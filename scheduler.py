@@ -1,6 +1,7 @@
 import time
 import logging
 import schedule
+from datetime import datetime
 from app import app
 from scraper import scrape_articles
 from nlp_processor import process_articles
