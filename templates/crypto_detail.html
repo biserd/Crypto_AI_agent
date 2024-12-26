@@ -184,128 +184,52 @@
     </div>
 </div>
 
-<!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-async function fetchPriceHistory() {
+<!-- TradingView Widget BEGIN -->
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+<script type="text/javascript">
+document.addEventListener('DOMContentLoaded', function() {
     const symbolMapping = {
-        'BTC': 'bitcoin',
-        'ETH': 'ethereum',
-        'BNB': 'binancecoin',
-        'ADA': 'cardano',
-        'SOL': 'solana',
-        'XRP': 'ripple',
-        'DOGE': 'dogecoin',
-        'MATIC': 'matic-network',
-        'AVAX': 'avalanche-2'
+        'BTC': 'BTCUSD',
+        'ETH': 'ETHUSD',
+        'BNB': 'BNBUSD',
+        'ADA': 'ADAUSD',
+        'SOL': 'SOLUSD',
+        'XRP': 'XRPUSD',
+        'DOGE': 'DOGEUSD',
+        'MATIC': 'MATICUSD',
+        'AVAX': 'AVAXUSD'
     };
-    const coinId = symbolMapping['{{ crypto.symbol }}'] || '{{ crypto.symbol.lower() }}';
-    const response = await fetch(`https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=7&interval=daily`);
-    const data = await response.json();
-    return data.prices.map(price => ({
-        timestamp: new Date(price[0]),
-        price: price[1]
-    }));
-}
-
-document.addEventListener('DOMContentLoaded', async function() {
-    const ctx = document.getElementById('priceChart').getContext('2d');
     
-    // Get price history
-    const priceHistory = await fetchPriceHistory();
-    const labels = priceHistory.map(p => p.timestamp.toLocaleDateString());
-    const prices = priceHistory.map(p => p.price);
-    const chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Price (USD)',
-                data: prices,
-                borderColor: '#2a2a72',
-                backgroundColor: 'rgba(42, 42, 114, 0.1)',
-                borderWidth: 2,
-                tension: 0.4,
-                fill: true,
-                pointRadius: 4,
-                pointBackgroundColor: '#2a2a72',
-                pointBorderColor: '#fff',
-                pointHoverRadius: 6,
-                pointHoverBackgroundColor: '#fff',
-                pointHoverBorderColor: '#2a2a72'
-            }]
-        },
-        options: {
-            responsive: true,
-            interaction: {
-                intersect: false,
-                mode: 'index'
-            },
-            plugins: {
-                legend: {
-                    position: 'top',
-                    labels: {
-                        usePointStyle: true,
-                        padding: 20,
-                        font: {
-                            size: 14
-                        }
-                    }
-                },
-                title: {
-                    display: true,
-                    text: '7-Day Price History',
-                    font: {
-                        size: 16,
-                        weight: 'bold'
-                    },
-                    padding: {
-                        top: 10,
-                        bottom: 30
-                    }
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    titleColor: '#2a2a72',
-                    bodyColor: '#666',
-                    borderColor: '#2a2a72',
-                    borderWidth: 1,
-                    padding: 12,
-                    displayColors: false,
-                    callbacks: {
-                        label: function(context) {
-                            return `$${context.parsed.y.toFixed(2)}`;
-                        }
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        font: {
-                            size: 12
-                        }
-                    }
-                },
-                y: {
-                    grid: {
-                        borderDash: [5, 5]
-                    },
-                    ticks: {
-                        font: {
-                            size: 12
-                        },
-                        callback: function(value) {
-                            return '$' + value.toFixed(2);
-                        }
-                    }
-                }
-            }
-        }
+    new TradingView.widget({
+        "width": "100%",
+        "height": 500,
+        "symbol": "BINANCE:" + symbolMapping['{{ crypto.symbol }}'],
+        "interval": "D",
+        "timezone": "Etc/UTC",
+        "theme": "light",
+        "style": "1",
+        "locale": "en",
+        "toolbar_bg": "#f1f3f6",
+        "enable_publishing": false,
+        "hide_side_toolbar": false,
+        "allow_symbol_change": false,
+        "container_id": "priceChart",
+        "studies": [
+            "RSI@tv-basicstudies",
+            "MACD@tv-basicstudies",
+            "MAExp@tv-basicstudies"
+        ],
+        "show_popup_button": true,
+        "popup_width": "1000",
+        "popup_height": "650",
+        "withdateranges": true,
+        "save_image": true,
+        "details": true,
+        "hotlist": true,
+        "calendar": true,
+        "show_popup_button": true
     });
 });
 </script>
+<!-- TradingView Widget END -->
 {% endblock %}
