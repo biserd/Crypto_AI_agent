@@ -1,6 +1,17 @@
 from datetime import datetime
 from database import db
 
+class NewsSourceMetrics(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    source_name = db.Column(db.String(100), unique=True, nullable=False)
+    trust_score = db.Column(db.Float, default=0.0)  # 0-100 scale
+    article_count = db.Column(db.Integer, default=0)
+    accuracy_score = db.Column(db.Float, default=0.0)  # Based on fact checking
+    last_updated = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<NewsSourceMetrics {self.source_name}: {self.trust_score}>'
+
 class Article(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(500), nullable=False)
@@ -13,6 +24,8 @@ class Article(db.Model):
     published = db.Column(db.Boolean, default=False)
     sentiment_score = db.Column(db.Float)  # Overall sentiment score
     sentiment_label = db.Column(db.String(20))  # Positive, Negative, or Neutral
+    accuracy_verified = db.Column(db.Boolean, default=False)  # For fact-checking tracking
+    trust_impact = db.Column(db.Float, default=0.0)  # Impact on source trust score
 
     def __repr__(self):
         return f'<Article {self.title}>'

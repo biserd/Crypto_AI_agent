@@ -53,11 +53,76 @@
     border-radius: 8px;
     margin-bottom: 1rem;
 }
+
+.trust-score-container {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.trust-score-bar {
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+}
+
+.trust-score-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.trust-high {
+    background: linear-gradient(90deg, #28a745 0%, #34ce57 100%);
+}
+
+.trust-medium {
+    background: linear-gradient(90deg, #ffc107 0%, #ffcd39 100%);
+}
+
+.trust-low {
+    background: linear-gradient(90deg, #dc3545 0%, #e4606d 100%);
+}
+
+.source-metrics {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: #6c757d;
+}
 </style>
 
 <div class="row">
     <div class="col-12">
         <h1 class="mb-4">Cryptocurrency News & Prices</h1>
+
+        <!-- Source Trust Scores Section -->
+        <div class="trust-score-container">
+            <h4 class="mb-3">News Source Trust Scores</h4>
+            {% for source in news_sources %}
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <strong>{{ source.source_name }}</strong>
+                    <span class="badge {% if source.trust_score >= 70 %}bg-success{% elif source.trust_score >= 40 %}bg-warning{% else %}bg-danger{% endif %}">
+                        {{ "%.1f"|format(source.trust_score) }}%
+                    </span>
+                </div>
+                <div class="trust-score-bar">
+                    <div class="trust-score-fill {% if source.trust_score >= 70 %}trust-high{% elif source.trust_score >= 40 %}trust-medium{% else %}trust-low{% endif %}"
+                         style="width: {{ source.trust_score }}%"></div>
+                </div>
+                <div class="source-metrics">
+                    <span>Articles: {{ source.article_count }}</span>
+                    <span>Accuracy: {{ "%.1f"|format(source.accuracy_score) }}%</span>
+                    <span>Last Updated: {{ source.last_updated.strftime('%Y-%m-%d') }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
 
         <!-- Crypto Prices Section -->
         <div class="crypto-prices mb-4">
@@ -74,7 +139,15 @@
         <div class="card mb-3">
             <div class="card-body">
                 <h5 class="card-title">{{ article.title }}</h5>
-                <h6 class="card-subtitle mb-2 text-muted">{{ article.source_name }} - {{ article.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</h6>
+                <h6 class="card-subtitle mb-2 text-muted">
+                    {{ article.source_name }}
+                    {% if article.source_metrics %}
+                    <span class="badge {% if article.source_metrics.trust_score >= 70 %}bg-success{% elif article.source_metrics.trust_score >= 40 %}bg-warning{% else %}bg-danger{% endif %}">
+                        Trust: {{ "%.1f"|format(article.source_metrics.trust_score) }}%
+                    </span>
+                    {% endif %}
+                    - {{ article.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                </h6>
                 <p class="card-text">{{ article.summary }}</p>
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
