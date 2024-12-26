@@ -11,7 +11,9 @@ class Article(db.Model):
     category = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     published = db.Column(db.Boolean, default=False)
-    
+    sentiment_score = db.Column(db.Float)  # Overall sentiment score
+    sentiment_label = db.Column(db.String(20))  # Positive, Negative, or Neutral
+
     def __repr__(self):
         return f'<Article {self.title}>'
 
