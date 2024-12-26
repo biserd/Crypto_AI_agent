@@ -6,18 +6,148 @@
     <title>News Aggregator</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/styles.css">
+    <style>
+    .subscription-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        margin-left: 1rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .subscription-badge.basic {
+        background: #e9ecef;
+        color: #495057;
+    }
+
+    .subscription-badge.pro {
+        background: linear-gradient(135deg, #2a2a72 0%, #009ffd 100%);
+        color: white;
+    }
+
+    .upgrade-modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+    }
+
+    .upgrade-modal-content {
+        background-color: #fff;
+        margin: 15% auto;
+        padding: 2rem;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 500px;
+        position: relative;
+    }
+
+    .close-modal {
+        position: absolute;
+        right: 1rem;
+        top: 0.5rem;
+        font-size: 1.5rem;
+        cursor: pointer;
+    }
+
+    .plan-features {
+        margin: 1.5rem 0;
+    }
+
+    .plan-features li {
+        margin-bottom: 0.5rem;
+        padding-left: 1.5rem;
+        position: relative;
+    }
+
+    .plan-features li:before {
+        content: "✓";
+        position: absolute;
+        left: 0;
+        color: #10b981;
+    }
+    </style>
 </head>
 <body class="bg-light">
     <nav class="navbar navbar-expand-lg bg-white border-bottom">
         <div class="container">
             <a class="navbar-brand" href="/">News Aggregator</a>
+            <div class="ms-auto d-flex align-items-center">
+                <div id="subscriptionStatus" class="subscription-badge basic" onclick="showUpgradeModal()">
+                    Loading...
+                </div>
+            </div>
         </div>
     </nav>
+
+    <!-- Upgrade Modal -->
+    <div id="upgradeModal" class="upgrade-modal">
+        <div class="upgrade-modal-content">
+            <span class="close-modal" onclick="hideUpgradeModal()">&times;</span>
+            <h4>Upgrade to Pro</h4>
+            <p>Get access to premium features and enhanced capabilities</p>
+            <ul class="plan-features">
+                <li>Advanced sentiment indicators</li>
+                <li>Early news alerts</li>
+                <li>Detailed market analysis</li>
+                <li>Unlimited API access</li>
+            </ul>
+            <button class="btn btn-primary w-100" onclick="processUpgrade()">
+                Upgrade Now
+            </button>
+        </div>
+    </div>
 
     <main class="container mt-4">
         {% block content %}{% endblock %}
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    // Fetch subscription status on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        fetchSubscriptionStatus();
+    });
+
+    function fetchSubscriptionStatus() {
+        fetch('/subscription/status')
+            .then(response => response.json())
+            .then(data => {
+                const badge = document.getElementById('subscriptionStatus');
+                badge.className = `subscription-badge ${data.tier}`;
+                badge.innerHTML = `${data.tier.charAt(0).toUpperCase() + data.tier.slice(1)} Plan`;
+            })
+            .catch(error => console.error('Error fetching subscription:', error));
+    }
+
+    function showUpgradeModal() {
+        document.getElementById('upgradeModal').style.display = 'block';
+    }
+
+    function hideUpgradeModal() {
+        document.getElementById('upgradeModal').style.display = 'none';
+    }
+
+    function processUpgrade() {
+        // For demonstration, we'll just show an alert
+        alert('Upgrade functionality will be implemented soon!');
+        hideUpgradeModal();
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        const modal = document.getElementById('upgradeModal');
+        if (event.target === modal) {
+            hideUpgradeModal();
+        }
+    }
+    </script>
 </body>
 </html>

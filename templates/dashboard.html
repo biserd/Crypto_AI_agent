@@ -369,64 +369,6 @@
         transform: translateY(0);
     }
 }
-
-/* Add to existing styles */
-.subscription-tiers {
-    display: flex;
-    gap: 2rem;
-    margin-top: 1rem;
-}
-
-.tier {
-    flex: 1;
-    padding: 1.5rem;
-    border-radius: 8px;
-    background: #f8f9fa;
-    transition: all 0.3s ease;
-}
-
-.tier.active {
-    background: #fff;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    transform: translateY(-4px);
-}
-
-.tier h6 {
-    font-size: 1.25rem;
-    margin-bottom: 1rem;
-    color: #2a2a72;
-}
-
-.tier ul {
-    list-style: none;
-    padding: 0;
-    margin-bottom: 1.5rem;
-}
-
-.tier ul li {
-    margin-bottom: 0.5rem;
-    padding-left: 1.5rem;
-    position: relative;
-}
-
-.tier ul li:before {
-    content: "✓";
-    position: absolute;
-    left: 0;
-    color: #10b981;
-}
-
-.upgrade-btn {
-    background: linear-gradient(135deg, #2a2a72 0%, #009ffd 100%);
-    border: none;
-    padding: 0.5rem 1.5rem;
-    transition: all 0.3s ease;
-}
-
-.upgrade-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-}
 </style>
 
 <div class="row">
@@ -473,42 +415,6 @@
             {% endfor %}
         </div>
 
-        <!-- Subscription Status Section -->
-        <div class="subscription-status mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Subscription Status</h5>
-                    <div class="subscription-tiers">
-                        <div class="tier basic {% if subscription and subscription.tier == 'basic' %}active{% endif %}">
-                            <h6>Basic</h6>
-                            <ul>
-                                <li>Access to news feed</li>
-                                <li>Basic sentiment analysis</li>
-                                <li>Limited API access</li>
-                            </ul>
-                            {% if not subscription or subscription.tier == 'basic' %}
-                                <button class="btn btn-secondary" disabled>Current Plan</button>
-                            {% endif %}
-                        </div>
-                        <div class="tier pro {% if subscription and subscription.tier == 'pro' %}active{% endif %}">
-                            <h6>Pro</h6>
-                            <ul>
-                                <li>Advanced sentiment indicators</li>
-                                <li>Early news alerts</li>
-                                <li>Detailed market analysis</li>
-                                <li>Unlimited API access</li>
-                            </ul>
-                            {% if not subscription or subscription.tier == 'basic' %}
-                                <button class="btn btn-primary upgrade-btn">Upgrade to Pro</button>
-                            {% elif subscription.tier == 'pro' %}
-                                <button class="btn btn-success" disabled>Current Plan</button>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
 
         <!-- Real-time news feed -->
         <div class="news-feed">
@@ -523,7 +429,6 @@
                 <!-- Real-time articles will be inserted here -->
             </div>
         </div>
-
 
         <!-- Articles Section -->
         {% for article in articles %}
