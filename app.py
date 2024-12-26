@@ -15,8 +15,8 @@ from datetime import datetime, timedelta
 import stripe
 from datetime import datetime
 
-# Global variable for last run time
-last_scraper_run = datetime.utcnow()
+# Initialize last run time in app config
+app.config['LAST_SCRAPER_RUN'] = datetime.utcnow()
 
 # Configure logging
 logging.basicConfig(
@@ -163,7 +163,7 @@ def dashboard():
                             articles=recent_articles,
                             crypto_prices=crypto_prices,
                             news_sources=news_sources,
-                            last_scraper_run=last_scraper_run)
+                            last_scraper_run=app.config['LAST_SCRAPER_RUN'])
     except Exception as e:
         logger.error(f"Error generating dashboard: {str(e)}")
         return "Error loading dashboard", 500

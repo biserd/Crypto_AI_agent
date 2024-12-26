@@ -13,8 +13,7 @@ def run_pipeline():
     logging.info("Starting news pipeline")
 
     with app.app_context():
-        global last_scraper_run
-        app.last_scraper_run = datetime.utcnow()
+        app.config['LAST_SCRAPER_RUN'] = datetime.utcnow()
         try:
             # Update crypto prices
             try:
