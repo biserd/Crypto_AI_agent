@@ -5,7 +5,7 @@ import requests
 import trafilatura
 from datetime import datetime
 from app import db, socketio, broadcast_new_article # Added imports
-from models import Article
+from models import Article, NewsSourceMetrics # Added NewsSourceMetrics import
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 import random
@@ -231,6 +231,28 @@ def scrape_rss_feed(source):
                 db.session.add(new_article)
                 articles_added += 1
 
+                # Update source metrics
+                try:
+                    source_metrics = NewsSourceMetrics.query.filter_by(source_name=source.name).first()
+                    if not source_metrics:
+                        source_metrics = NewsSourceMetrics(
+                            source_name=source.name,
+                            trust_score=70.0,  # Default initial trust score
+                            article_count=1,
+                            accuracy_score=80.0,  # Default initial accuracy score
+                            last_updated=datetime.utcnow()
+                        )
+                        db.session.add(source_metrics)
+                        logger.info(f"Created new source metrics for {source.name}")
+                    else:
+                        source_metrics.article_count += 1
+                        source_metrics.last_updated = datetime.utcnow()
+                        logger.info(f"Updated article count for {source.name} to {source_metrics.article_count}")
+                    db.session.commit() #Commit changes to database
+                except Exception as e:
+                    logger.error(f"Error updating source metrics for {source.name}: {str(e)}")
+                    db.session.rollback() #Rollback changes if error occurs
+
                 # Broadcast the new article immediately
                 try:
                     broadcast_new_article(new_article)
@@ -245,7 +267,7 @@ def scrape_rss_feed(source):
 
         if articles_added > 0:
             try:
-                db.session.commit()
+                #db.session.commit() #moved commit inside source metrics update
                 logger.info(f"Successfully committed {articles_added} articles from {source.name}")
             except Exception as e:
                 logger.error(f"Error committing articles from {source.name}: {str(e)}")
