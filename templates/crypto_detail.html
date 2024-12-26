@@ -132,9 +132,12 @@
                     <p class="card-text">{{ article.summary }}</p>
                     {% if article.sentiment_label %}
                     <div class="d-flex align-items-center">
-                        <span class="sentiment-badge {{ article.sentiment_label|lower }}">
-                            {{ article.sentiment_label|title }}
-                            {% if article.sentiment_score %}
+                        <span class="sentiment-indicator sentiment-{{ article.sentiment_label|lower }}">
+    {{ article.sentiment_label|title }}
+    {% if article.sentiment_score %}
+    <span class="sentiment-score">{{ "%.2f"|format(article.sentiment_score) }}</span>
+    {% endif %}
+</span>
                             <span class="sentiment-score">{{ "%.2f"|format(article.sentiment_score) }}</span>
                             {% endif %}
                         </span>
