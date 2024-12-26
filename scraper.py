@@ -145,7 +145,7 @@ def create_session():
 SOURCES = [
     NewsSource(
         "CoinDesk",
-        "https://www.coindesk.com/feed",
+        "https://www.coindesk.com/arc/outboundfeeds/rss/?outputType=xml",
         is_rss=True
     ),
     NewsSource(
@@ -205,7 +205,10 @@ def scrape_rss_feed(source):
         logger.info(f"Fetching RSS feed from {source.name} at {source.url}")
         try:
             session = create_session()
-            response = session.get(source.url, timeout=10)
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+            response = session.get(source.url, timeout=10, headers=headers)
             response.raise_for_status()
             feed = feedparser.parse(response.content)
             
