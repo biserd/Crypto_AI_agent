@@ -49,30 +49,7 @@ def broadcast_new_article(article):
     except Exception as e:
         logger.error(f"Error broadcasting article: {str(e)}")
 
-from functools import wraps
-from flask import jsonify, request
-import time
-
-def check_rate_limit(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not getattr(request, 'subscription', None):
-            request.subscription = Subscription.query.filter_by(user_id=1, active=True).first()
-            if not request.subscription:
-                request.subscription = Subscription(user_id=1, plan_type='free')
-                
-        key = f"{request.remote_addr}:{int(time.time() // 3600)}"
-        current = cache.get(key) or 0
-        
-        if current >= request.subscription.rate_limit:
-            return jsonify({"error": "Rate limit exceeded", "upgrade_url": "/upgrade"}), 429
-            
-        cache.incr(key)
-        return f(*args, **kwargs)
-    return decorated_function
-
 @app.route('/')
-@check_rate_limit
 def dashboard():
     try:
         logger.info("Starting dashboard view generation")

@@ -612,17 +612,3 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
-<!-- Add before closing div.row -->
-{% if subscription and subscription.plan_type == 'free' %}
-<div class="premium-banner">
-    <h3>Upgrade to Premium</h3>
-    <ul>
-        <li>Advanced Trading Signals</li>
-        <li>Unlimited API Access</li>
-        <li>Real-time Price Alerts</li>
-        <li>Historical Sentiment Analysis</li>
-    </ul>
-    <button class="btn btn-primary" onclick="window.location.href='/upgrade'">Upgrade Now - $49/month</button>
-</div>
-{% endif %}
-</div>
