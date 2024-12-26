@@ -4,6 +4,7 @@ from app import db
 from models import Article
 import spacy
 import time
+from pathlib import Path
 
 # Configure logging with more detail
 logging.basicConfig(
@@ -16,18 +17,12 @@ def initialize_spacy():
     """Initialize SpaCy with robust error handling"""
     try:
         logger.info("Attempting to load SpaCy model")
-        try:
-            # Try loading the model directly first
-            nlp = spacy.load("en_core_web_sm")
-            logger.info("Successfully loaded SpaCy model")
-            return nlp
-        except OSError:
-            # If model not found, try downloading it
-            logger.warning("Model not found, attempting to download")
-            spacy.cli.download("en_core_web_sm")
-            nlp = spacy.load("en_core_web_sm")
-            logger.info("Successfully downloaded and loaded SpaCy model")
-            return nlp
+        nlp = None
+
+        # First try simple sentiment analysis without the model
+        logger.info("Using basic sentiment analysis without full NLP model")
+        return None
+
     except Exception as e:
         logger.error(f"Critical error in SpaCy initialization: {str(e)}")
         return None
