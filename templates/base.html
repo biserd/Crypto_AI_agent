@@ -151,9 +151,12 @@
                     return;
                 }
                 
-                // Open checkout in new tab
-                const checkoutUrl = session.url;
-                window.open(checkoutUrl, '_blank');
+                // Redirect to Stripe checkout URL
+                if (session.url) {
+                    window.location.href = session.url;
+                } else {
+                    alert('Error: No checkout URL received');
+                }
                 hideUpgradeModal();
             } catch (error) {
                 console.error('Error:', error);
