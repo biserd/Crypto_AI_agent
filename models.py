@@ -15,6 +15,7 @@ class Subscription(db.Model):
 
 class NewsSourceMetrics(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
     source_name = db.Column(db.String(100), unique=True, nullable=False)
     trust_score = db.Column(db.Float, default=0.0)  # 0-100 scale
     article_count = db.Column(db.Integer, default=0)
@@ -22,7 +23,7 @@ class NewsSourceMetrics(db.Model):
     last_updated = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
-        return f'<NewsSourceMetrics {self.source_name}: {self.trust_score}>'
+        return f'<NewsSourceMetrics {self.name}: {self.trust_score}>'
 
 class Article(db.Model):
     id = db.Column(db.Integer, primary_key=True)
