@@ -105,9 +105,9 @@
                 <div class="card-body">
                     <h5 class="card-title">Sentiment Analysis (Last 24 Hours)</h5>
                     <ul class="list-unstyled">
-                        <li>Positive Articles: <span class="sentiment-indicator sentiment-positive">{{ news|selectattr('sentiment_label', 'equalto', 'positive')|list|length }}</span></li>
-                        <li>Negative Articles: <span class="sentiment-indicator sentiment-negative">{{ news|selectattr('sentiment_label', 'equalto', 'negative')|list|length }}</span></li>
-                        <li>Neutral Articles: <span class="sentiment-indicator sentiment-neutral">{{ news|selectattr('sentiment_label', 'equalto', 'neutral')|list|length }}</span></li>
+                        <li>Positive Articles: {{ news|selectattr('sentiment_label', 'equalto', 'positive')|list|length }}</li>
+                        <li>Negative Articles: {{ news|selectattr('sentiment_label', 'equalto', 'negative')|list|length }}</li>
+                        <li>Neutral Articles: {{ news|selectattr('sentiment_label', 'equalto', 'neutral')|list|length }}</li>
                     </ul>
                 </div>
             </div>
