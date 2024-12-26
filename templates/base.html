@@ -161,24 +161,25 @@
                 }
                 
                 if (session.error) {
-                    console.error('Session error:', session.error);
-                    alert(session.error);
-                    return;
+                    throw new Error(session.error);
                 }
                 
-                // Redirect to Stripe checkout URL using stripe.redirectToCheckout
+                if (!session.id) {
+                    throw new Error('No session ID received');
+                }
+
                 const result = await stripe.redirectToCheckout({
                     sessionId: session.id
                 });
                 
                 if (result.error) {
-                    console.error('Checkout error:', result.error);
-                    alert(result.error.message);
+                    throw new Error(result.error.message);
                 }
-                hideUpgradeModal();
             } catch (error) {
-                console.error('Error:', error);
-                alert('Something went wrong with the payment process.');
+                console.error('Payment error:', error);
+                alert(error.message || 'Something went wrong with the payment process.');
+            } finally {
+                hideUpgradeModal();
             }
         }
 
