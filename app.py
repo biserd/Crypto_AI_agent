@@ -189,9 +189,11 @@ def glossary():
 @app.route('/glossary/<term_name>')
 def get_term_details(term_name):
     try:
-        # Convert URL-friendly term name back to proper format
-        decoded_term = term_name.replace('-', ' ').title()
-        term = CryptoGlossary.query.filter_by(term=decoded_term).first_or_404()
+        # Convert URL-friendly term name back to proper format and make case-insensitive
+        decoded_term = term_name.replace('-', ' ')
+        term = CryptoGlossary.query.filter(
+            CryptoGlossary.term.ilike(decoded_term)
+        ).first_or_404()
         term.usage_count += 1
         db.session.commit()
 
