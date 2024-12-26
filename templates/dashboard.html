@@ -124,6 +124,84 @@
     gap: 0.5rem;
     margin-top: 1rem;
 }
+
+/* New styles for share modal */
+.share-modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.share-modal-content {
+    background-color: #fff;
+    margin: 10% auto;
+    padding: 20px;
+    border-radius: 8px;
+    width: 80%;
+    max-width: 600px;
+    position: relative;
+}
+
+.close-modal {
+    position: absolute;
+    right: 20px;
+    top: 10px;
+    font-size: 28px;
+    cursor: pointer;
+}
+
+.social-preview {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin: 10px 0;
+    padding: 15px;
+}
+
+.social-preview.twitter {
+    background: #f8f9fa;
+}
+
+.social-preview.linkedin {
+    background: #f3f6f8;
+}
+
+.social-preview-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.share-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.share-btn {
+    padding: 8px 15px;
+    border-radius: 20px;
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.share-btn.twitter {
+    background: #1DA1F2;
+}
+
+.share-btn.linkedin {
+    background: #0A66C2;
+}
 </style>
 
 <div class="row">
@@ -207,7 +285,44 @@
                                 {% endif %}
                             {% endfor %}
                         {% endif %}
+                        <button class="btn btn-info btn-sm" onclick="showShareModal('{{ article.id }}')">Share</button>
                         <a href="{{ article.source_url }}" class="btn btn-primary btn-sm" target="_blank">Read More</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Share Modal for each article -->
+        <div id="shareModal{{ article.id }}" class="share-modal">
+            <div class="share-modal-content">
+                <span class="close-modal" onclick="hideShareModal('{{ article.id }}')">&times;</span>
+                <h4>Share Article</h4>
+
+                <!-- Twitter Preview -->
+                <div class="social-preview twitter">
+                    <h5>Twitter Preview</h5>
+                    <div class="social-preview-content">
+                        <h6>{{ article.title }}</h6>
+                        <p>{{ article.summary[:140] }}...</p>
+                        <div class="share-buttons">
+                            <button class="share-btn twitter" onclick="shareOnTwitter('{{ article.title }}', '{{ article.source_url }}')">
+                                Share on Twitter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LinkedIn Preview -->
+                <div class="social-preview linkedin">
+                    <h5>LinkedIn Preview</h5>
+                    <div class="social-preview-content">
+                        <h6>{{ article.title }}</h6>
+                        <p>{{ article.summary }}</p>
+                        <div class="share-buttons">
+                            <button class="share-btn linkedin" onclick="shareOnLinkedIn('{{ article.title }}', '{{ article.summary }}', '{{ article.source_url }}')">
+                                Share on LinkedIn
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -215,4 +330,32 @@
         {% endfor %}
     </div>
 </div>
+
+<script>
+function showShareModal(articleId) {
+    document.getElementById('shareModal' + articleId).style.display = 'block';
+}
+
+function hideShareModal(articleId) {
+    document.getElementById('shareModal' + articleId).style.display = 'none';
+}
+
+function shareOnTwitter(title, url) {
+    const text = encodeURIComponent(title);
+    const shareUrl = encodeURIComponent(url);
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${shareUrl}`, '_blank');
+}
+
+function shareOnLinkedIn(title, summary, url) {
+    const shareUrl = encodeURIComponent(url);
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`, '_blank');
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    if (event.target.classList.contains('share-modal')) {
+        event.target.style.display = 'none';
+    }
+}
+</script>
 {% endblock %}
