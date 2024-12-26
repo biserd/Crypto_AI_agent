@@ -3,7 +3,7 @@ eventlet.monkey_patch()
 
 import os
 from functools import wraps
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect
 from database import db
 from models import Article, CryptoPrice, NewsSourceMetrics, CryptoGlossary, Subscription
 import logging
@@ -14,6 +14,7 @@ import json
 from datetime import datetime, timedelta
 import stripe
 from datetime import datetime
+from sqlalchemy import desc
 
 # Create Flask app
 app = Flask(__name__)
@@ -28,7 +29,6 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
-
 
 
 # Stripe configuration
@@ -205,6 +205,40 @@ def get_term_details(term_id):
     except Exception as e:
         logger.error(f"Error getting term details: {str(e)}")
         return "Error loading term details", 500
+
+@app.route('/crypto/<symbol>')
+@check_subscription('basic')
+def crypto_detail(symbol):
+    try:
+        # Get current price data
+        crypto_price = CryptoPrice.query.filter_by(symbol=symbol).first_or_404()
+
+        # Get related news articles (containing the symbol)
+        related_news = Article.query.filter(
+            (Article.content.ilike(f'%{symbol}%')) |
+            (Article.title.ilike(f'%{symbol}%'))
+        ).order_by(desc(Article.created_at)).limit(10).all()
+
+        # Calculate overall sentiment
+        positive_count = sum(1 for article in related_news if article.sentiment_label == 'positive')
+        negative_count = sum(1 for article in related_news if article.sentiment_label == 'negative')
+
+        # Determine buy/hold/sell recommendation
+        if positive_count > negative_count * 2:
+            recommendation = 'buy'
+        elif negative_count > positive_count * 2:
+            recommendation = 'sell'
+        else:
+            recommendation = 'hold'
+
+        return render_template('crypto_detail.html',
+                            crypto=crypto_price,
+                            news=related_news,
+                            recommendation=recommendation)
+    except Exception as e:
+        logger.error(f"Error in crypto detail page: {str(e)}")
+        return "Error loading cryptocurrency details", 500
+
 
 @socketio.on('connect')
 def handle_connect():

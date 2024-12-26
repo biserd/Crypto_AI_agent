@@ -422,23 +422,23 @@ updateLastRunTime();
 
         <div class="crypto-prices-container mt-4 mb-5">
             {% for price in crypto_prices %}
-                <div class="crypto-tooltip crypto-price {% if price.percent_change_24h > 0 %}price-up{% else %}price-down{% endif %}">
-                    {{ price.symbol }}: ${{ "%.2f"|format(price.price_usd) }}
-                    <small>({{ "%.1f"|format(price.percent_change_24h) }}%)</small>
-                    <div class="tooltip-content">
-                        <span class="tooltip-price">${{ "%.2f"|format(price.price_usd) }}</span>
-                        <span class="tooltip-change {% if price.percent_change_24h > 0 %}positive{% else %}negative{% endif %}">
-                            {{ "%.1f"|format(price.percent_change_24h) }}%
-                        </span>
+                <a href="/crypto/{{ price.symbol }}" class="text-decoration-none">
+                    <div class="crypto-tooltip crypto-price {% if price.percent_change_24h > 0 %}price-up{% else %}price-down{% endif %}">
+                        {{ price.symbol }}: ${{ "%.2f"|format(price.price_usd) }}
+                        <small>({{ "%.1f"|format(price.percent_change_24h) }}%)</small>
+                        <div class="tooltip-content">
+                            <span class="tooltip-price">${{ "%.2f"|format(price.price_usd) }}</span>
+                            <span class="tooltip-change {% if price.percent_change_24h > 0 %}positive{% else %}negative{% endif %}">
+                                {{ "%.1f"|format(price.percent_change_24h) }}%
+                            </span>
+                        </div>
                     </div>
-                </div>
+                </a>
             {% endfor %}
         </div>
 
         <hr class="my-5">
 
-
-        
 
         <!-- Articles Section -->
         {% for article in articles %}

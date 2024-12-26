@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+.crypto-header {
+    padding: 2rem 0;
+    background: linear-gradient(135deg, #2a2a72 0%, #009ffd 100%);
+    color: white;
+    margin-bottom: 2rem;
+    border-radius: 8px;
+}
+
+.price-display {
+    font-size: 2.5rem;
+    font-weight: bold;
+}
+
+.price-change {
+    font-size: 1.2rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    display: inline-block;
+}
+
+.price-up {
+    background: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+}
+
+.price-down {
+    background: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+}
+
+.recommendation-indicator {
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+    margin: 1rem 0;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.recommendation-buy {
+    background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+    color: white;
+}
+
+.recommendation-sell {
+    background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+    color: white;
+}
+
+.recommendation-hold {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: #1f2937;
+}
+
+.news-card {
+    transition: transform 0.2s;
+}
+
+.news-card:hover {
+    transform: translateY(-2px);
+}
+
+.chart-container {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+</style>
+
+<div class="crypto-header text-center">
+    <h1>{{ crypto.symbol }}</h1>
+    <div class="price-display">${{ "%.2f"|format(crypto.price_usd) }}</div>
+    <div class="price-change {% if crypto.percent_change_24h > 0 %}price-up{% else %}price-down{% endif %}">
+        {{ "%.2f"|format(crypto.percent_change_24h) }}% (24h)
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Price Chart -->
+            <div class="chart-container">
+                <h3>Price History</h3>
+                <canvas id="priceChart"></canvas>
+            </div>
+
+            <!-- News Section -->
+            <h3>Latest {{ crypto.symbol }} News</h3>
+            {% for article in news %}
+            <div class="card mb-3 news-card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ article.title }}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">
+                        {{ article.source_name }} - {{ article.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                    </h6>
+                    <p class="card-text">{{ article.summary }}</p>
+                    {% if article.sentiment_label %}
+                    <span class="badge bg-{{ article.sentiment_label|lower }}">
+                        {{ article.sentiment_label }}
+                        {% if article.sentiment_score %}
+                        ({{ "%.2f"|format(article.sentiment_score) }})
+                        {% endif %}
+                    </span>
+                    {% endif %}
+                    <a href="{{ article.source_url }}" class="btn btn-primary btn-sm" target="_blank">Read More</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="col-md-4">
+            <!-- Sentiment/Trading Recommendation -->
+            <div class="recommendation-indicator recommendation-{{ recommendation }}">
+                Recommendation: {{ recommendation|upper }}
+            </div>
+
+            <!-- Additional Stats -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Sentiment Analysis</h5>
+                    <ul class="list-unstyled">
+                        <li>Positive Articles: {{ news|selectattr('sentiment_label', 'equalto', 'positive')|list|length }}</li>
+                        <li>Negative Articles: {{ news|selectattr('sentiment_label', 'equalto', 'negative')|list|length }}</li>
+                        <li>Neutral Articles: {{ news|selectattr('sentiment_label', 'equalto', 'neutral')|list|length }}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Sample data - this should be replaced with real historical data
+    const ctx = document.getElementById('priceChart').getContext('2d');
+    const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['7 days ago', '6 days ago', '5 days ago', '4 days ago', '3 days ago', '2 days ago', 'Today'],
+            datasets: [{
+                label: 'Price (USD)',
+                data: [{{ crypto.price_usd * 0.95 }}, 
+                      {{ crypto.price_usd * 0.97 }}, 
+                      {{ crypto.price_usd * 0.99 }}, 
+                      {{ crypto.price_usd * 1.02 }}, 
+                      {{ crypto.price_usd * 1.01 }}, 
+                      {{ crypto.price_usd * 0.98 }}, 
+                      {{ crypto.price_usd }}],
+                borderColor: '#2a2a72',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: '7-Day Price History'
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
