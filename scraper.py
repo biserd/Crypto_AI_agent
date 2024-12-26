@@ -12,7 +12,7 @@ import random
 import feedparser
 import re
 from html.parser import HTMLParser
-from html.parser import HTMLParser as HTMLParser2 # Added to resolve Comment ambiguity
+from html.parser import HTMLParser as HTMLParser2
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -151,6 +151,11 @@ SOURCES = [
     NewsSource(
         "Cointelegraph",
         "https://cointelegraph.com/rss",
+        is_rss=True
+    ),
+    NewsSource(
+        "Messari",
+        "https://messari.io/rss",
         is_rss=True
     )
 ]
