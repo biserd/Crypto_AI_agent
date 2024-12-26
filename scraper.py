@@ -157,6 +157,11 @@ SOURCES = [
         "Messari",
         "https://messari.io/rss",
         is_rss=True
+    ),
+    NewsSource(
+        "The Block",
+        "https://www.theblock.co/rss.xml",
+        is_rss=True
     )
 ]
 
