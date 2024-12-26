@@ -114,7 +114,21 @@
     <script>
         let stripe;
         
+        async function initializeStripe() {
+            try {
+                const response = await fetch('/stripe-config');
+                const config = await response.json();
+                stripe = Stripe(config.publishableKey);
+            } catch (error) {
+                console.error('Error initializing Stripe:', error);
+            }
+        }
+
         async function processUpgrade() {
+            if (!stripe) {
+                await initializeStripe();
+            }
+            
             try {
                 const response = await fetch('/create-checkout-session', {
                     method: 'POST',
@@ -139,17 +153,9 @@
             }
         }
 
-        // Initialize Stripe
-        fetch('/stripe-config')
-            .then(response => response.json())
-            .then(config => {
-                stripe = Stripe(config.publishableKey);
-            })
-            .catch(error => {
-                console.error('Error loading Stripe:', error);
-            });
+        // Initialize Stripe when page loads
+        initializeStripe();
     </script>
-    <script>
     // Fetch subscription status on page load
     document.addEventListener('DOMContentLoaded', function() {
         fetchSubscriptionStatus();
@@ -174,25 +180,7 @@
         document.getElementById('upgradeModal').style.display = 'none';
     }
 
-    function processUpgrade() {
-        fetch('/create-checkout-session', {
-            method: 'POST',
-        })
-        .then(function(response) {
-            return response.json();
-        })
-        .then(function(session) {
-            if(session.error) {
-                alert(session.error);
-                return;
-            }
-            stripe.redirectToCheckout({ sessionId: session.id });
-        })
-        .catch(function(error) {
-            console.error('Error:', error);
-            alert('Something went wrong with the payment process.');
-        });
-    }
+    // Empty - removing duplicate function
 
     // Close modal when clicking outside
     window.onclick = function(event) {
