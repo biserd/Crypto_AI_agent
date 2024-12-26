@@ -154,9 +154,7 @@
                 // Open checkout in new tab
                 const checkoutUrl = session.url;
                 window.open(checkoutUrl, '_blank');
-                
-                if (error) {
-                    alert(error.message);
+                hideUpgradeModal();
                 }
             } catch (error) {
                 console.error('Error:', error);
