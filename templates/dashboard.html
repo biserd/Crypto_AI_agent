@@ -434,8 +434,8 @@
                 <h6 class="card-subtitle mb-2 text-muted">
                     {{ article.source_name }}
                     {% if article.source_metrics %}
-                    <span class="badge {% if article.source_metrics.trust_score >= 70 %}bg-success{% elif article.source_metrics.trust_score >= 40 %}bg-warning{% else %}bg-danger{% endif %}">
-                        Trust: {{ "%.1f"|format(article.source_metrics.trust_score) }}%
+                    <span class="badge {% if article.source_metrics.trust_score >= 70 %}bg-success{% elif article.source_metrics.trust_score >= 40 %}bg-warning{% else %}bg-danger{% endif %}" title="Source Trust Score">
+                        Source Trust: {{ "%.1f"|format(article.source_metrics.trust_score) }}%
                     </span>
                     {% endif %}
                     - {{ article.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
