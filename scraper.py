@@ -14,14 +14,14 @@ class NewsSource:
 
 SOURCES = [
     NewsSource(
-        "Reuters",
-        "https://www.reuters.com/world",
-        "article.story-card",
+        "Tech Crunch",
+        "https://techcrunch.com",
+        "article.post-block",
     ),
     NewsSource(
-        "Associated Press",
-        "https://apnews.com/hub/world-news",
-        "div.CardHeadline",
+        "The Verge",
+        "https://www.theverge.com",
+        "div.relative.group.mb-8",
     ),
 ]
 
@@ -33,13 +33,13 @@ def scrape_articles():
         try:
             logging.info(f"Scraping from {source.name} at {source.url}")
             headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
             }
             response = requests.get(source.url, headers=headers, timeout=10)
-            response.raise_for_status()  # Raise an error for bad status codes
+            response.raise_for_status()
 
             soup = BeautifulSoup(response.text, 'html.parser')
-            logging.debug(f"Successfully parsed HTML from {source.name}")
+            logging.info(f"Successfully parsed HTML from {source.name}")
 
             articles = soup.select(source.article_selector)
             logging.info(f"Found {len(articles)} articles on {source.name}")
@@ -48,15 +48,15 @@ def scrape_articles():
                 try:
                     # Extract article URL
                     link = article.find('a')
-                    if not link:
-                        logging.warning(f"No link found in article from {source.name}")
+                    if not link or not link.get('href'):
+                        logging.warning(f"No valid link found in article from {source.name}")
                         continue
 
                     article_url = link.get('href')
                     if not article_url.startswith('http'):
-                        article_url = f"https://{source.url.split('/')[2]}{article_url}"
+                        article_url = f"{source.url.rstrip('/')}/{article_url.lstrip('/')}"
 
-                    logging.debug(f"Processing article URL: {article_url}")
+                    logging.info(f"Processing article URL: {article_url}")
 
                     # Check if article already exists
                     exists = Article.query.filter_by(source_url=article_url).first()
@@ -66,20 +66,29 @@ def scrape_articles():
 
                     # Get article content
                     downloaded = trafilatura.fetch_url(article_url)
-                    content = trafilatura.extract(downloaded)
+                    if not downloaded:
+                        logging.warning(f"Could not download content from {article_url}")
+                        continue
 
+                    content = trafilatura.extract(downloaded)
                     if not content:
                         logging.warning(f"No content extracted from {article_url}")
                         continue
 
-                    # Create new article
-                    title = article.find(['h3', 'h2', 'h1'])
+                    # Find title
+                    title = None
+                    for tag in ['h1', 'h2', 'h3']:
+                        title_tag = article.find(tag)
+                        if title_tag and title_tag.text.strip():
+                            title = title_tag.text.strip()
+                            break
+
                     if not title:
                         logging.warning(f"No title found for article: {article_url}")
                         continue
 
                     new_article = Article(
-                        title=title.text.strip(),
+                        title=title,
                         content=content,
                         source_url=article_url,
                         source_name=source.name,
@@ -95,6 +104,7 @@ def scrape_articles():
                     continue
 
             db.session.commit()
+            logging.info(f"Successfully committed {articles_added} articles from {source.name}")
 
         except Exception as e:
             logging.error(f"Error scraping {source.name}: {str(e)}")

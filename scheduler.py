@@ -1,28 +1,35 @@
 import time
 import logging
 import schedule
+from app import app
 from scraper import scrape_articles
 from nlp_processor import process_articles
 from distributors import distribute_articles
 
 def run_pipeline():
     """Run the complete news pipeline"""
-    try:
-        logging.info("Starting news pipeline")
+    with app.app_context():
+        try:
+            logging.info("Starting news pipeline")
 
-        # Run scraper
-        articles_added = scrape_articles()
-        logging.info(f"Scraper added {articles_added} new articles")
+            # Run scraper
+            articles_added = scrape_articles()
+            logging.info(f"Scraper added {articles_added} new articles")
 
-        # Process articles
-        process_articles()
+            if articles_added > 0:
+                # Process articles
+                logging.info("Processing new articles")
+                process_articles()
 
-        # Distribute articles
-        distribute_articles()
+                # Distribute articles
+                logging.info("Distributing processed articles")
+                distribute_articles()
+            else:
+                logging.info("No new articles to process")
 
-        logging.info("Completed news pipeline")
-    except Exception as e:
-        logging.error(f"Pipeline error: {str(e)}")
+            logging.info("Completed news pipeline")
+        except Exception as e:
+            logging.error(f"Pipeline error: {str(e)}")
 
 def start_scheduler():
     """Initialize and start the scheduler"""
@@ -31,7 +38,10 @@ def start_scheduler():
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
 
+    logging.info("Starting news aggregator scheduler")
+
     # Run once immediately on startup
+    logging.info("Running initial pipeline")
     run_pipeline()
 
     # Schedule regular runs
