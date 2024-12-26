@@ -17,34 +17,46 @@ def initialize_spacy():
     try:
         logger.info("Attempting to load SpaCy model")
         try:
+            # Try loading the model directly first
             nlp = spacy.load("en_core_web_sm")
             logger.info("Successfully loaded SpaCy model")
             return nlp
-        except Exception as e:
-            logger.error(f"Failed to load SpaCy model: {str(e)}")
-            return None
+        except OSError:
+            # If model not found, try downloading it
+            logger.warning("Model not found, attempting to download")
+            spacy.cli.download("en_core_web_sm")
+            nlp = spacy.load("en_core_web_sm")
+            logger.info("Successfully downloaded and loaded SpaCy model")
+            return nlp
     except Exception as e:
         logger.error(f"Critical error in SpaCy initialization: {str(e)}")
         return None
 
 def analyze_sentiment(text):
-    """Analyze sentiment using crypto-specific lexicon"""
+    """Analyze sentiment using crypto-specific lexicon with enhanced error handling"""
     try:
-        logger.debug("Starting sentiment analysis for text")
+        logger.debug(f"Starting sentiment analysis for text (length: {len(text)})")
 
-        # Crypto-specific sentiment words
+        # Enhanced crypto-specific sentiment words
         positive_words = {
             'bullish', 'surge', 'rally', 'gain', 'growth', 'profit', 'adoption',
             'innovation', 'partnership', 'success', 'breakthrough', 'upgrade',
             'support', 'launch', 'integration', 'milestone', 'achievement',
-            'positive', 'boost', 'advance', 'progress', 'improve'
+            'positive', 'boost', 'advance', 'progress', 'improve', 'recovery',
+            'strengthen', 'momentum', 'optimistic'
         }
         negative_words = {
             'bearish', 'crash', 'drop', 'decline', 'loss', 'risk', 'scam',
             'hack', 'breach', 'concern', 'warning', 'vulnerability', 'ban',
             'sell-off', 'dump', 'lawsuit', 'regulation', 'investigation',
-            'negative', 'fail', 'threat', 'weak', 'uncertain'
+            'negative', 'fail', 'threat', 'weak', 'uncertain', 'volatile',
+            'downward', 'struggle', 'panic'
         }
+
+        # Input validation
+        if not text or len(text.strip()) == 0:
+            logger.warning("Empty text provided for sentiment analysis")
+            return 0.0, 'neutral'
 
         # Convert to lowercase and split into words
         words = text.lower().split()
@@ -53,22 +65,22 @@ def analyze_sentiment(text):
         pos_count = sum(1 for word in words if word in positive_words)
         neg_count = sum(1 for word in words if word in negative_words)
 
-        logger.debug(f"Found {pos_count} positive words and {neg_count} negative words")
+        logger.debug(f"Found {pos_count} positive words and {neg_count} negative words in {len(words)} total words")
 
-        # Calculate sentiment score
+        # Calculate sentiment score with enhanced thresholds
         total_words = max(len(words), 1)  # Prevent division by zero
         score = (pos_count - neg_count) / total_words
 
-        # Determine sentiment label
-        if score > 0.05:  # Lower threshold for positive sentiment
-            logger.debug(f"Determined positive sentiment with score {score}")
-            return 0.5, 'positive'
-        elif score < -0.05:  # Lower threshold for negative sentiment
-            logger.debug(f"Determined negative sentiment with score {score}")
-            return -0.5, 'negative'
+        # Determine sentiment label with adjusted thresholds
+        if score > 0.03:  # More sensitive threshold for positive sentiment
+            logger.debug(f"Determined positive sentiment with score {score:.4f}")
+            return score, 'positive'
+        elif score < -0.03:  # More sensitive threshold for negative sentiment
+            logger.debug(f"Determined negative sentiment with score {score:.4f}")
+            return score, 'negative'
         else:
-            logger.debug(f"Determined neutral sentiment with score {score}")
-            return 0.0, 'neutral'
+            logger.debug(f"Determined neutral sentiment with score {score:.4f}")
+            return score, 'neutral'
 
     except Exception as e:
         logger.error(f"Error in sentiment analysis: {str(e)}")
@@ -82,6 +94,10 @@ def process_articles():
         articles = Article.query.filter_by(sentiment_label=None).all()
         logger.info(f"Found {len(articles)} articles to process")
 
+        if not articles:
+            logger.info("No articles found needing sentiment analysis")
+            return
+
         processed_count = 0
         for article in articles:
             try:
@@ -94,9 +110,9 @@ def process_articles():
 
                 # Set category based on content
                 content_lower = article.content.lower()
-                if any(word in content_lower for word in ['bitcoin', 'btc', 'crypto', 'blockchain', 'defi']):
+                if any(word in content_lower for word in ['bitcoin', 'btc', 'crypto', 'blockchain', 'defi', 'eth', 'ethereum']):
                     article.category = 'Crypto Markets'
-                elif any(word in content_lower for word in ['technology', 'protocol', 'network']):
+                elif any(word in content_lower for word in ['technology', 'protocol', 'network', 'platform']):
                     article.category = 'Technology'
                 else:
                     article.category = 'General'
@@ -113,7 +129,7 @@ def process_articles():
             db.session.commit()
             logger.info(f"Successfully processed and committed {processed_count} articles")
         else:
-            logger.info("No articles were processed")
+            logger.info("No articles were processed successfully")
 
     except Exception as e:
         logger.error(f"Error in process_articles: {str(e)}")
