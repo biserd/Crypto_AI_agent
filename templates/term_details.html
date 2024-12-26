@@ -154,7 +154,7 @@
         <h3>Related Terms</h3>
         <div class="related-terms-list">
             {% for related in related_terms %}
-            <a href="/glossary/term/{{ related.id }}" class="related-term-link">
+            <a href="/glossary/{{ related.term.lower().replace(' ', '-') }}" class="related-term-link">
                 {{ related.term }}
             </a>
             {% endfor %}
