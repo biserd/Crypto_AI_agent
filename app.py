@@ -24,7 +24,10 @@ db.init_app(app)
 @app.route('/')
 def dashboard():
     from models import Article
-    recent_articles = Article.query.order_by(Article.created_at.desc()).limit(10).all()
+    logging.info("Fetching articles for dashboard")
+    # Remove the published filter to show all articles
+    recent_articles = Article.query.order_by(Article.created_at.desc()).all()
+    logging.info(f"Found {len(recent_articles)} articles to display")
     return render_template('dashboard.html', articles=recent_articles)
 
 with app.app_context():
