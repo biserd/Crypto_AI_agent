@@ -160,6 +160,29 @@ SOURCES = [
     )
 ]
 
+def init_source_metrics(source_name):
+    """Initialize or get source metrics with proper error handling"""
+    try:
+        source_metrics = NewsSourceMetrics.query.filter_by(source_name=source_name).first()
+        if not source_metrics:
+            # Count existing articles for this source
+            existing_count = Article.query.filter_by(source_name=source_name).count()
+            source_metrics = NewsSourceMetrics(
+                source_name=source_name,
+                trust_score=70.0,  # Default initial trust score
+                article_count=existing_count,  # Initialize with existing count
+                accuracy_score=80.0,  # Default initial accuracy score
+                last_updated=datetime.utcnow()
+            )
+            db.session.add(source_metrics)
+            db.session.commit()
+            logger.info(f"Created new source metrics for {source_name} with initial count {existing_count}")
+        return source_metrics
+    except Exception as e:
+        logger.error(f"Error initializing source metrics for {source_name}: {str(e)}")
+        db.session.rollback()
+        return None
+
 def scrape_rss_feed(source):
     """Scrape articles from RSS feed with improved content extraction"""
     try:
@@ -177,106 +200,88 @@ def scrape_rss_feed(source):
         articles_added = 0
         logger.info(f"Found {len(feed.entries)} entries in {source.name} RSS feed")
 
-        # Get or create source metrics
-        try:
-            source_metrics = NewsSourceMetrics.query.filter_by(source_name=source.name).first()
-            if not source_metrics:
-                source_metrics = NewsSourceMetrics(
-                    source_name=source.name,
-                    trust_score=70.0,  # Default initial trust score
-                    article_count=0,
-                    accuracy_score=80.0,  # Default initial accuracy score
-                    last_updated=datetime.utcnow()
-                )
-                db.session.add(source_metrics)
-                logger.info(f"Created new source metrics for {source.name}")
-
-            initial_count = source_metrics.article_count
-            logger.info(f"Current article count for {source.name}: {initial_count}")
-
-        except Exception as e:
-            logger.error(f"Error initializing source metrics for {source.name}: {str(e)}")
+        # Initialize source metrics
+        source_metrics = init_source_metrics(source.name)
+        if not source_metrics:
+            logger.error(f"Failed to initialize source metrics for {source.name}")
             return 0
 
-        for entry in feed.entries[:10]:  # Process latest 10 entries
-            try:
-                article_url = entry.link
-                logger.debug(f"Processing article from {source.name}: {article_url}")
+        initial_count = source_metrics.article_count
+        logger.info(f"Current article count for {source.name}: {initial_count}")
 
-                # Check if article already exists
-                exists = Article.query.filter_by(source_url=article_url).first()
-                if exists:
-                    logger.debug(f"Article already exists: {article_url}")
-                    continue
-
+        try:
+            for entry in feed.entries[:10]:  # Process latest 10 entries
                 try:
-                    downloaded = trafilatura.fetch_url(article_url)
-                    full_content = trafilatura.extract(downloaded)
+                    article_url = entry.link
+                    logger.debug(f"Processing article from {source.name}: {article_url}")
 
-                    if full_content:
-                        content = full_content
-                        logger.debug(f"Successfully extracted full article content from {source.name}")
-                    else:
+                    # Check if article already exists
+                    exists = Article.query.filter_by(source_url=article_url).first()
+                    if exists:
+                        logger.debug(f"Article already exists: {article_url}")
+                        continue
+
+                    try:
+                        downloaded = trafilatura.fetch_url(article_url)
+                        full_content = trafilatura.extract(downloaded)
+
+                        if full_content:
+                            content = full_content
+                            logger.debug(f"Successfully extracted full article content from {source.name}")
+                        else:
+                            content = entry.get('description', '')
+                            if not content and 'content' in entry:
+                                content = entry.content[0].value if isinstance(entry.content, list) else entry.content
+                            logger.debug(f"Using RSS feed content as fallback for {source.name}")
+                    except Exception as e:
+                        logger.error(f"Error fetching full article content from {source.name}: {str(e)}")
                         content = entry.get('description', '')
-                        if not content and 'content' in entry:
-                            content = entry.content[0].value if isinstance(entry.content, list) else entry.content
-                        logger.debug(f"Using RSS feed content as fallback for {source.name}")
-                except Exception as e:
-                    logger.error(f"Error fetching full article content from {source.name}: {str(e)}")
-                    content = entry.get('description', '')
 
-                if not content:
-                    logger.warning(f"No content found for {article_url} from {source.name}")
+                    if not content:
+                        logger.warning(f"No content found for {article_url} from {source.name}")
+                        continue
+
+                    cleaned_content = clean_html_content(content)
+                    summary = clean_html_content(entry.get('summary', ''))
+                    if not summary:
+                        summary = ' '.join(cleaned_content.split('. ')[:3]) + '.'
+
+                    logger.info(f"Adding new article from {source.name}: {entry.title}")
+
+                    new_article = Article(
+                        title=entry.title,
+                        content=cleaned_content,
+                        summary=summary,
+                        source_url=article_url,
+                        source_name=source.name,
+                        created_at=datetime.utcnow(),
+                        category='Crypto Markets'
+                    )
+
+                    db.session.add(new_article)
+                    source_metrics.article_count += 1
+                    source_metrics.last_updated = datetime.utcnow()
+                    articles_added += 1
+
+                    try:
+                        broadcast_new_article(new_article)
+                    except Exception as e:
+                        logger.error(f"Error broadcasting new article: {str(e)}")
+
+                except Exception as e:
+                    logger.error(f"Error processing article from {source.name}: {str(e)}")
                     continue
 
-                logger.debug(f"Raw content length before cleaning: {len(content)}")
-                cleaned_content = clean_html_content(content)
-                logger.debug(f"Cleaned content length: {len(cleaned_content)}")
-
-                summary = clean_html_content(entry.get('summary', ''))
-                if not summary:
-                    summary = ' '.join(cleaned_content.split('. ')[:3]) + '.'
-
-                logger.info(f"Adding new article from {source.name}: {entry.title}")
-
-                new_article = Article(
-                    title=entry.title,
-                    content=cleaned_content,
-                    summary=summary,
-                    source_url=article_url,
-                    source_name=source.name,
-                    created_at=datetime.utcnow(),
-                    category='Crypto Markets'
-                )
-
-                db.session.add(new_article)
-                source_metrics.article_count += 1
-                source_metrics.last_updated = datetime.utcnow()
-                articles_added += 1
-
-                # Broadcast the new article immediately
-                try:
-                    broadcast_new_article(new_article)
-                except Exception as e:
-                    logger.error(f"Error broadcasting new article: {str(e)}")
-
-                logger.info(f"Successfully added and broadcast article from {source.name}: {entry.title}")
-
-            except Exception as e:
-                logger.error(f"Error processing RSS entry from {source.name}: {str(e)}")
-                continue
-
-        if articles_added > 0:
-            try:
+            if articles_added > 0:
                 db.session.commit()
                 logger.info(f"Successfully committed {articles_added} articles and updated metrics for {source.name}")
                 logger.info(f"Updated article count for {source.name} from {initial_count} to {source_metrics.article_count}")
-            except Exception as e:
-                logger.error(f"Error committing articles from {source.name}: {str(e)}")
-                db.session.rollback()
-                return 0
+            return articles_added
 
-        return articles_added
+        except Exception as e:
+            logger.error(f"Error in RSS feed processing for {source.name}: {str(e)}")
+            db.session.rollback()
+            return 0
 
     except Exception as e:
         logger.error(f"Error fetching RSS feed from {source.name}: {str(e)}")
