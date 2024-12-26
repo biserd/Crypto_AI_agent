@@ -44,9 +44,17 @@
                         <li class="mb-2">✓ Custom Price Alerts</li>
                         <li class="mb-2">✓ Priority Support</li>
                     </ul>
-                    {% if current_user.is_authenticated and not current_user.is_premium %}
+                    {% if not current_user.is_authenticated %}
                     <div class="text-center mt-4">
-                        <a href="/upgrade" class="btn btn-primary btn-lg">Upgrade Now</a>
+                        <button onclick="showUpgradeModal()" class="btn btn-primary btn-lg">Get Pro</button>
+                    </div>
+                    {% elif not current_user.is_premium %}
+                    <div class="text-center mt-4">
+                        <button onclick="processUpgrade()" class="btn btn-primary btn-lg">Upgrade Now</button>
+                    </div>
+                    {% else %}
+                    <div class="text-center mt-4">
+                        <span class="badge bg-success">Current Plan</span>
                     </div>
                     {% endif %}
                 </div>
