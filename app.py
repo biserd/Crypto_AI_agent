@@ -4,7 +4,7 @@ import logging
 from database import db
 from models import Article, CryptoPrice, NewsSourceMetrics
 import re
-from markupsafe import escape
+from markupsafe import escape, Markup
 
 app = Flask(__name__)
 
@@ -63,9 +63,19 @@ def dashboard():
                 for crypto in crypto_prices:
                     if crypto.symbol.lower() in enhanced_summary.lower():
                         logger.debug(f"Found crypto {crypto.symbol} in article {article.id}")
-                        tooltip_html = f'<span class="crypto-tooltip">{crypto.symbol}<span class="tooltip-content"><div class="tooltip-price">${crypto.price_usd:.2f}</div><div class="tooltip-change {("positive" if crypto.percent_change_24h > 0 else "negative")}">{crypto.percent_change_24h:.1f}% (24h)</div></span></span>'
+
+                        # Create tooltip HTML with Markup to prevent double-escaping
+                        tooltip_html = Markup(
+                            f'<span class="crypto-tooltip">{crypto.symbol}'
+                            f'<span class="tooltip-content">'
+                            f'<div class="tooltip-price">${crypto.price_usd:.2f}</div>'
+                            f'<div class="tooltip-change {("positive" if crypto.percent_change_24h > 0 else "negative")}">'
+                            f'{crypto.percent_change_24h:.1f}% (24h)</div>'
+                            f'</span></span>'
+                        )
+
                         pattern = re.compile(re.escape(crypto.symbol), re.IGNORECASE)
-                        enhanced_summary = pattern.sub(tooltip_html, enhanced_summary)
+                        enhanced_summary = Markup(pattern.sub(tooltip_html, str(enhanced_summary)))
                         logger.debug(f"Added tooltip for {crypto.symbol} in article {article.id}")
 
                 # Store the enhanced summary in a new attribute
