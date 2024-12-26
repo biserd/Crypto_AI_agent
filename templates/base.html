@@ -117,10 +117,9 @@
         async function initStripe() {
             try {
                 const response = await fetch('/stripe-config');
-                if (!response.ok) throw new Error('Failed to fetch Stripe config');
                 const data = await response.json();
-                if (!data.publishableKey) throw new Error('No publishable key found');
                 stripe = Stripe(data.publishableKey);
+                console.log('Stripe initialized with key');
             } catch (error) {
                 console.error('Stripe initialization failed:', error);
             }
@@ -157,13 +156,25 @@
                 });
                 const session = await response.json();
                 
+                if (!stripe) {
+                    await initStripe();
+                }
+                
                 if (session.error) {
+                    console.error('Session error:', session.error);
                     alert(session.error);
                     return;
                 }
                 
-                // Redirect to Stripe checkout URL
-                window.location.href = session.url;
+                // Redirect to Stripe checkout URL using stripe.redirectToCheckout
+                const result = await stripe.redirectToCheckout({
+                    sessionId: session.id
+                });
+                
+                if (result.error) {
+                    console.error('Checkout error:', result.error);
+                    alert(result.error.message);
+                }
                 hideUpgradeModal();
             } catch (error) {
                 console.error('Error:', error);
