@@ -225,17 +225,25 @@ def sync_article_counts():
 @app.route('/create-checkout-session', methods=['POST'])
 def create_checkout_session():
     try:
+        # First create a product
+        product = stripe.Product.create(
+            name='Pro Subscription',
+            description='Access to premium features'
+        )
+        
+        # Create a recurring price for the product
+        price = stripe.Price.create(
+            unit_amount=4900,  # $49.00
+            currency='usd',
+            recurring={'interval': 'month'},
+            product=product.id,
+        )
+        
+        # Create checkout session with the recurring price
         checkout_session = stripe.checkout.Session.create(
             payment_method_types=['card'],
             line_items=[{
-                'price_data': {
-                    'currency': 'usd',
-                    'product_data': {
-                        'name': 'Pro Subscription',
-                        'description': 'Access to premium features',
-                    },
-                    'unit_amount': 4900,  # $49.00
-                },
+                'price': price.id,
                 'quantity': 1,
             }],
             mode='subscription',
