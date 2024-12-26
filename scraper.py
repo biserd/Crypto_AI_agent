@@ -11,6 +11,9 @@ from urllib3.util.retry import Retry
 import random
 import feedparser
 import re
+from html.parser import HTMLParser
+from html.parser import HTMLParser as HTMLParser2 # Added to resolve Comment ambiguity
+
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -24,14 +27,37 @@ class NewsSource:
         self.title_selector = title_selector
         self.is_rss = is_rss
 
+class MLStripper(HTMLParser2):
+    def __init__(self):
+        super().__init__()
+        self.reset()
+        self.fed = []
+    def handle_data(self, d):
+        self.fed.append(d)
+    def get_data(self):
+        return ''.join(self.fed)
+
+def strip_tags(html):
+    s = MLStripper()
+    s.feed(html)
+    return s.get_data()
+
 def clean_html_content(html_content):
-    """Clean HTML content and extract readable text"""
+    """Clean HTML content and extract readable text with enhanced cleaning"""
     try:
         if not html_content:
             return ""
 
         logger.debug(f"Starting HTML content cleaning (length: {len(html_content)})")
 
+        # First try trafilatura for better content extraction
+        cleaned_text = trafilatura.extract(html_content)
+
+        if cleaned_text:
+            logger.debug("Successfully cleaned content using trafilatura")
+            return cleaned_text.strip()
+
+        # Fallback to BeautifulSoup if trafilatura fails
         # Remove problematic unicode characters
         html_content = html_content.replace('\xa0', ' ')
 
@@ -39,8 +65,16 @@ def clean_html_content(html_content):
         soup = BeautifulSoup(html_content, 'html.parser')
 
         # Remove unwanted tags and their contents
-        for element in soup(["script", "style", "iframe", "form", "nav", "header", "footer"]):
+        unwanted_tags = [
+            "script", "style", "iframe", "form", "nav", "header", "footer",
+            "aside", "noscript", "figure", "figcaption", "time", "button"
+        ]
+        for element in soup(unwanted_tags):
             element.decompose()
+
+        # Remove all HTML comments
+        for comment in soup.findAll(text=lambda text: isinstance(text, Comment)):
+            comment.extract()
 
         # Replace <br> with newlines for better text flow
         for br in soup.find_all("br"):
@@ -55,13 +89,7 @@ def clean_html_content(html_content):
 
         # Clean up the text
         text = re.sub(r'<[^>]+>', '', text)  # Remove any remaining HTML tags
-        text = re.sub(r'&nbsp;', ' ', text)  # Replace HTML entities
-        text = re.sub(r'&amp;', '&', text)
-        text = re.sub(r'&lt;', '<', text)
-        text = re.sub(r'&gt;', '>', text)
-        text = re.sub(r'&quot;', '"', text)
-        text = re.sub(r'&#39;', "'", text)
-        text = re.sub(r'&[a-zA-Z]+;', '', text)  # Remove other HTML entities
+        text = re.sub(r'&nbsp;|&amp;|&lt;|&gt;|&quot;|&#39;|&[a-zA-Z]+;', ' ', text)  # Replace HTML entities
         text = re.sub(r'\s+', ' ', text)  # Replace multiple spaces with single space
         text = re.sub(r'\n\s*\n', '\n', text)  # Replace multiple newlines
         text = text.strip()
@@ -101,7 +129,7 @@ SOURCES = [
 ]
 
 def scrape_rss_feed(source):
-    """Scrape articles from RSS feed"""
+    """Scrape articles from RSS feed with improved content extraction"""
     try:
         logger.info(f"Fetching RSS feed from {source.name} at {source.url}")
         feed = feedparser.parse(source.url)
@@ -123,13 +151,26 @@ def scrape_rss_feed(source):
                     logger.debug(f"Article already exists: {article_url}")
                     continue
 
-                # Extract content from RSS feed entry
-                content = entry.get('description', '')
-                if not content and 'content' in entry:
-                    content = entry.content[0].value if isinstance(entry.content, list) else entry.content
+                # Try to get the full article content using trafilatura
+                try:
+                    downloaded = trafilatura.fetch_url(article_url)
+                    full_content = trafilatura.extract(downloaded)
+
+                    if full_content:
+                        content = full_content
+                        logger.debug("Successfully extracted full article content")
+                    else:
+                        # Fallback to RSS content if full article extraction fails
+                        content = entry.get('description', '')
+                        if not content and 'content' in entry:
+                            content = entry.content[0].value if isinstance(entry.content, list) else entry.content
+                        logger.debug("Using RSS feed content as fallback")
+                except Exception as e:
+                    logger.error(f"Error fetching full article content: {str(e)}")
+                    content = entry.get('description', '')
 
                 if not content:
-                    logger.warning(f"No content found in RSS entry for {article_url}")
+                    logger.warning(f"No content found for {article_url}")
                     continue
 
                 # Clean HTML content with detailed logging
