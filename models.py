@@ -61,3 +61,11 @@ class CryptoGlossary(db.Model):
 
     def __repr__(self):
         return f'<CryptoGlossary {self.term}>'
+class Subscription(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False)
+    plan_type = db.Column(db.String(20), default='free')  # free, premium, enterprise
+    rate_limit = db.Column(db.Integer, default=100)  # requests per hour
+    features = db.Column(db.JSON)
+    active = db.Column(db.Boolean, default=True)
+    expiry_date = db.Column(db.DateTime)
