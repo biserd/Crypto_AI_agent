@@ -13,6 +13,10 @@ from flask_socketio import SocketIO, emit
 import json
 from datetime import datetime, timedelta
 import stripe
+from datetime import datetime
+
+# Global variable for last run time
+last_scraper_run = datetime.utcnow()
 
 # Configure logging
 logging.basicConfig(
@@ -158,7 +162,8 @@ def dashboard():
         return render_template('dashboard.html', 
                             articles=recent_articles,
                             crypto_prices=crypto_prices,
-                            news_sources=news_sources)
+                            news_sources=news_sources,
+                            last_scraper_run=last_scraper_run)
     except Exception as e:
         logger.error(f"Error generating dashboard: {str(e)}")
         return "Error loading dashboard", 500

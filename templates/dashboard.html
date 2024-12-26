@@ -371,6 +371,30 @@
 }
 </style>
 
+<div class="last-run-timer">
+    Last scraper run: <span id="lastRunTime"></span>
+</div>
+<script>
+function updateLastRunTime() {
+    const lastRun = new Date('{{ last_scraper_run.isoformat() }}');
+    const now = new Date();
+    const diff = Math.floor((now - lastRun) / 1000);
+    
+    let text = '';
+    if (diff < 60) {
+        text = `${diff} seconds ago`;
+    } else if (diff < 3600) {
+        text = `${Math.floor(diff/60)} minutes ago`;
+    } else {
+        text = `${Math.floor(diff/3600)} hours ago`;
+    }
+    
+    document.getElementById('lastRunTime').textContent = text;
+}
+
+setInterval(updateLastRunTime, 1000);
+updateLastRunTime();
+</script>
 <div class="row">
     <div class="col-12">
         <div class="trust-score-container mt-4">
