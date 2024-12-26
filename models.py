@@ -15,7 +15,6 @@ class Subscription(db.Model):
 
 class NewsSourceMetrics(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), unique=True, nullable=False)
     source_name = db.Column(db.String(100), unique=True, nullable=False)
     trust_score = db.Column(db.Float, default=0.0)  # 0-100 scale
     article_count = db.Column(db.Integer, default=0)
