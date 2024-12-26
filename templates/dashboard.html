@@ -396,7 +396,7 @@
             {% endfor %}
         </div>
 
-        <div class="crypto-prices mb-4">
+        <div class="mt-4">
             {% for price in crypto_prices %}
                 <div class="crypto-tooltip crypto-price {% if price.percent_change_24h > 0 %}price-up{% else %}price-down{% endif %}">
                     {{ price.symbol }}: ${{ "%.2f"|format(price.price_usd) }}
