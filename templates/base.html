@@ -115,9 +115,15 @@
         let stripe;
         
         async function initStripe() {
-            const response = await fetch('/stripe-config');
-            const data = await response.json();
-            stripe = Stripe(data.publishableKey);
+            try {
+                const response = await fetch('/stripe-config');
+                if (!response.ok) throw new Error('Failed to fetch Stripe config');
+                const data = await response.json();
+                if (!data.publishableKey) throw new Error('No publishable key found');
+                stripe = Stripe(data.publishableKey);
+            } catch (error) {
+                console.error('Stripe initialization failed:', error);
+            }
         }
 
         function showUpgradeModal() {

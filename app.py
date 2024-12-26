@@ -30,8 +30,8 @@ stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 @app.route('/stripe-config')
 def stripe_config():
     return jsonify({
-        'publishableKey': os.environ.get('STRIPE_PUBLISHABLE_KEY')
-    })
+        'publishableKey': os.environ.get('STRIPE_PUBLISHABLE_KEY', 'pk_test_yourdefaultkey')
+    }), 200
 
 # Configuration
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", os.urandom(24))
