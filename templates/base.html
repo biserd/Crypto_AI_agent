@@ -113,6 +113,12 @@
     <script src="https://js.stripe.com/v3/"></script>
     <script>
         let stripe;
+        
+        async function initStripe() {
+            const response = await fetch('/stripe-config');
+            const data = await response.json();
+            stripe = Stripe(data.publishableKey);
+        }
 
         function showUpgradeModal() {
             document.getElementById('upgradeModal').style.display = 'block';
@@ -137,8 +143,7 @@
         async function processUpgrade() {
             try {
                 if (!stripe) {
-                    const config = await fetch('/stripe-config').then(r => r.json());
-                    stripe = Stripe(config.publishableKey);
+                    await initStripe()
                 }
 
                 const response = await fetch('/create-checkout-session', {
@@ -160,42 +165,18 @@
             }
         }
 
-        // Initialize subscription status when page loads
+        // Initialize subscription status and Stripe when page loads
         document.addEventListener('DOMContentLoaded', fetchSubscriptionStatus);
-    </script>
-    // Fetch subscription status on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        fetchSubscriptionStatus();
-    });
+        document.addEventListener('DOMContentLoaded', initStripe);
 
-    function fetchSubscriptionStatus() {
-        fetch('/subscription/status')
-            .then(response => response.json())
-            .then(data => {
-                const badge = document.getElementById('subscriptionStatus');
-                badge.className = `subscription-badge ${data.tier}`;
-                badge.innerHTML = data.tier === 'basic' ? 'Upgrade to Pro' : 'Pro Plan';
-            })
-            .catch(error => console.error('Error fetching subscription:', error));
-    }
 
-    function showUpgradeModal() {
-        document.getElementById('upgradeModal').style.display = 'block';
-    }
-
-    function hideUpgradeModal() {
-        document.getElementById('upgradeModal').style.display = 'none';
-    }
-
-    // Empty - removing duplicate function
-
-    // Close modal when clicking outside
-    window.onclick = function(event) {
-        const modal = document.getElementById('upgradeModal');
-        if (event.target === modal) {
-            hideUpgradeModal();
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('upgradeModal');
+            if (event.target === modal) {
+                hideUpgradeModal();
+            }
         }
-    }
     </script>
 </body>
 </html>
