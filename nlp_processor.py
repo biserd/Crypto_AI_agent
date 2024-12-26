@@ -2,7 +2,6 @@ import logging
 import os
 from app import db
 from models import Article
-import spacy
 import time
 from pathlib import Path
 
@@ -14,24 +13,34 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def analyze_sentiment(text):
-    """Analyze sentiment using crypto-specific lexicon with enhanced error handling"""
+    """Analyze sentiment using crypto-specific lexicon and contextual analysis"""
     try:
         logger.debug(f"Starting sentiment analysis for text (length: {len(text)})")
 
-        # Enhanced crypto-specific sentiment words
-        positive_words = {
-            'bullish', 'surge', 'rally', 'gain', 'growth', 'profit', 'adoption',
-            'innovation', 'partnership', 'success', 'breakthrough', 'upgrade',
-            'support', 'launch', 'integration', 'milestone', 'achievement',
-            'positive', 'boost', 'advance', 'progress', 'improve', 'recovery',
-            'strengthen', 'momentum', 'optimistic', 'soar', 'peak', 'record-high'
+        # Enhanced crypto-specific sentiment words and phrases
+        positive_patterns = {
+            # Price movements
+            'surge', 'rally', 'jump', 'gain', 'soar', 'rise', 'climb', 'peak', 'record high',
+            # Market sentiment
+            'bullish', 'optimistic', 'confident', 'strong', 'positive', 'opportunity',
+            # Adoption/Development
+            'adoption', 'partnership', 'launch', 'upgrade', 'integration', 'milestone',
+            'development', 'progress', 'innovation', 'breakthrough', 'success',
+            # Regulatory
+            'approve', 'support', 'legal', 'regulate', 'compliance',
         }
-        negative_words = {
-            'bearish', 'crash', 'drop', 'decline', 'loss', 'risk', 'scam',
-            'hack', 'breach', 'concern', 'warning', 'vulnerability', 'ban',
-            'sell-off', 'dump', 'lawsuit', 'regulation', 'investigation',
-            'negative', 'fail', 'threat', 'weak', 'uncertain', 'volatile',
-            'downward', 'struggle', 'panic', 'plunge', 'collapse', 'crisis'
+
+        negative_patterns = {
+            # Price movements
+            'crash', 'plunge', 'drop', 'fall', 'decline', 'tumble', 'slump', 'correction',
+            # Market sentiment
+            'bearish', 'pessimistic', 'fear', 'concern', 'worry', 'uncertain', 'volatile',
+            # Security/Risk
+            'hack', 'breach', 'scam', 'fraud', 'vulnerability', 'exploit', 'risk',
+            # Regulatory
+            'ban', 'restrict', 'crack down', 'investigate', 'sue', 'lawsuit', 'illegal',
+            # Market problems
+            'sell-off', 'dump', 'liquidation', 'margin call', 'default'
         }
 
         # Input validation
@@ -39,66 +48,80 @@ def analyze_sentiment(text):
             logger.warning("Empty text provided for sentiment analysis")
             return 0.0, 'neutral'
 
-        # Convert to lowercase and split into words
-        text_lower = text.lower()
-        words = text_lower.split()
+        # Preprocess text
+        text = text.lower().replace('\n', ' ').replace('\t', ' ')
 
-        # Count sentiment words with context
+        # Clean up extra spaces
+        while '  ' in text:
+            text = text.replace('  ', ' ')
+
+        # Split into sentences for better context
+        sentences = text.split('.')
+
         pos_count = 0
         neg_count = 0
+        total_relevant_phrases = 0
 
-        # Consider negation words
-        negation_words = {'not', 'no', "n't", 'never', 'neither', 'nor', 'none'}
-        skip_next = False
-
-        for i, word in enumerate(words):
-            if skip_next:
-                skip_next = False
+        for sentence in sentences:
+            # Skip empty sentences
+            if not sentence.strip():
                 continue
 
-            # Check for negation
-            is_negated = False
-            if i > 0 and any(neg in words[i-1] for neg in negation_words):
-                is_negated = True
+            words = sentence.strip().split()
 
-            # Count sentiment considering negation
-            if word in positive_words:
-                if is_negated:
+            # Check for negation words in the sentence
+            has_negation = any(neg in words for neg in {'not', 'no', "n't", 'never', 'without', 'rarely'})
+
+            # Look for sentiment patterns
+            found_positive = any(pattern in sentence for pattern in positive_patterns)
+            found_negative = any(pattern in sentence for pattern in negative_patterns)
+
+            # Apply negation logic
+            if found_positive:
+                if has_negation:
                     neg_count += 1
                 else:
                     pos_count += 1
-            elif word in negative_words:
-                if is_negated:
+                total_relevant_phrases += 1
+
+            if found_negative:
+                if has_negation:
                     pos_count += 1
                 else:
                     neg_count += 1
+                total_relevant_phrases += 1
 
-        logger.debug(f"Found {pos_count} positive words and {neg_count} negative words in {len(words)} total words")
+        # Calculate sentiment score
+        if total_relevant_phrases == 0:
+            logger.debug("No sentiment patterns found in text")
+            return 0.0, 'neutral'
 
-        # Calculate sentiment score with enhanced thresholds
-        total_words = max(len(words), 1)  # Prevent division by zero
-        score = (pos_count - neg_count) / total_words
+        # Calculate weighted sentiment score
+        sentiment_score = (pos_count - neg_count) / max(total_relevant_phrases, 1)
 
-        # Determine sentiment label with adjusted thresholds
-        if score > 0.02:  # More sensitive threshold for positive sentiment
-            logger.debug(f"Determined positive sentiment with score {score:.4f}")
-            return score, 'positive'
-        elif score < -0.02:  # More sensitive threshold for negative sentiment
-            logger.debug(f"Determined negative sentiment with score {score:.4f}")
-            return score, 'negative'
+        logger.debug(f"Sentiment analysis results: positive={pos_count}, negative={neg_count}, "
+                    f"total_phrases={total_relevant_phrases}, score={sentiment_score:.4f}")
+
+        # Determine sentiment with adjusted thresholds
+        if sentiment_score > 0.15:
+            logger.info(f"Positive sentiment detected with score {sentiment_score:.4f}")
+            return sentiment_score, 'positive'
+        elif sentiment_score < -0.15:
+            logger.info(f"Negative sentiment detected with score {sentiment_score:.4f}")
+            return sentiment_score, 'negative'
         else:
-            logger.debug(f"Determined neutral sentiment with score {score:.4f}")
-            return score, 'neutral'
+            logger.info(f"Neutral sentiment detected with score {sentiment_score:.4f}")
+            return sentiment_score, 'neutral'
 
     except Exception as e:
         logger.error(f"Error in sentiment analysis: {str(e)}")
-        return 0.0, 'neutral'  # Default to neutral on error
+        return 0.0, 'neutral'
 
 def process_articles():
     """Process all unprocessed articles with sentiment analysis"""
     logger.info("Starting article processing")
     try:
-        # Process articles without sentiment
+        # Process articles without sentiment and reprocess articles with empty sentiment
         articles = Article.query.filter(
             (Article.sentiment_label.is_(None)) | 
             (Article.sentiment_label == '')
@@ -115,22 +138,16 @@ def process_articles():
             try:
                 logger.debug(f"Processing article {article.id}: {article.title}")
 
+                # Combine title and content for better context
+                full_text = f"{article.title}. {article.content}"
+
                 # Analyze sentiment
-                score, label = analyze_sentiment(article.content)
+                score, label = analyze_sentiment(full_text)
                 article.sentiment_score = score
                 article.sentiment_label = label
 
-                # Set category based on content
-                content_lower = article.content.lower()
-                if any(word in content_lower for word in ['bitcoin', 'btc', 'crypto', 'blockchain', 'defi', 'eth', 'ethereum']):
-                    article.category = 'Crypto Markets'
-                elif any(word in content_lower for word in ['technology', 'protocol', 'network', 'platform']):
-                    article.category = 'Technology'
-                else:
-                    article.category = 'General'
-
                 processed_count += 1
-                logger.info(f"Successfully processed article {article.id}: Category={article.category}, Sentiment={label}")
+                logger.info(f"Successfully processed article {article.id}: Sentiment={label} (score={score:.4f})")
 
             except Exception as e:
                 logger.error(f"Error processing article {article.id}: {str(e)}")
