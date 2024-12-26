@@ -29,8 +29,11 @@ stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 
 @app.route('/stripe-config')
 def stripe_config():
+    key = os.environ.get('STRIPE_PUBLISHABLE_KEY')
+    if not key:
+        return jsonify({'error': 'Stripe key not configured'}), 500
     return jsonify({
-        'publishableKey': os.environ.get('STRIPE_PUBLISHABLE_KEY', 'pk_test_yourdefaultkey')
+        'publishableKey': key
     }), 200
 
 # Configuration
