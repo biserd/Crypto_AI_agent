@@ -179,6 +179,7 @@ def process_articles():
                 for asset, ticker in crypto_assets.items():
                     # Create pattern that matches word boundaries
                     pattern = re.compile(rf'\b{asset}\b', re.IGNORECASE)
+                    # Only show the asset name in bold with the ticker symbol
                     replacement = f'**{asset.title()}** (${ticker})'
 
                     formatted_content = pattern.sub(replacement, formatted_content)
