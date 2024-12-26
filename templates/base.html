@@ -114,6 +114,14 @@
     <script>
         let stripe;
         
+        function showUpgradeModal() {
+            document.getElementById('upgradeModal').style.display = 'block';
+        }
+
+        function hideUpgradeModal() {
+            document.getElementById('upgradeModal').style.display = 'none';
+        }
+
         async function initializeStripe() {
             try {
                 const response = await fetch('/stripe-config');
