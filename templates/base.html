@@ -113,10 +113,40 @@
     <script src="https://js.stripe.com/v3/"></script>
     <script>
         let stripe;
+        
+        async function processUpgrade() {
+            try {
+                const response = await fetch('/create-checkout-session', {
+                    method: 'POST',
+                });
+                const session = await response.json();
+                
+                if (session.error) {
+                    alert(session.error);
+                    return;
+                }
+                
+                const result = await stripe.redirectToCheckout({
+                    sessionId: session.id
+                });
+                
+                if (result.error) {
+                    alert(result.error.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Something went wrong with the payment process.');
+            }
+        }
+
+        // Initialize Stripe
         fetch('/stripe-config')
             .then(response => response.json())
             .then(config => {
                 stripe = Stripe(config.publishableKey);
+            })
+            .catch(error => {
+                console.error('Error loading Stripe:', error);
             });
     </script>
     <script>
