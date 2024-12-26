@@ -3,58 +3,65 @@
 
 {% block content %}
 <div class="container mt-5">
-    <h1 class="text-center mb-5">Pricing Plans</h1>
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold">Choose Your Plan</h1>
+        <p class="lead text-muted">Get access to premium features and enhanced capabilities</p>
+    </div>
     
-    <div class="row justify-content-center">
+    <div class="row justify-content-center g-4">
         <div class="col-md-5">
-            <div class="card mb-4">
-                <div class="card-header bg-light">
-                    <h4 class="text-center mb-0">Free Tier</h4>
-                </div>
-                <div class="card-body">
-                    <h2 class="text-center mb-4">$0<small>/month</small></h2>
-                    <ul class="list-unstyled">
-                        <li class="mb-2">✓ Basic News Feed</li>
-                        <li class="mb-2">✓ Limited Price Tracking</li>
-                        <li class="mb-2">✓ Basic Glossary Access</li>
-                        <li class="mb-2">✓ Standard Updates</li>
-                        <li class="mb-2 text-muted">✗ Advanced Sentiment Analysis</li>
-                        <li class="mb-2 text-muted">✗ Historical Data</li>
-                        <li class="mb-2 text-muted">✗ Custom Alerts</li>
-                        <li class="mb-2 text-muted">✗ Priority Support</li>
+            <div class="card h-100 pricing-card free-tier">
+                <div class="card-body p-4">
+                    <div class="text-center">
+                        <h4 class="card-title mb-3">Free Tier</h4>
+                        <h2 class="display-5 mb-4">$0<small class="text-muted">/month</small></h2>
+                    </div>
+                    <ul class="feature-list">
+                        <li><i class="fas fa-check text-success"></i> Basic News Feed</li>
+                        <li><i class="fas fa-check text-success"></i> Limited Price Tracking</li>
+                        <li><i class="fas fa-check text-success"></i> Basic Glossary Access</li>
+                        <li><i class="fas fa-check text-success"></i> Standard Updates</li>
+                        <li class="text-muted"><i class="fas fa-times text-danger"></i> Advanced Sentiment Analysis</li>
+                        <li class="text-muted"><i class="fas fa-times text-danger"></i> Historical Data</li>
+                        <li class="text-muted"><i class="fas fa-times text-danger"></i> Custom Alerts</li>
+                        <li class="text-muted"><i class="fas fa-times text-danger"></i> Priority Support</li>
                     </ul>
+                    <div class="text-center mt-4">
+                        <a href="/signup" class="btn btn-outline-primary btn-lg w-100">Get Started</a>
+                    </div>
                 </div>
             </div>
         </div>
         
         <div class="col-md-5">
-            <div class="card mb-4 border-primary">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="text-center mb-0">Pro Tier</h4>
-                </div>
-                <div class="card-body">
-                    <h2 class="text-center mb-4">$19<small>/month</small></h2>
-                    <ul class="list-unstyled">
-                        <li class="mb-2">✓ Premium News Feed</li>
-                        <li class="mb-2">✓ Unlimited Price Tracking</li>
-                        <li class="mb-2">✓ Full Glossary Access</li>
-                        <li class="mb-2">✓ Real-time Updates</li>
-                        <li class="mb-2">✓ Advanced Sentiment Analysis</li>
-                        <li class="mb-2">✓ Historical Data Access</li>
-                        <li class="mb-2">✓ Custom Price Alerts</li>
-                        <li class="mb-2">✓ Priority Support</li>
+            <div class="card h-100 pricing-card premium-tier">
+                <div class="ribbon">Popular</div>
+                <div class="card-body p-4">
+                    <div class="text-center">
+                        <h4 class="card-title mb-3">Pro Tier</h4>
+                        <h2 class="display-5 mb-4">$19<small class="text-muted">/month</small></h2>
+                    </div>
+                    <ul class="feature-list">
+                        <li><i class="fas fa-check text-success"></i> Premium News Feed</li>
+                        <li><i class="fas fa-check text-success"></i> Unlimited Price Tracking</li>
+                        <li><i class="fas fa-check text-success"></i> Full Glossary Access</li>
+                        <li><i class="fas fa-check text-success"></i> Real-time Updates</li>
+                        <li><i class="fas fa-check text-success"></i> Advanced Sentiment Analysis</li>
+                        <li><i class="fas fa-check text-success"></i> Historical Data Access</li>
+                        <li><i class="fas fa-check text-success"></i> Custom Price Alerts</li>
+                        <li><i class="fas fa-check text-success"></i> Priority Support</li>
                     </ul>
                     {% if not current_user.is_authenticated %}
                     <div class="text-center mt-4">
-                        <button onclick="showUpgradeModal()" class="btn btn-primary btn-lg">Get Pro</button>
+                        <button onclick="showUpgradeModal()" class="btn btn-primary btn-lg w-100">Get Pro</button>
                     </div>
                     {% elif not current_user.is_premium %}
                     <div class="text-center mt-4">
-                        <button onclick="processUpgrade()" class="btn btn-primary btn-lg">Upgrade Now</button>
+                        <button onclick="processUpgrade()" class="btn btn-primary btn-lg w-100">Upgrade Now</button>
                     </div>
                     {% else %}
                     <div class="text-center mt-4">
-                        <span class="badge bg-success">Current Plan</span>
+                        <span class="badge bg-success p-2">Current Plan</span>
                     </div>
                     {% endif %}
                 </div>
