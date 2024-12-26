@@ -564,11 +564,10 @@
         {% endfor %}
         {% endif %}
 
-        {% set messari_articles = [article for article in articles if article.source_name == 'Messari'] %}
-        {% if messari_articles %}
+        {% for article in articles %}
+            {% if article.source_name == 'Messari' %}
         <!-- Messari Articles -->
         <h4 class="mt-4 mb-3">Messari</h4>
-        {% for article in messari_articles %}
         <div class="card mb-3">
             <div class="card-body">
                 <h5 class="card-title">{{ article.title.replace('**', '').replace('($BTC)', '').replace('($Btc)', '').replace('($ADA)', '').replace('($Ada)', '').replace('($ETH)', '').replace('($AVAX)', '').replace('($SOL)', '').replace('($XRP)', '').replace('($MATIC)', '').replace('($DOGE)', '').replace('($BNB)', '') }}</h5>
@@ -605,8 +604,8 @@
                 </div>
             </div>
         </div>
+            {% endif %}
         {% endfor %}
-        {% endif %}
     </div>
 </div>
 
