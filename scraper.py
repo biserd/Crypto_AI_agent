@@ -135,17 +135,23 @@ def create_session():
         total=3,
         backoff_factor=1,
         status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["GET", "HEAD", "OPTIONS"]
     )
     adapter = HTTPAdapter(max_retries=retry_strategy)
     session.mount("http://", adapter)
     session.mount("https://", adapter)
+    session.headers.update({
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'application/rss+xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,*/*;q=0.7',
+        'Accept-Language': 'en-US,en;q=0.9'
+    })
     return session
 
 # Define news sources
 SOURCES = [
     NewsSource(
         "CoinDesk",
-        "https://www.coindesk.com/arc/outboundfeeds/rss/?outputType=xml",
+        "https://www.coindesk.com/feed/",
         is_rss=True
     ),
     NewsSource(
@@ -155,7 +161,7 @@ SOURCES = [
     ),
     NewsSource(
         "Messari",
-        "https://messari.io/rss",
+        "https://messari.io/api/v1/news/feed",
         is_rss=True
     ),
     NewsSource(
