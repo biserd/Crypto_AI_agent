@@ -63,9 +63,9 @@ def dashboard():
 
                 # Add crypto price tooltips to the summary
                 for crypto in crypto_prices:
-                    if crypto.symbol.lower() in enhanced_summary.lower():
-                        logger.debug(f"Found crypto {crypto.symbol} in article {article.id}")
-
+                    # Use word boundaries to match only whole words
+                    pattern = re.compile(r'\b' + re.escape(crypto.symbol) + r'\b', re.IGNORECASE)
+                    if pattern.search(str(enhanced_summary)):
                         # Create tooltip HTML with Markup to prevent double-escaping
                         tooltip_html = Markup(
                             f'<span class="crypto-tooltip">{crypto.symbol}'
@@ -76,10 +76,12 @@ def dashboard():
                             f'</div></span>'
                         )
 
-                        pattern = re.compile(re.escape(crypto.symbol), re.IGNORECASE)
                         enhanced_summary = Markup(pattern.sub(str(tooltip_html), str(enhanced_summary)))
-                        logger.debug(f"Added tooltip for {crypto.symbol} in article {article.id}")
+                        logger.debug(f"Added tooltip for whole word match {crypto.symbol} in article {article.id}")
                         logger.debug(f"Generated tooltip HTML: {tooltip_html}")
+                    else:
+                        logger.debug(f"No whole word match found for {crypto.symbol} in article {article.id}")
+
 
                 # Store the enhanced summary in a new attribute
                 article.enhanced_summary = enhanced_summary
