@@ -23,6 +23,9 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 socketio = SocketIO(app, async_mode='eventlet', cors_allowed_origins="*")
 
+# Stripe configuration
+stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+
 # Configuration
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", os.urandom(24))
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
@@ -212,6 +215,45 @@ def sync_article_counts():
         db.session.rollback()
 
 # Add routes for subscription management
+@app.route('/create-checkout-session', methods=['POST'])
+def create_checkout_session():
+    try:
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'usd',
+                    'product_data': {
+                        'name': 'Pro Subscription',
+                        'description': 'Access to premium features',
+                    },
+                    'unit_amount': 4900,  # $49.00
+                },
+                'quantity': 1,
+            }],
+            mode='subscription',
+            success_url=request.host_url + 'success?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url=request.host_url + 'cancelled',
+        )
+        return jsonify({'id': checkout_session.id})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 403
+
+@app.route('/success')
+def success():
+    session_id = request.args.get('session_id')
+    if session_id:
+        # Update user subscription
+        subscription = Subscription(
+            user_id=1,  # Replace with actual user ID
+            tier='pro',
+            expires_at=datetime.utcnow() + timedelta(days=30),
+            rate_limit=1000
+        )
+        db.session.add(subscription)
+        db.session.commit()
+    return redirect('/')
+
 @app.route('/subscription/status')
 def subscription_status():
     subscription = Subscription.query.filter_by(user_id=1, active=True).first()
