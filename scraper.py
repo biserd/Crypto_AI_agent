@@ -177,6 +177,27 @@ def scrape_rss_feed(source):
         articles_added = 0
         logger.info(f"Found {len(feed.entries)} entries in {source.name} RSS feed")
 
+        # Get or create source metrics
+        try:
+            source_metrics = NewsSourceMetrics.query.filter_by(source_name=source.name).first()
+            if not source_metrics:
+                source_metrics = NewsSourceMetrics(
+                    source_name=source.name,
+                    trust_score=70.0,  # Default initial trust score
+                    article_count=0,
+                    accuracy_score=80.0,  # Default initial accuracy score
+                    last_updated=datetime.utcnow()
+                )
+                db.session.add(source_metrics)
+                logger.info(f"Created new source metrics for {source.name}")
+
+            initial_count = source_metrics.article_count
+            logger.info(f"Current article count for {source.name}: {initial_count}")
+
+        except Exception as e:
+            logger.error(f"Error initializing source metrics for {source.name}: {str(e)}")
+            return 0
+
         for entry in feed.entries[:10]:  # Process latest 10 entries
             try:
                 article_url = entry.link
@@ -229,29 +250,9 @@ def scrape_rss_feed(source):
                 )
 
                 db.session.add(new_article)
+                source_metrics.article_count += 1
+                source_metrics.last_updated = datetime.utcnow()
                 articles_added += 1
-
-                # Update source metrics
-                try:
-                    source_metrics = NewsSourceMetrics.query.filter_by(source_name=source.name).first()
-                    if not source_metrics:
-                        source_metrics = NewsSourceMetrics(
-                            source_name=source.name,
-                            trust_score=70.0,  # Default initial trust score
-                            article_count=1,
-                            accuracy_score=80.0,  # Default initial accuracy score
-                            last_updated=datetime.utcnow()
-                        )
-                        db.session.add(source_metrics)
-                        logger.info(f"Created new source metrics for {source.name}")
-                    else:
-                        source_metrics.article_count += 1
-                        source_metrics.last_updated = datetime.utcnow()
-                        logger.info(f"Updated article count for {source.name} to {source_metrics.article_count}")
-                    db.session.commit() #Commit changes to database
-                except Exception as e:
-                    logger.error(f"Error updating source metrics for {source.name}: {str(e)}")
-                    db.session.rollback() #Rollback changes if error occurs
 
                 # Broadcast the new article immediately
                 try:
@@ -267,8 +268,9 @@ def scrape_rss_feed(source):
 
         if articles_added > 0:
             try:
-                #db.session.commit() #moved commit inside source metrics update
-                logger.info(f"Successfully committed {articles_added} articles from {source.name}")
+                db.session.commit()
+                logger.info(f"Successfully committed {articles_added} articles and updated metrics for {source.name}")
+                logger.info(f"Updated article count for {source.name} from {initial_count} to {source_metrics.article_count}")
             except Exception as e:
                 logger.error(f"Error committing articles from {source.name}: {str(e)}")
                 db.session.rollback()
