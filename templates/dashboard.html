@@ -427,9 +427,11 @@
         </div>
 
         <!-- Articles Section -->
+        {% set coindesk_articles = [article for article in articles if article.source_name == 'CoinDesk'] %}
+        {% if coindesk_articles %}
         <!-- CoinDesk Articles -->
         <h4 class="mt-4 mb-3">CoinDesk</h4>
-        {% for article in articles if article.source_name == 'CoinDesk' %}
+        {% for article in coindesk_articles %}
         <div class="card mb-3">
             <div class="card-body">
                 <h5 class="card-title">{{ article.title.replace('**', '').replace('($BTC)', '').replace('($Btc)', '').replace('($ADA)', '').replace('($Ada)', '').replace('($ETH)', '').replace('($AVAX)', '').replace('($SOL)', '').replace('($XRP)', '').replace('($MATIC)', '').replace('($DOGE)', '').replace('($BNB)', '') }}</h5>
@@ -516,10 +518,13 @@
             </div>
         </div>
         {% endfor %}
+        {% endif %}
 
+        {% set cointelegraph_articles = [article for article in articles if article.source_name == 'Cointelegraph'] %}
+        {% if cointelegraph_articles %}
         <!-- Cointelegraph Articles -->
         <h4 class="mt-4 mb-3">Cointelegraph</h4>
-        {% for article in articles if article.source_name == 'Cointelegraph' %}
+        {% for article in cointelegraph_articles %}
         <div class="card mb-3">
             <div class="card-body">
                 <h5 class="card-title">{{ article.title.replace('**', '').replace('($BTC)', '').replace('($Btc)', '').replace('($ADA)', '').replace('($Ada)', '').replace('($ETH)', '').replace('($AVAX)', '').replace('($SOL)', '').replace('($XRP)', '').replace('($MATIC)', '').replace('($DOGE)', '').replace('($BNB)', '') }}</h5>
@@ -557,10 +562,13 @@
             </div>
         </div>
         {% endfor %}
+        {% endif %}
 
+        {% set messari_articles = [article for article in articles if article.source_name == 'Messari'] %}
+        {% if messari_articles %}
         <!-- Messari Articles -->
         <h4 class="mt-4 mb-3">Messari</h4>
-        {% for article in articles if article.source_name == 'Messari' %}
+        {% for article in messari_articles %}
         <div class="card mb-3">
             <div class="card-body">
                 <h5 class="card-title">{{ article.title.replace('**', '').replace('($BTC)', '').replace('($Btc)', '').replace('($ADA)', '').replace('($Ada)', '').replace('($ETH)', '').replace('($AVAX)', '').replace('($SOL)', '').replace('($XRP)', '').replace('($MATIC)', '').replace('($DOGE)', '').replace('($BNB)', '') }}</h5>
@@ -598,6 +606,7 @@
             </div>
         </div>
         {% endfor %}
+        {% endif %}
     </div>
 </div>
 
