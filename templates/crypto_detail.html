@@ -1,3 +1,4 @@
+
 {% extends "base.html" %}
 
 {% block content %}
@@ -60,51 +61,13 @@
     color: #1f2937;
 }
 
-.news-card {
-    transition: transform 0.2s;
-}
-
-.news-card:hover {
-    transform: translateY(-2px);
-}
-
 .chart-container {
     background: white;
     padding: 1rem;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     margin-bottom: 2rem;
-}
-
-.sentiment-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-weight: 500;
-    margin-right: 0.5rem;
-}
-
-.sentiment-badge.positive {
-    background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
-    color: white;
-}
-
-.sentiment-badge.negative {
-    background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
-    color: white;
-}
-
-.sentiment-badge.neutral {
-    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-    color: #1f2937;
-}
-
-.sentiment-score {
-    margin-left: 0.5rem;
-    padding-left: 0.5rem;
-    border-left: 1px solid rgba(255, 255, 255, 0.3);
-    font-family: monospace;
+    height: 600px;
 }
 </style>
 
@@ -120,7 +83,7 @@
     'AVAX': 'Avalanche'
 } %}
 
-<div class="crypto-header text-center">
+<div class="crypto-header">
     <h1>{{ crypto_names[crypto.symbol] }} ({{ crypto.symbol }})</h1>
     <div class="price-display">${{ "%.2f"|format(crypto.price_usd) }}</div>
     <div class="price-change {% if crypto.percent_change_24h > 0 %}price-up{% else %}price-down{% endif %}">
@@ -131,10 +94,8 @@
 <div class="container">
     <div class="row">
         <div class="col-md-8">
-            <!-- Price Chart -->
             <div class="chart-container">
-                <h3>Price History</h3>
-                <canvas id="priceChart"></canvas>
+                <div id="tradingview_chart" style="height: 100%;"></div>
             </div>
 
             <!-- News Section -->
@@ -142,7 +103,7 @@
             {% for article in news %}
             <div class="card mb-3 news-card">
                 <div class="card-body">
-                    <h5 class="card-title">{{ article.title|replace('**', '')|replace('($BTC)', '')|replace('($Btc)', '')|replace('($ETH)', '')|replace('($AVAX)', '')|replace('($SOL)', '')|replace('($XRP)', '')|replace('($MATIC)', '')|replace('($DOGE)', '')|replace('($BNB)', '') }}</h5>
+                    <h5 class="card-title">{{ article.title }}</h5>
                     <h6 class="card-subtitle mb-2 text-muted">
                         {{ article.source_name }} - {{ article.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
                     </h6>
@@ -184,7 +145,7 @@
     </div>
 </div>
 
-<!-- TradingView Widget BEGIN -->
+<!-- TradingView Widget -->
 <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 <script type="text/javascript">
 document.addEventListener('DOMContentLoaded', function() {
@@ -201,8 +162,9 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     new TradingView.widget({
+        "container_id": "tradingview_chart",
         "width": "100%",
-        "height": 500,
+        "height": "100%",
         "symbol": "BINANCE:" + symbolMapping['{{ crypto.symbol }}'],
         "interval": "D",
         "timezone": "Etc/UTC",
@@ -213,23 +175,16 @@ document.addEventListener('DOMContentLoaded', function() {
         "enable_publishing": false,
         "hide_side_toolbar": false,
         "allow_symbol_change": false,
-        "container_id": "priceChart",
         "studies": [
             "RSI@tv-basicstudies",
             "MACD@tv-basicstudies",
             "MAExp@tv-basicstudies"
         ],
-        "show_popup_button": true,
-        "popup_width": "1000",
-        "popup_height": "650",
-        "withdateranges": true,
         "save_image": true,
         "details": true,
         "hotlist": true,
-        "calendar": true,
-        "show_popup_button": true
+        "calendar": true
     });
 });
 </script>
-<!-- TradingView Widget END -->
 {% endblock %}
