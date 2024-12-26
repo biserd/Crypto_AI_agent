@@ -68,12 +68,6 @@ def scrape_articles():
             articles = soup.select(source.article_selector)
             logging.info(f"Found {len(articles)} articles matching selector '{source.article_selector}' on {source.name}")
 
-            if len(articles) == 0:
-                # Log the available classes for debugging
-                logging.debug("Available classes in HTML:")
-                for tag in soup.find_all(class_=True):
-                    logging.debug(f"Found element with classes: {tag.get('class')}")
-
             for article in articles[:5]:  # Limit to 5 articles per source
                 try:
                     logging.debug(f"Processing article HTML: {article.prettify()}")
@@ -144,6 +138,7 @@ def scrape_articles():
                         logging.warning(f"No title found for article: {article_url}")
                         continue
 
+                    # Create new article
                     new_article = Article(
                         title=title,
                         content=content,
