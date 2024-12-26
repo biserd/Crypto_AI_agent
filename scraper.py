@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup, Comment
 import requests
 import trafilatura
 from datetime import datetime
-from app import db
+from app import db, socketio, broadcast_new_article # Added imports
 from models import Article
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -188,7 +188,6 @@ def scrape_rss_feed(source):
                     logger.debug(f"Article already exists: {article_url}")
                     continue
 
-                # Try to get the full article content using trafilatura
                 try:
                     downloaded = trafilatura.fetch_url(article_url)
                     full_content = trafilatura.extract(downloaded)
@@ -197,7 +196,6 @@ def scrape_rss_feed(source):
                         content = full_content
                         logger.debug(f"Successfully extracted full article content from {source.name}")
                     else:
-                        # Fallback to RSS content if full article extraction fails
                         content = entry.get('description', '')
                         if not content and 'content' in entry:
                             content = entry.content[0].value if isinstance(entry.content, list) else entry.content
@@ -210,15 +208,12 @@ def scrape_rss_feed(source):
                     logger.warning(f"No content found for {article_url} from {source.name}")
                     continue
 
-                # Clean HTML content with detailed logging
                 logger.debug(f"Raw content length before cleaning: {len(content)}")
                 cleaned_content = clean_html_content(content)
                 logger.debug(f"Cleaned content length: {len(cleaned_content)}")
 
-                # Use summary from RSS feed or create from cleaned content
                 summary = clean_html_content(entry.get('summary', ''))
                 if not summary:
-                    # Create a summary from the first few sentences of the cleaned content
                     summary = ' '.join(cleaned_content.split('. ')[:3]) + '.'
 
                 logger.info(f"Adding new article from {source.name}: {entry.title}")
@@ -235,7 +230,14 @@ def scrape_rss_feed(source):
 
                 db.session.add(new_article)
                 articles_added += 1
-                logger.info(f"Successfully added article from {source.name}: {entry.title}")
+
+                # Broadcast the new article immediately
+                try:
+                    broadcast_new_article(new_article)
+                except Exception as e:
+                    logger.error(f"Error broadcasting new article: {str(e)}")
+
+                logger.info(f"Successfully added and broadcast article from {source.name}: {entry.title}")
 
             except Exception as e:
                 logger.error(f"Error processing RSS entry from {source.name}: {str(e)}")

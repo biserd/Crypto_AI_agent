@@ -2,9 +2,12 @@ import os
 from flask import Flask, render_template
 import logging
 from database import db
-from models import Article, CryptoPrice, NewsSourceMetrics, CryptoGlossary # Added CryptoGlossary import
+from models import Article, CryptoPrice, NewsSourceMetrics, CryptoGlossary
 import re
 from markupsafe import escape, Markup
+from flask_socketio import SocketIO, emit
+import json
+from datetime import datetime
 
 # Configure logging
 logging.basicConfig(
@@ -14,6 +17,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Configuration
 app.secret_key = os.urandom(24)
@@ -25,6 +29,23 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 
 db.init_app(app)
 
+def broadcast_new_article(article):
+    """Broadcast new article to all connected clients"""
+    try:
+        article_data = {
+            'id': article.id,
+            'title': article.title,
+            'summary': article.summary,
+            'source_name': article.source_name,
+            'created_at': article.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'sentiment_label': article.sentiment_label,
+            'sentiment_score': article.sentiment_score
+        }
+        socketio.emit('new_article', article_data)
+        logger.info(f"Broadcasted new article: {article.title}")
+    except Exception as e:
+        logger.error(f"Error broadcasting article: {str(e)}")
+
 @app.route('/')
 def dashboard():
     try:
@@ -32,7 +53,7 @@ def dashboard():
 
         # Fetch articles with error handling
         try:
-            recent_articles = Article.query.order_by(Article.created_at.desc()).all()
+            recent_articles = Article.query.order_by(Article.created_at.desc()).limit(20).all()
             logger.info(f"Retrieved {len(recent_articles)} articles from database")
         except Exception as e:
             logger.error(f"Error fetching articles: {str(e)}")
@@ -57,16 +78,13 @@ def dashboard():
         # Prepare articles with enhanced summaries
         for article in recent_articles:
             try:
-                # Create a copy of the summary for modification
                 enhanced_summary = escape(article.summary)
                 logger.debug(f"Processing article {article.id} summary: {enhanced_summary[:100]}...")
 
                 # Add crypto price tooltips to the summary
                 for crypto in crypto_prices:
-                    # Use word boundaries to match only whole words
                     pattern = re.compile(r'\b' + re.escape(crypto.symbol) + r'\b', re.IGNORECASE)
                     if pattern.search(str(enhanced_summary)):
-                        # Create tooltip HTML with Markup to prevent double-escaping
                         tooltip_html = Markup(
                             f'<span class="crypto-tooltip">{crypto.symbol}'
                             f'<div class="tooltip-content">'
@@ -82,15 +100,12 @@ def dashboard():
                     else:
                         logger.debug(f"No whole word match found for {crypto.symbol} in article {article.id}")
 
-
-                # Store the enhanced summary in a new attribute
                 article.enhanced_summary = enhanced_summary
 
             except Exception as e:
                 logger.error(f"Error processing tooltips for article {article.id}: {str(e)}")
                 article.enhanced_summary = article.summary
 
-            # Attach source metrics
             article.source_metrics = next(
                 (source for source in news_sources if source.source_name == article.source_name),
                 None
@@ -140,9 +155,20 @@ def get_term_details(term_id):
         logger.error(f"Error getting term details: {str(e)}")
         return "Error loading term details", 500
 
+@socketio.on('connect')
+def handle_connect():
+    logger.info("Client connected to WebSocket")
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    logger.info("Client disconnected from WebSocket")
+
 with app.app_context():
     try:
         db.create_all()
         logger.info("Successfully created database tables")
     except Exception as e:
         logger.error(f"Error creating database tables: {str(e)}")
+
+if __name__ == '__main__':
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
