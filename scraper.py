@@ -13,21 +13,24 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 class NewsSource:
-    def __init__(self, name, url, article_selector):
+    def __init__(self, name, url, article_selector, title_selector):
         self.name = name
         self.url = url
         self.article_selector = article_selector
+        self.title_selector = title_selector
 
 SOURCES = [
     NewsSource(
         "CoinDesk",
-        "https://www.coindesk.com/markets",  # Updated to markets section for more relevant news
-        ".article-cardstyles__StyledWrapper-q1x8lc-0",
+        "https://www.coindesk.com/markets/",
+        "article.article-cardstyles__StyledWrapper-sc-q1x8lc-0",
+        "h6.typography__StyledTypography-sc-owin6q-0"
     ),
     NewsSource(
-        "The Block",
-        "https://www.theblock.co/latest",  # Updated to latest news section
-        ".post-card",
+        "Cointelegraph",
+        "https://cointelegraph.com/",
+        "article.post-card",
+        "span.post-card-inline__title"
     ),
 ]
 
@@ -66,18 +69,19 @@ def scrape_articles():
             logger.info(f"Found {len(articles)} articles on {source.name}")
 
             if len(articles) == 0:
-                logger.debug(f"HTML content sample: {soup.prettify()[:500]}")
-                logger.debug("Available classes in HTML:")
-                for tag in soup.find_all(class_=True):
-                    logger.debug(f"Found element with classes: {tag.get('class')}")
+                logger.warning(f"No articles found for {source.name}. HTML structure might have changed.")
+                logger.debug(f"Current selector: {source.article_selector}")
+                continue
 
             for article in articles[:5]:  # Limit to 5 most recent articles
                 try:
-                    # Extract article URL
+                    # Extract article URL and title based on source
                     if source.name == "CoinDesk":
                         link = article.find('a', href=True)
-                    else:  # The Block
+                        title_elem = article.select_one(source.title_selector)
+                    else:  # Cointelegraph
                         link = article.find('a', class_='post-card__title-link')
+                        title_elem = article.select_one(source.title_selector)
 
                     if not link or not link.get('href'):
                         logger.warning(f"No valid link found in article from {source.name}")
@@ -85,7 +89,9 @@ def scrape_articles():
 
                     article_url = link.get('href')
                     if not article_url.startswith('http'):
-                        article_url = f"{source.url.split('/')[0]}//{source.url.split('/')[2]}{article_url}"
+                        article_url = f"https://{source.url.split('/')[2]}{article_url}"
+
+                    logger.debug(f"Processing article URL: {article_url}")
 
                     # Check if article already exists
                     exists = Article.query.filter_by(source_url=article_url).first()
@@ -104,13 +110,8 @@ def scrape_articles():
                         logger.warning(f"No content extracted from {article_url}")
                         continue
 
-                    # Find title
+                    # Get title
                     title = None
-                    if source.name == "CoinDesk":
-                        title_elem = article.find('h6') or article.find('h5') or article.find('h4')
-                    else:  # The Block
-                        title_elem = article.find('h2', class_='post-card__title')
-
                     if title_elem:
                         title = title_elem.text.strip()
 
@@ -118,12 +119,15 @@ def scrape_articles():
                         logger.warning(f"No title found for article: {article_url}")
                         continue
 
+                    logger.info(f"Adding new article: {title}")
+
                     new_article = Article(
                         title=title,
                         content=content,
                         source_url=article_url,
                         source_name=source.name,
-                        created_at=datetime.utcnow()
+                        created_at=datetime.utcnow(),
+                        category='Crypto Markets'  # Set default category for crypto news
                     )
 
                     db.session.add(new_article)
@@ -131,7 +135,7 @@ def scrape_articles():
                     logger.info(f"Added new article: {title}")
 
                 except Exception as e:
-                    logger.error(f"Error processing article from {source.name}: {str(e)}")
+                    logger.error(f"Error processing individual article from {source.name}: {str(e)}")
                     continue
 
             db.session.commit()
@@ -139,6 +143,7 @@ def scrape_articles():
 
         except Exception as e:
             logger.error(f"Error scraping {source.name}: {str(e)}")
+            db.session.rollback()
             continue
 
     logger.info(f"Completed article scraping. Added {articles_added} new articles")
