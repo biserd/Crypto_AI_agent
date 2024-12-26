@@ -427,7 +427,9 @@
         </div>
 
         <!-- Articles Section -->
-        {% for article in articles %}
+        <!-- CoinDesk Articles -->
+        <h4 class="mt-4 mb-3">CoinDesk</h4>
+        {% for article in articles if article.source_name == 'CoinDesk' %}
         <div class="card mb-3">
             <div class="card-body">
                 <h5 class="card-title">{{ article.title.replace('**', '').replace('($BTC)', '').replace('($Btc)', '').replace('($ADA)', '').replace('($Ada)', '').replace('($ETH)', '').replace('($AVAX)', '').replace('($SOL)', '').replace('($XRP)', '').replace('($MATIC)', '').replace('($DOGE)', '').replace('($BNB)', '') }}</h5>
@@ -509,6 +511,88 @@
                                 Share on LinkedIn
                             </button>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Cointelegraph Articles -->
+        <h4 class="mt-4 mb-3">Cointelegraph</h4>
+        {% for article in articles if article.source_name == 'Cointelegraph' %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">{{ article.title.replace('**', '').replace('($BTC)', '').replace('($Btc)', '').replace('($ADA)', '').replace('($Ada)', '').replace('($ETH)', '').replace('($AVAX)', '').replace('($SOL)', '').replace('($XRP)', '').replace('($MATIC)', '').replace('($DOGE)', '').replace('($BNB)', '') }}</h5>
+                <h6 class="card-subtitle mb-2 text-muted">
+                    {{ article.source_name }}
+                    {% if article.source_metrics %}
+                    <span class="badge {% if article.source_metrics.trust_score >= 70 %}bg-success{% elif article.source_metrics.trust_score >= 40 %}bg-warning{% else %}bg-danger{% endif %}">
+                        Trust: {{ "%.1f"|format(article.source_metrics.trust_score) }}%
+                    </span>
+                    {% endif %}
+                    - {{ article.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                </h6>
+                <p class="card-text" data-article-id="{{ article.id }}">
+                    {{ article.enhanced_summary|safe }}
+                </p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge bg-secondary me-2">{{ article.category }}</span>
+                        {% if article.sentiment_label %}
+                            <span class="sentiment-indicator sentiment-{{ article.sentiment_label.lower() }}">
+                                {{ article.sentiment_label|title }}
+                                <span class="sentiment-score">
+                                    {% if article.sentiment_score %}
+                                        {{ "%.2f"|format(article.sentiment_score) }}
+                                    {% endif %}
+                                </span>
+                            </span>
+                        {% endif %}
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn btn-info btn-sm" onclick="showShareModal('{{ article.id }}')">Share</button>
+                        <a href="{{ article.source_url }}" class="btn btn-primary btn-sm" target="_blank">Read More</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Messari Articles -->
+        <h4 class="mt-4 mb-3">Messari</h4>
+        {% for article in articles if article.source_name == 'Messari' %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">{{ article.title.replace('**', '').replace('($BTC)', '').replace('($Btc)', '').replace('($ADA)', '').replace('($Ada)', '').replace('($ETH)', '').replace('($AVAX)', '').replace('($SOL)', '').replace('($XRP)', '').replace('($MATIC)', '').replace('($DOGE)', '').replace('($BNB)', '') }}</h5>
+                <h6 class="card-subtitle mb-2 text-muted">
+                    {{ article.source_name }}
+                    {% if article.source_metrics %}
+                    <span class="badge {% if article.source_metrics.trust_score >= 70 %}bg-success{% elif article.source_metrics.trust_score >= 40 %}bg-warning{% else %}bg-danger{% endif %}">
+                        Trust: {{ "%.1f"|format(article.source_metrics.trust_score) }}%
+                    </span>
+                    {% endif %}
+                    - {{ article.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                </h6>
+                <p class="card-text" data-article-id="{{ article.id }}">
+                    {{ article.enhanced_summary|safe }}
+                </p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge bg-secondary me-2">{{ article.category }}</span>
+                        {% if article.sentiment_label %}
+                            <span class="sentiment-indicator sentiment-{{ article.sentiment_label.lower() }}">
+                                {{ article.sentiment_label|title }}
+                                <span class="sentiment-score">
+                                    {% if article.sentiment_score %}
+                                        {{ "%.2f"|format(article.sentiment_score) }}
+                                    {% endif %}
+                                </span>
+                            </span>
+                        {% endif %}
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn btn-info btn-sm" onclick="showShareModal('{{ article.id }}')">Share</button>
+                        <a href="{{ article.source_url }}" class="btn btn-primary btn-sm" target="_blank">Read More</a>
                     </div>
                 </div>
             </div>
