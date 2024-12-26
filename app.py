@@ -5,11 +5,10 @@ import os
 from flask import Flask, render_template
 import logging
 from database import db
-from models import Article, CryptoPrice, NewsSourceMetrics, CryptoGlossary, Subscription
+from models import Article, CryptoPrice, NewsSourceMetrics, CryptoGlossary
 import re
 from markupsafe import escape, Markup
 from flask_socketio import SocketIO, emit
-from flask_caching import Cache
 import json
 from datetime import datetime
 
@@ -22,7 +21,6 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 socketio = SocketIO(app, async_mode='eventlet', cors_allowed_origins="*")
-cache = Cache(app, config={'CACHE_TYPE': 'simple'})
 
 # Configuration
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", os.urandom(24))

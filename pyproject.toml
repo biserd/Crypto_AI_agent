@@ -24,5 +24,4 @@ dependencies = [
     "urllib3>=2.3.0",
     "python-socketio>=5.12.0",
     "eventlet>=0.38.2",
-    "flask-caching>=2.3.0",
 ]
