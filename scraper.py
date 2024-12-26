@@ -30,21 +30,39 @@ def clean_html_content(html_content):
         if not html_content:
             return ""
 
-        # Remove script and style elements
+        logger.debug(f"Starting HTML content cleaning (length: {len(html_content)})")
+
+        # Remove problematic unicode characters
+        html_content = html_content.replace('\xa0', ' ')
+
+        # Parse with BeautifulSoup
         soup = BeautifulSoup(html_content, 'html.parser')
-        for script in soup(["script", "style"]):
-            script.decompose()
+
+        # Remove unwanted tags and their contents
+        for element in soup(["script", "style", "iframe", "form"]):
+            element.decompose()
+
+        # Replace <br> with newlines for better text flow
+        for br in soup.find_all("br"):
+            br.replace_with("\n")
+
+        # Replace paragraph tags with double newlines for better readability
+        for p in soup.find_all("p"):
+            p.replace_with(f"\n{p.get_text()}\n")
 
         # Get text and clean it
-        text = soup.get_text(separator=' ', strip=True)
+        text = soup.get_text(separator=' ')
 
-        # Remove extra whitespace and normalize spaces
-        text = re.sub(r'\s+', ' ', text).strip()
+        # Clean up the text
+        text = re.sub(r'\s+', ' ', text)  # Replace multiple spaces with single space
+        text = re.sub(r'\n\s*\n', '\n', text)  # Replace multiple newlines
+        text = re.sub(r'&[a-zA-Z]+;', '', text)  # Remove HTML entities
+        text = re.sub(r'[^\w\s.,!?-]', '', text)  # Remove special chars but keep punctuation
+        text = text.strip()
 
-        # Remove special characters but keep basic punctuation
-        text = re.sub(r'[^\w\s.,!?-]', '', text)
-
+        logger.debug(f"Completed HTML cleaning. Final length: {len(text)}")
         return text
+
     except Exception as e:
         logger.error(f"Error cleaning HTML content: {str(e)}")
         return html_content  # Return original content if cleaning fails
@@ -108,9 +126,10 @@ def scrape_rss_feed(source):
                     logger.warning(f"No content found in RSS entry for {article_url}")
                     continue
 
-                # Clean HTML content
+                # Clean HTML content with detailed logging
+                logger.debug(f"Raw content length before cleaning: {len(content)}")
                 cleaned_content = clean_html_content(content)
-                logger.debug(f"Cleaned content length: {len(cleaned_content)} chars")
+                logger.debug(f"Cleaned content length: {len(cleaned_content)}")
 
                 # Use summary from RSS feed or create from cleaned content
                 summary = clean_html_content(entry.get('summary', ''))
