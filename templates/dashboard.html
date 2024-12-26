@@ -445,7 +445,6 @@
                 </p>
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <span class="badge bg-secondary me-2">{{ article.category }}</span>
                         {% if article.sentiment_label %}
                             <span class="sentiment-indicator sentiment-{{ article.sentiment_label.lower() }}">
                                 {{ article.sentiment_label|title }}
