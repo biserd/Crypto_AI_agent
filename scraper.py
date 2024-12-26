@@ -72,23 +72,27 @@ def scrape_rss_feed(source):
                     logger.debug(f"Article already exists: {article_url}")
                     continue
 
-                # Get article content
-                downloaded = trafilatura.fetch_url(article_url)
-                if not downloaded:
-                    logger.warning(f"Could not download content from {article_url}")
+                # Extract content from RSS feed entry instead of visiting the article URL
+                content = entry.get('description', '')
+                if not content and 'content' in entry:
+                    content = entry.content[0].value if isinstance(entry.content, list) else entry.content
+
+                if not content:
+                    logger.warning(f"No content found in RSS entry for {article_url}")
                     continue
 
-                content = trafilatura.extract(downloaded)
-                if not content:
-                    logger.warning(f"No content extracted from {article_url}")
-                    continue
+                # Use summary from RSS feed
+                summary = entry.get('summary', '')
+                if not summary:
+                    # Create a summary from the first few sentences of the content
+                    summary = ' '.join(content.split('. ')[:3]) + '.'
 
                 logger.info(f"Adding new article: {entry.title}")
 
                 new_article = Article(
                     title=entry.title,
                     content=content,
-                    summary=entry.get('summary', ''),
+                    summary=summary,
                     source_url=article_url,
                     source_name=source.name,
                     created_at=datetime.utcnow(),
@@ -97,13 +101,21 @@ def scrape_rss_feed(source):
 
                 db.session.add(new_article)
                 articles_added += 1
+                logger.info(f"Successfully added article: {entry.title}")
 
             except Exception as e:
                 logger.error(f"Error processing RSS entry from {source.name}: {str(e)}")
                 continue
 
-        db.session.commit()
-        logger.info(f"Added {articles_added} articles from {source.name} RSS feed")
+        if articles_added > 0:
+            try:
+                db.session.commit()
+                logger.info(f"Successfully committed {articles_added} articles from {source.name}")
+            except Exception as e:
+                logger.error(f"Error committing articles from {source.name}: {str(e)}")
+                db.session.rollback()
+                return 0
+
         return articles_added
 
     except Exception as e:

@@ -20,22 +20,21 @@ def run_pipeline():
                 logging.error(f"Scraping failed: {str(e)}")
                 articles_added = 0
 
-            if articles_added > 0:
-                # Process articles
-                try:
-                    logging.info("Processing new articles")
-                    process_articles()
-                except Exception as e:
-                    logging.error(f"Processing failed: {str(e)}")
+            # Always try to process articles, even if no new ones were added
+            # This ensures any previously unprocessed articles get analyzed
+            try:
+                logging.info("Processing articles for sentiment analysis")
+                process_articles()
+            except Exception as e:
+                logging.error(f"Sentiment analysis failed: {str(e)}")
 
-                # Distribute articles
+            # Only distribute if we have new articles
+            if articles_added > 0:
                 try:
                     logging.info("Distributing processed articles")
                     distribute_articles()
                 except Exception as e:
                     logging.error(f"Distribution failed: {str(e)}")
-            else:
-                logging.info("No new articles to process")
 
             logging.info("Completed news pipeline")
         except Exception as e:
@@ -58,7 +57,7 @@ def start_scheduler():
         logging.error(f"Initial pipeline run failed: {str(e)}")
 
     # Schedule regular runs
-    schedule.every(1).hours.do(run_pipeline)
+    schedule.every(15).minutes.do(run_pipeline)  # Run more frequently to catch up on any missed articles
 
     while True:
         try:
