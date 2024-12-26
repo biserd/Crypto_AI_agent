@@ -385,14 +385,14 @@
 </div>
 <script>
 function updateLastRunTime() {
-    const lastRun = new Date('{{ last_scraper_run.isoformat() }}');
+    const lastRun = new Date('{{ last_scraper_run.isoformat() }}Z');
     const now = new Date();
     const diff = Math.floor((now - lastRun) / 1000);
-    const minutes = Math.floor(Math.abs(diff) / 60);
+    const minutes = Math.floor(diff / 60);
     document.getElementById('lastRunTime').textContent = `${minutes} minutes ago`;
 }
 
-setInterval(updateLastRunTime, 1000);
+setInterval(updateLastRunTime, 60000);
 updateLastRunTime();
 </script>
 <div class="row">
