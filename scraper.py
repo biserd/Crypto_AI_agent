@@ -1,6 +1,6 @@
 import logging
 import time
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Comment
 import requests
 import trafilatura
 from datetime import datetime
@@ -38,9 +38,14 @@ class MLStripper(HTMLParser2):
         return ''.join(self.fed)
 
 def strip_tags(html):
-    s = MLStripper()
-    s.feed(html)
-    return s.get_data()
+    """Strip HTML tags from content"""
+    try:
+        s = MLStripper()
+        s.feed(html)
+        return s.get_data()
+    except Exception as e:
+        logger.error(f"Error stripping HTML tags: {str(e)}")
+        return html
 
 def clean_html_content(html_content):
     """Clean HTML content and extract readable text with enhanced cleaning"""
@@ -51,30 +56,43 @@ def clean_html_content(html_content):
         logger.debug(f"Starting HTML content cleaning (length: {len(html_content)})")
 
         # First try trafilatura for better content extraction
-        cleaned_text = trafilatura.extract(html_content)
-
-        if cleaned_text:
-            logger.debug("Successfully cleaned content using trafilatura")
-            return cleaned_text.strip()
+        try:
+            cleaned_text = trafilatura.extract(html_content)
+            if cleaned_text:
+                logger.debug("Successfully cleaned content using trafilatura")
+                return cleaned_text.strip()
+        except Exception as e:
+            logger.warning(f"Trafilatura extraction failed: {str(e)}, falling back to BeautifulSoup")
 
         # Fallback to BeautifulSoup if trafilatura fails
         # Remove problematic unicode characters
         html_content = html_content.replace('\xa0', ' ')
 
         # Parse with BeautifulSoup
-        soup = BeautifulSoup(html_content, 'html.parser')
+        try:
+            soup = BeautifulSoup(html_content, 'html.parser')
+        except Exception as e:
+            logger.error(f"BeautifulSoup parsing failed: {str(e)}")
+            return strip_tags(html_content)
 
         # Remove unwanted tags and their contents
         unwanted_tags = [
             "script", "style", "iframe", "form", "nav", "header", "footer",
             "aside", "noscript", "figure", "figcaption", "time", "button"
         ]
-        for element in soup(unwanted_tags):
-            element.decompose()
+        for tag in unwanted_tags:
+            for element in soup.find_all(tag):
+                try:
+                    element.decompose()
+                except Exception as e:
+                    logger.warning(f"Error removing {tag} tag: {str(e)}")
 
         # Remove all HTML comments
-        for comment in soup.findAll(text=lambda text: isinstance(text, Comment)):
-            comment.extract()
+        try:
+            for comment in soup.find_all(text=lambda text: isinstance(text, Comment)):
+                comment.extract()
+        except Exception as e:
+            logger.warning(f"Error removing HTML comments: {str(e)}")
 
         # Replace <br> with newlines for better text flow
         for br in soup.find_all("br"):
@@ -99,7 +117,7 @@ def clean_html_content(html_content):
 
     except Exception as e:
         logger.error(f"Error cleaning HTML content: {str(e)}")
-        return html_content  # Return original content if cleaning fails
+        return strip_tags(html_content)  # Return stripped content as fallback
 
 def create_session():
     """Create a requests session with advanced retry strategy"""
