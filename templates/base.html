@@ -151,9 +151,9 @@
                     return;
                 }
                 
-                const { error } = await stripe.redirectToCheckout({
-                    sessionId: session.id
-                });
+                // Open checkout in new tab
+                const checkoutUrl = session.url;
+                window.open(checkoutUrl, '_blank');
                 
                 if (error) {
                     alert(error.message);
