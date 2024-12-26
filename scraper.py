@@ -171,7 +171,7 @@ def init_source_metrics(source_name):
         if not source_metrics:
             # Create new metrics if none exist
             source_metrics = NewsSourceMetrics(
-                name=source_name,
+                source_name=source_name,
                 trust_score=70.0,  # Default initial trust score
                 article_count=existing_count,  # Initialize with existing count
                 accuracy_score=80.0,  # Default initial accuracy score

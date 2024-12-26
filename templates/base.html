@@ -118,26 +118,6 @@
             try {
                 const response = await fetch('/stripe-config');
                 const data = await response.json();
-                if (data.publishableKey) {
-                    stripe = Stripe(data.publishableKey);
-                    console.log('Stripe initialized successfully');
-                } else {
-                    throw new Error('No publishable key received');
-                }
-            } catch (error) {
-                console.error('Stripe initialization failed:', error);
-            }
-        }
-
-        // Initialize Stripe when the page loads
-        window.addEventListener('DOMContentLoaded', initStripe);t>
-    <script>
-        let stripe;
-        
-        async function initStripe() {
-            try {
-                const response = await fetch('/stripe-config');
-                const data = await response.json();
                 stripe = Stripe(data.publishableKey);
                 console.log('Stripe initialized with key');
             } catch (error) {
