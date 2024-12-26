@@ -17,14 +17,14 @@ class NewsSource:
 
 SOURCES = [
     NewsSource(
-        "Tech Crunch",
-        "https://techcrunch.com",
-        ".post-block__title",  # Updated selector for better precision
+        "CoinDesk",
+        "https://www.coindesk.com",
+        "article.article-card", # CoinDesk's article card selector
     ),
     NewsSource(
-        "The Verge",
-        "https://www.theverge.com",
-        ".duet--content-cards--content-card",  # Updated selector
+        "The Block",
+        "https://www.theblock.co",
+        ".post-card", # The Block's article card selector
     ),
 ]
 

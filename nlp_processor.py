@@ -44,11 +44,13 @@ def analyze_sentiment(text):
     # Enhanced sentiment word lists
     positive_words = {
         'good', 'great', 'excellent', 'amazing', 'positive', 'success', 'wonderful',
-        'best', 'perfect', 'innovative', 'breakthrough', 'achievement', 'improved'
+        'best', 'perfect', 'innovative', 'breakthrough', 'achievement', 'improved',
+        'bullish', 'surge', 'gain', 'rally', 'growth', 'profit', 'adoption'
     }
     negative_words = {
         'bad', 'poor', 'negative', 'terrible', 'awful', 'failed', 'worst',
-        'problem', 'issue', 'concern', 'dangerous', 'disappointing', 'troubled'
+        'problem', 'issue', 'concern', 'dangerous', 'disappointing', 'troubled',
+        'bearish', 'crash', 'drop', 'decline', 'loss', 'risk', 'scam'
     }
 
     for token in doc:
@@ -102,10 +104,10 @@ def process_articles():
 
             # Basic categorization based on keywords
             content_lower = article.content.lower()
-            if any(word in content_lower for word in ['market', 'stock', 'economy']):
-                article.category = 'Business'
-            elif any(word in content_lower for word in ['government', 'president', 'election']):
-                article.category = 'Politics'
+            if any(word in content_lower for word in ['market', 'stock', 'economy', 'bitcoin', 'crypto', 'blockchain']):
+                article.category = 'Crypto Markets'
+            elif any(word in content_lower for word in ['technology', 'protocol', 'network', 'defi']):
+                article.category = 'Technology'
             else:
                 article.category = 'General'
 
