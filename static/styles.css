@@ -1,0 +1,16 @@
+.card {
+    border: 1px solid var(--bs-border-color);
+    background-color: var(--bs-dark);
+}
+
+.card-title {
+    color: var(--bs-light);
+}
+
+.card-text {
+    color: var(--bs-gray-300);
+}
+
+.badge {
+    font-size: 0.8rem;
+}
