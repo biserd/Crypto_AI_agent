@@ -102,11 +102,11 @@ def analyze_sentiment(text):
         logger.debug(f"Sentiment analysis results: positive={pos_count}, negative={neg_count}, "
                     f"total_phrases={total_relevant_phrases}, score={sentiment_score:.4f}")
 
-        # Determine sentiment with adjusted thresholds
-        if sentiment_score > 0.15:
+        # Determine sentiment with stricter thresholds
+        if sentiment_score > 0.2:
             logger.info(f"Positive sentiment detected with score {sentiment_score:.4f}")
             return sentiment_score, 'positive'
-        elif sentiment_score < -0.15:
+        elif sentiment_score < -0.1:  # More sensitive to negative sentiment
             logger.info(f"Negative sentiment detected with score {sentiment_score:.4f}")
             return sentiment_score, 'negative'
         else:
@@ -141,10 +141,28 @@ def process_articles():
                 # Combine title and content for better context
                 full_text = f"{article.title}. {article.content}"
 
+                # Define crypto assets and their tickers
+                crypto_assets = {
+                    'bitcoin': 'BTC',
+                    'ethereum': 'ETH',
+                    'binance': 'BNB',
+                    'cardano': 'ADA',
+                    'solana': 'SOL',
+                    'ripple': 'XRP',
+                }
+
                 # Analyze sentiment
                 score, label = analyze_sentiment(full_text)
                 article.sentiment_score = score
                 article.sentiment_label = label
+
+                # Format content with bold assets and tickers
+                formatted_content = article.content
+                for asset, ticker in crypto_assets.items():
+                    pattern = re.compile(rf'\b{asset}\b', re.IGNORECASE)
+                    formatted_content = pattern.sub(f'**{asset.title()}** (${ticker})', formatted_content)
+                
+                article.content = formatted_content
 
                 processed_count += 1
                 logger.info(f"Successfully processed article {article.id}: Sentiment={label} (score={score:.4f})")

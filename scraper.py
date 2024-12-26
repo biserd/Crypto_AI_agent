@@ -57,6 +57,7 @@ def clean_html_content(html_content):
         text = re.sub(r'\s+', ' ', text)  # Replace multiple spaces with single space
         text = re.sub(r'\n\s*\n', '\n', text)  # Replace multiple newlines
         text = re.sub(r'&[a-zA-Z]+;', '', text)  # Remove HTML entities
+        text = re.sub(r'<[^>]+>', '', text)  # Remove any remaining HTML tags
         text = re.sub(r'[^\w\s.,!?-]', '', text)  # Remove special chars but keep punctuation
         text = text.strip()
 
