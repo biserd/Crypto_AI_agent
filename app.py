@@ -250,7 +250,7 @@ def create_checkout_session():
             success_url=request.host_url + 'success?session_id={CHECKOUT_SESSION_ID}',
             cancel_url=request.host_url + 'cancelled',
         )
-        return jsonify({'id': checkout_session.id})
+        return jsonify({'id': checkout_session.id, 'url': checkout_session.url})
     except Exception as e:
         return jsonify({'error': str(e)}), 403
 

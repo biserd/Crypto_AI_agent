@@ -152,11 +152,7 @@
                 }
                 
                 // Redirect to Stripe checkout URL
-                if (session.url) {
-                    window.location.href = session.url;
-                } else {
-                    alert('Error: No checkout URL received');
-                }
+                window.location.href = session.url;
                 hideUpgradeModal();
             } catch (error) {
                 console.error('Error:', error);
