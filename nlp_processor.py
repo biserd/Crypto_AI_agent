@@ -102,11 +102,11 @@ def analyze_sentiment(text):
         logger.debug(f"Sentiment analysis results: positive={pos_count}, negative={neg_count}, "
                     f"total_phrases={total_relevant_phrases}, score={sentiment_score:.4f}")
 
-        # Determine sentiment with stricter thresholds
-        if sentiment_score > 0.2:
+        # Even stricter thresholds with bias towards negative sentiment
+        if sentiment_score > 0.25:
             logger.info(f"Positive sentiment detected with score {sentiment_score:.4f}")
             return sentiment_score, 'positive'
-        elif sentiment_score < -0.1:  # More sensitive to negative sentiment
+        elif sentiment_score < -0.05:  # Very sensitive to negative sentiment
             logger.info(f"Negative sentiment detected with score {sentiment_score:.4f}")
             return sentiment_score, 'negative'
         else:
@@ -141,14 +141,26 @@ def process_articles():
                 # Combine title and content for better context
                 full_text = f"{article.title}. {article.content}"
 
-                # Define crypto assets and their tickers
+                # Define crypto assets and their tickers with variations
                 crypto_assets = {
                     'bitcoin': 'BTC',
+                    'btc': 'BTC',
                     'ethereum': 'ETH',
-                    'binance': 'BNB',
+                    'eth': 'ETH',
+                    'binance coin': 'BNB',
+                    'bnb': 'BNB',
                     'cardano': 'ADA',
+                    'ada': 'ADA',
                     'solana': 'SOL',
+                    'sol': 'SOL',
+                    'xrp': 'XRP',
                     'ripple': 'XRP',
+                    'dogecoin': 'DOGE',
+                    'doge': 'DOGE',
+                    'polygon': 'MATIC',
+                    'matic': 'MATIC',
+                    'avalanche': 'AVAX',
+                    'avax': 'AVAX'
                 }
 
                 # Analyze sentiment
