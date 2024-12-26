@@ -145,7 +145,7 @@ def create_session():
 SOURCES = [
     NewsSource(
         "CoinDesk",
-        "https://www.coindesk.com/arc/outboundfeeds/rss/",
+        "https://www.coindesk.com/feed",
         is_rss=True
     ),
     NewsSource(
