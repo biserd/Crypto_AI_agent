@@ -222,6 +222,14 @@ def sync_article_counts():
         db.session.rollback()
 
 # Add routes for subscription management
+@app.after_request
+def after_request(response):
+    response.headers.update({
+        'Content-Security-Policy': "frame-ancestors 'self' https://checkout.stripe.com",
+        'X-Frame-Options': 'SAMEORIGIN'
+    })
+    return response
+
 @app.route('/create-checkout-session', methods=['POST'])
 def create_checkout_session():
     try:

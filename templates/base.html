@@ -164,8 +164,8 @@
                     throw new Error(session.error);
                 }
 
-                // Open Stripe checkout in the current window
-                window.top.location.href = session.url;
+                // Redirect to Stripe checkout
+                window.location = session.url;
             } catch (error) {
                 console.error('Payment error:', error);
                 alert(error.message || 'Something went wrong with the payment process.');
