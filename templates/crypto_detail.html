@@ -71,6 +71,37 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     margin-bottom: 2rem;
 }
+
+.sentiment-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 500;
+    margin-right: 0.5rem;
+}
+
+.sentiment-badge.positive {
+    background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+    color: white;
+}
+
+.sentiment-badge.negative {
+    background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+    color: white;
+}
+
+.sentiment-badge.neutral {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: #1f2937;
+}
+
+.sentiment-score {
+    margin-left: 0.5rem;
+    padding-left: 0.5rem;
+    border-left: 1px solid rgba(255, 255, 255, 0.3);
+    font-family: monospace;
+}
 </style>
 
 <div class="crypto-header text-center">
@@ -95,20 +126,22 @@
             {% for article in news %}
             <div class="card mb-3 news-card">
                 <div class="card-body">
-                    <h5 class="card-title">{{ article.title }}</h5>
+                    <h5 class="card-title">{{ article.title|replace('**', '')|replace('($BTC)', '')|replace('($Btc)', '')|replace('($ETH)', '')|replace('($AVAX)', '')|replace('($SOL)', '')|replace('($XRP)', '')|replace('($MATIC)', '')|replace('($DOGE)', '')|replace('($BNB)', '') }}</h5>
                     <h6 class="card-subtitle mb-2 text-muted">
                         {{ article.source_name }} - {{ article.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
                     </h6>
                     <p class="card-text">{{ article.summary }}</p>
                     {% if article.sentiment_label %}
-                    <span class="badge bg-{{ article.sentiment_label|lower }}">
-                        {{ article.sentiment_label }}
-                        {% if article.sentiment_score %}
-                        ({{ "%.2f"|format(article.sentiment_score) }})
-                        {% endif %}
-                    </span>
+                    <div class="d-flex align-items-center">
+                        <span class="sentiment-badge {{ article.sentiment_label|lower }}">
+                            {{ article.sentiment_label|title }}
+                            {% if article.sentiment_score %}
+                            <span class="sentiment-score">{{ "%.2f"|format(article.sentiment_score) }}</span>
+                            {% endif %}
+                        </span>
+                        <a href="{{ article.source_url }}" class="btn btn-primary btn-sm ms-auto" target="_blank">Read More</a>
+                    </div>
                     {% endif %}
-                    <a href="{{ article.source_url }}" class="btn btn-primary btn-sm" target="_blank">Read More</a>
                 </div>
             </div>
             {% endfor %}
@@ -139,7 +172,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Sample data - this should be replaced with real historical data
     const ctx = document.getElementById('priceChart').getContext('2d');
     const chart = new Chart(ctx, {
         type: 'line',
