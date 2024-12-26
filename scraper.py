@@ -31,8 +31,8 @@ class MLStripper(HTMLParser2):
         super().__init__()
         self.reset()
         self.fed = []
-    def handle_data(self, d):
-        self.fed.append(d)
+    def handle_data(self, data):  # Changed parameter name from 'd' to 'data'
+        self.fed.append(data)
     def get_data(self):
         return ''.join(self.fed)
 
