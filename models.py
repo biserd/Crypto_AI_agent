@@ -1,5 +1,5 @@
 from datetime import datetime
-from app import db
+from database import db
 
 class Article(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -24,3 +24,13 @@ class DistributionLog(db.Model):
     status = db.Column(db.String(50), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     message = db.Column(db.Text)
+
+class CryptoPrice(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    symbol = db.Column(db.String(10), nullable=False)  # e.g., BTC, ETH
+    price_usd = db.Column(db.Float, nullable=False)
+    percent_change_24h = db.Column(db.Float)
+    last_updated = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<CryptoPrice {self.symbol}: ${self.price_usd:.2f}>'

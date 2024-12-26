@@ -26,12 +26,50 @@
     font-size: 0.8rem;
     margin-left: 0.5rem;
 }
+
+.crypto-price {
+    font-weight: bold;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    margin-right: 0.5rem;
+}
+
+.price-up {
+    color: #28a745;
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+.price-down {
+    color: #dc3545;
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.crypto-prices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
 </style>
 
 <div class="row">
     <div class="col-12">
-        <h1 class="mb-4">Recent Articles</h1>
+        <h1 class="mb-4">Cryptocurrency News & Prices</h1>
 
+        <!-- Crypto Prices Section -->
+        <div class="crypto-prices mb-4">
+            {% for price in crypto_prices %}
+                <div class="crypto-price {% if price.percent_change_24h > 0 %}price-up{% else %}price-down{% endif %}">
+                    {{ price.symbol }}: ${{ "%.2f"|format(price.price_usd) }}
+                    <small>({{ "%.1f"|format(price.percent_change_24h) }}%)</small>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Articles Section -->
         {% for article in articles %}
         <div class="card mb-3">
             <div class="card-body">

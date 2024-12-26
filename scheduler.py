@@ -5,12 +5,21 @@ from app import app
 from scraper import scrape_articles
 from nlp_processor import process_articles
 from distributors import distribute_articles
+from crypto_price_tracker import CryptoPriceTracker
 
 def run_pipeline():
     """Run the complete news pipeline with proper error handling"""
     with app.app_context():
         try:
             logging.info("Starting news pipeline")
+
+            # Update crypto prices
+            try:
+                price_tracker = CryptoPriceTracker()
+                price_tracker.fetch_current_prices()
+                logging.info("Updated cryptocurrency prices")
+            except Exception as e:
+                logging.error(f"Price tracking failed: {str(e)}")
 
             # Run scraper
             try:
@@ -20,8 +29,7 @@ def run_pipeline():
                 logging.error(f"Scraping failed: {str(e)}")
                 articles_added = 0
 
-            # Always try to process articles, even if no new ones were added
-            # This ensures any previously unprocessed articles get analyzed
+            # Process articles
             try:
                 logging.info("Processing articles for sentiment analysis")
                 process_articles()
@@ -57,7 +65,8 @@ def start_scheduler():
         logging.error(f"Initial pipeline run failed: {str(e)}")
 
     # Schedule regular runs
-    schedule.every(15).minutes.do(run_pipeline)  # Run more frequently to catch up on any missed articles
+    schedule.every(15).minutes.do(run_pipeline)
+    schedule.every(5).minutes.do(lambda: CryptoPriceTracker().fetch_current_prices())
 
     while True:
         try:

@@ -1,13 +1,9 @@
 import os
 from flask import Flask, render_template
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import DeclarativeBase
 import logging
+from database import db
+from models import Article, CryptoPrice
 
-class Base(DeclarativeBase):
-    pass
-
-db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
 
 # Configuration
@@ -23,13 +19,14 @@ db.init_app(app)
 # Routes
 @app.route('/')
 def dashboard():
-    from models import Article
     logging.info("Fetching articles for dashboard")
-    # Remove the published filter to show all articles
     recent_articles = Article.query.order_by(Article.created_at.desc()).all()
+    crypto_prices = CryptoPrice.query.all()
+
     logging.info(f"Found {len(recent_articles)} articles to display")
-    return render_template('dashboard.html', articles=recent_articles)
+    return render_template('dashboard.html', 
+                         articles=recent_articles,
+                         crypto_prices=crypto_prices)
 
 with app.app_context():
-    import models
     db.create_all()
