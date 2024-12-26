@@ -77,7 +77,7 @@
     border-radius: 8px;
     margin-bottom: 1rem;
     position: relative;
-    z-index: 2; /* Added for better stacking */
+    z-index: 3; /* Updated for better stacking */
 }
 
 .trust-score-container {
@@ -215,6 +215,7 @@
     padding: 2px 4px;
     border-radius: 4px;
     background-color: rgba(13, 110, 253, 0.1);
+    z-index: 1;
 }
 
 .tooltip-content {
@@ -269,20 +270,20 @@
     color: #dc3545;
 }
 
-/* Fix container stacking contexts */
-.card-text {
+/* Fix stacking context issues */
+.card {
     position: relative;
-    overflow: visible;
+    z-index: 1;
 }
 
-.card {
+.card-text {
     position: relative;
     z-index: 1;
 }
 
 .crypto-prices {
     position: relative;
-    z-index: 2;
+    z-index: 3;
 }
 </style>
 
