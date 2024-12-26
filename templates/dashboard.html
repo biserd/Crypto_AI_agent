@@ -567,16 +567,14 @@
                 </div>
             </div>
         </div>
-        {% endfor %}
         {% endif %}
+        {% endfor %}
 
         <!-- Messari Articles -->
-        {% set shown_messari = false %}
         {% for article in articles %}
             {% if article.source_name == 'Messari' %}
-                {% if not shown_messari %}
+                {% if loop.first %}
                     <h4 class="mt-4 mb-3">Messari</h4>
-                    {% set shown_messari = true %}
                 {% endif %}
                 <div class="card mb-3">
             <div class="card-body">
@@ -618,6 +616,7 @@
         {% endfor %}
     </div>
 </div>
+{% endblock %}
 
 <script>
 function showShareModal(articleId) {
