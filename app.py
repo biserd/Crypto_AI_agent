@@ -4,6 +4,7 @@ eventlet.monkey_patch()
 import os
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, redirect
+from flask_login import LoginManager, UserMixin, current_user
 from database import db
 from models import Article, CryptoPrice, NewsSourceMetrics, CryptoGlossary, Subscription
 import logging
@@ -49,6 +50,9 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 }
 
 db.init_app(app)
+
+login_manager = LoginManager()
+login_manager.init_app(app)
 
 def broadcast_new_article(article):
     """Broadcast new article to all connected clients"""
@@ -251,6 +255,16 @@ def handle_connect():
 @socketio.on('disconnect')
 def handle_disconnect():
     logger.info("Client disconnected from WebSocket")
+
+class User(UserMixin):
+    def __init__(self, user_id, is_premium=False):
+        self.id = user_id
+        self.is_premium = is_premium
+
+@login_manager.user_loader
+def load_user(user_id):
+    # Mock user for now
+    return User(user_id, False)
 
 def sync_article_counts():
     """Synchronize article counts with actual numbers in database"""
