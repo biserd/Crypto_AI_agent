@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from app import db
 from models import Article
 import time
@@ -17,96 +18,87 @@ def analyze_sentiment(text):
     try:
         logger.debug(f"Starting sentiment analysis for text (length: {len(text)})")
 
-        # Enhanced crypto-specific sentiment words and phrases
+        # Enhanced crypto-specific sentiment words and phrases with weights
         positive_patterns = {
-            # Price movements
-            'surge', 'rally', 'jump', 'gain', 'soar', 'rise', 'climb', 'peak', 'record high',
-            # Market sentiment
-            'bullish', 'optimistic', 'confident', 'strong', 'positive', 'opportunity',
-            # Adoption/Development
-            'adoption', 'partnership', 'launch', 'upgrade', 'integration', 'milestone',
-            'development', 'progress', 'innovation', 'breakthrough', 'success',
-            # Regulatory
-            'approve', 'support', 'legal', 'regulate', 'compliance',
+            # Price movements (weight: 1.0)
+            'surge': 1.0, 'rally': 1.0, 'jump': 1.0, 'gain': 1.0, 'soar': 1.0, 'rise': 1.0, 'climb': 1.0, 
+            'peak': 1.0, 'record high': 1.2,
+            # Market sentiment (weight: 1.2)
+            'bullish': 1.2, 'optimistic': 1.2, 'confident': 1.2, 'strong': 1.0, 'positive': 1.0, 
+            'opportunity': 1.0,
+            # Adoption/Development (weight: 1.5)
+            'adoption': 1.5, 'partnership': 1.5, 'launch': 1.2, 'upgrade': 1.2, 'integration': 1.2, 
+            'milestone': 1.2, 'development': 1.2, 'progress': 1.2, 'innovation': 1.5, 'breakthrough': 1.5,
+            'success': 1.2,
         }
 
         negative_patterns = {
-            # Price movements
-            'crash', 'plunge', 'drop', 'fall', 'decline', 'tumble', 'slump', 'correction',
-            # Market sentiment
-            'bearish', 'pessimistic', 'fear', 'concern', 'worry', 'uncertain', 'volatile',
-            # Security/Risk
-            'hack', 'breach', 'scam', 'fraud', 'vulnerability', 'exploit', 'risk',
-            # Regulatory
-            'ban', 'restrict', 'crack down', 'investigate', 'sue', 'lawsuit', 'illegal',
-            # Market problems
-            'sell-off', 'dump', 'liquidation', 'margin call', 'default'
+            # Price movements (weight: 1.5)
+            'crash': 1.5, 'plunge': 1.5, 'drop': 1.2, 'fall': 1.2, 'decline': 1.2, 'tumble': 1.5, 
+            'slump': 1.5, 'correction': 1.2,
+            # Market sentiment (weight: 1.2)
+            'bearish': 1.2, 'pessimistic': 1.2, 'fear': 1.2, 'concern': 1.0, 'worry': 1.0, 
+            'uncertain': 1.0, 'volatile': 1.0,
+            # Security/Risk (weight: 2.0)
+            'hack': 2.0, 'breach': 2.0, 'scam': 2.0, 'fraud': 2.0, 'vulnerability': 1.5, 
+            'exploit': 1.5, 'risk': 1.2,
+            # Regulatory (weight: 1.5)
+            'ban': 1.5, 'restrict': 1.5, 'crack down': 1.5, 'investigate': 1.2, 'sue': 1.5, 
+            'lawsuit': 1.5, 'illegal': 1.5,
+            # Market problems (weight: 1.8)
+            'sell-off': 1.8, 'dump': 1.8, 'liquidation': 1.8, 'margin call': 1.8, 'default': 1.8
         }
 
-        # Input validation
         if not text or len(text.strip()) == 0:
             logger.warning("Empty text provided for sentiment analysis")
             return 0.0, 'neutral'
 
-        # Preprocess text
-        text = text.lower().replace('\n', ' ').replace('\t', ' ')
-
-        # Clean up extra spaces
-        while '  ' in text:
-            text = text.replace('  ', ' ')
-
-        # Split into sentences for better context
+        text = text.lower()
         sentences = text.split('.')
 
-        pos_count = 0
-        neg_count = 0
-        total_relevant_phrases = 0
+        weighted_pos_score = 0
+        weighted_neg_score = 0
+        total_matches = 0
 
         for sentence in sentences:
-            # Skip empty sentences
             if not sentence.strip():
                 continue
 
-            words = sentence.strip().split()
+            has_negation = any(neg in sentence for neg in {'not', 'no', "n't", 'never', 'without', 'rarely'})
 
-            # Check for negation words in the sentence
-            has_negation = any(neg in words for neg in {'not', 'no', "n't", 'never', 'without', 'rarely'})
+            # Calculate weighted sentiment scores
+            for pattern, weight in positive_patterns.items():
+                if pattern in sentence:
+                    if has_negation:
+                        weighted_neg_score += weight
+                    else:
+                        weighted_pos_score += weight
+                    total_matches += 1
 
-            # Look for sentiment patterns
-            found_positive = any(pattern in sentence for pattern in positive_patterns)
-            found_negative = any(pattern in sentence for pattern in negative_patterns)
+            for pattern, weight in negative_patterns.items():
+                if pattern in sentence:
+                    if has_negation:
+                        weighted_pos_score += weight * 0.5  # Negated negative is less positive
+                    else:
+                        weighted_neg_score += weight
+                    total_matches += 1
 
-            # Apply negation logic
-            if found_positive:
-                if has_negation:
-                    neg_count += 1
-                else:
-                    pos_count += 1
-                total_relevant_phrases += 1
-
-            if found_negative:
-                if has_negation:
-                    pos_count += 1
-                else:
-                    neg_count += 1
-                total_relevant_phrases += 1
-
-        # Calculate sentiment score
-        if total_relevant_phrases == 0:
+        if total_matches == 0:
             logger.debug("No sentiment patterns found in text")
             return 0.0, 'neutral'
 
         # Calculate weighted sentiment score
-        sentiment_score = (pos_count - neg_count) / max(total_relevant_phrases, 1)
+        sentiment_score = (weighted_pos_score - weighted_neg_score) / max(total_matches, 1)
 
-        logger.debug(f"Sentiment analysis results: positive={pos_count}, negative={neg_count}, "
-                    f"total_phrases={total_relevant_phrases}, score={sentiment_score:.4f}")
+        logger.debug(f"Sentiment analysis results: positive={weighted_pos_score}, "
+                    f"negative={weighted_neg_score}, total_matches={total_matches}, "
+                    f"score={sentiment_score:.4f}")
 
-        # Even stricter thresholds with bias towards negative sentiment
-        if sentiment_score > 0.25:
+        # Adjusted thresholds with bias towards negative sentiment
+        if sentiment_score > 0.3:
             logger.info(f"Positive sentiment detected with score {sentiment_score:.4f}")
             return sentiment_score, 'positive'
-        elif sentiment_score < -0.05:  # Very sensitive to negative sentiment
+        elif sentiment_score < -0.1:  # More sensitive to negative sentiment
             logger.info(f"Negative sentiment detected with score {sentiment_score:.4f}")
             return sentiment_score, 'negative'
         else:
@@ -133,6 +125,28 @@ def process_articles():
             logger.info("No articles found needing sentiment analysis")
             return
 
+        # Define crypto assets and their tickers
+        crypto_assets = {
+            'bitcoin': 'BTC',
+            'btc': 'BTC',
+            'ethereum': 'ETH',
+            'eth': 'ETH',
+            'binance coin': 'BNB',
+            'bnb': 'BNB',
+            'cardano': 'ADA',
+            'ada': 'ADA',
+            'solana': 'SOL',
+            'sol': 'SOL',
+            'xrp': 'XRP',
+            'ripple': 'XRP',
+            'dogecoin': 'DOGE',
+            'doge': 'DOGE',
+            'polygon': 'MATIC',
+            'matic': 'MATIC',
+            'avalanche': 'AVAX',
+            'avax': 'AVAX'
+        }
+
         processed_count = 0
         for article in articles:
             try:
@@ -141,40 +155,25 @@ def process_articles():
                 # Combine title and content for better context
                 full_text = f"{article.title}. {article.content}"
 
-                # Define crypto assets and their tickers with variations
-                crypto_assets = {
-                    'bitcoin': 'BTC',
-                    'btc': 'BTC',
-                    'ethereum': 'ETH',
-                    'eth': 'ETH',
-                    'binance coin': 'BNB',
-                    'bnb': 'BNB',
-                    'cardano': 'ADA',
-                    'ada': 'ADA',
-                    'solana': 'SOL',
-                    'sol': 'SOL',
-                    'xrp': 'XRP',
-                    'ripple': 'XRP',
-                    'dogecoin': 'DOGE',
-                    'doge': 'DOGE',
-                    'polygon': 'MATIC',
-                    'matic': 'MATIC',
-                    'avalanche': 'AVAX',
-                    'avax': 'AVAX'
-                }
+                # Format content with bold assets and tickers
+                formatted_content = article.content
+                formatted_title = article.title
+
+                for asset, ticker in crypto_assets.items():
+                    # Create pattern that matches word boundaries
+                    pattern = re.compile(rf'\b{asset}\b', re.IGNORECASE)
+                    replacement = f'**{asset.title()}** (${ticker})'
+
+                    formatted_content = pattern.sub(replacement, formatted_content)
+                    formatted_title = pattern.sub(replacement, formatted_title)
+
+                article.content = formatted_content
+                article.title = formatted_title
 
                 # Analyze sentiment
                 score, label = analyze_sentiment(full_text)
                 article.sentiment_score = score
                 article.sentiment_label = label
-
-                # Format content with bold assets and tickers
-                formatted_content = article.content
-                for asset, ticker in crypto_assets.items():
-                    pattern = re.compile(rf'\b{asset}\b', re.IGNORECASE)
-                    formatted_content = pattern.sub(f'**{asset.title()}** (${ticker})', formatted_content)
-                
-                article.content = formatted_content
 
                 processed_count += 1
                 logger.info(f"Successfully processed article {article.id}: Sentiment={label} (score={score:.4f})")

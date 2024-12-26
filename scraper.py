@@ -39,7 +39,7 @@ def clean_html_content(html_content):
         soup = BeautifulSoup(html_content, 'html.parser')
 
         # Remove unwanted tags and their contents
-        for element in soup(["script", "style", "iframe", "form"]):
+        for element in soup(["script", "style", "iframe", "form", "nav", "header", "footer"]):
             element.decompose()
 
         # Replace <br> with newlines for better text flow
@@ -54,11 +54,14 @@ def clean_html_content(html_content):
         text = soup.get_text(separator=' ')
 
         # Clean up the text
-        text = re.sub(r'<[^>]+>', ' ', text)  # Replace HTML tags with space
-        text = text.replace('&nbsp;', ' ')
-        text = text.replace('&amp;', '&')
-        text = text.replace('&lt;', '<')
-        text = text.replace('&gt;', '>')
+        text = re.sub(r'<[^>]+>', '', text)  # Remove any remaining HTML tags
+        text = re.sub(r'&nbsp;', ' ', text)  # Replace HTML entities
+        text = re.sub(r'&amp;', '&', text)
+        text = re.sub(r'&lt;', '<', text)
+        text = re.sub(r'&gt;', '>', text)
+        text = re.sub(r'&quot;', '"', text)
+        text = re.sub(r'&#39;', "'", text)
+        text = re.sub(r'&[a-zA-Z]+;', '', text)  # Remove other HTML entities
         text = re.sub(r'\s+', ' ', text)  # Replace multiple spaces with single space
         text = re.sub(r'\n\s*\n', '\n', text)  # Replace multiple newlines
         text = text.strip()
