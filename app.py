@@ -3,6 +3,7 @@ from flask import Flask, render_template
 import logging
 from database import db
 from models import Article, CryptoPrice, NewsSourceMetrics
+import re
 
 app = Flask(__name__)
 
@@ -50,8 +51,22 @@ def dashboard():
             logger.error(f"Error fetching news sources: {str(e)}")
             news_sources = []
 
-        # Attach source metrics to articles for easy access in template
+        # Prepare articles with enhanced summaries
         for article in recent_articles:
+            # Create a copy of the summary for modification
+            enhanced_summary = article.summary
+
+            # Add crypto price tooltips to the summary
+            for crypto in crypto_prices:
+                if crypto.symbol.lower() in enhanced_summary.lower():
+                    tooltip_html = f'<span class="crypto-tooltip">{crypto.symbol}<span class="tooltip-content"><div class="tooltip-price">${crypto.price_usd:.2f}</div><div class="tooltip-change {("positive" if crypto.percent_change_24h > 0 else "negative")}">{crypto.percent_change_24h:.1f}% (24h)</div></span></span>'
+                    pattern = re.compile(re.escape(crypto.symbol), re.IGNORECASE)
+                    enhanced_summary = pattern.sub(tooltip_html, enhanced_summary)
+
+            # Store the enhanced summary in a new attribute
+            article.enhanced_summary = enhanced_summary
+
+            # Attach source metrics
             article.source_metrics = next(
                 (source for source in news_sources if source.source_name == article.source_name),
                 None

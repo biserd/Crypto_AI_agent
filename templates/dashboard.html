@@ -202,6 +202,70 @@
 .share-btn.linkedin {
     background: #0A66C2;
 }
+
+/* New tooltip styles */
+.crypto-tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    font-weight: bold;
+    color: #0d6efd;
+}
+
+.crypto-tooltip .tooltip-content {
+    visibility: hidden;
+    position: absolute;
+    z-index: 1000;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px;
+    background: linear-gradient(135deg, #2a2a72 0%, #009ffd 74%);
+    color: white;
+    border-radius: 8px;
+    width: 220px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    opacity: 0;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.crypto-tooltip:hover .tooltip-content {
+    visibility: visible;
+    opacity: 1;
+}
+
+.tooltip-content::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #009ffd transparent transparent transparent;
+}
+
+.tooltip-price {
+    font-size: 1.1em;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.tooltip-change {
+    font-size: 0.9em;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.tooltip-change.positive {
+    background-color: rgba(40, 167, 69, 0.2);
+    color: #98ff98;
+}
+
+.tooltip-change.negative {
+    background-color: rgba(220, 53, 69, 0.2);
+    color: #ffb6c1;
+}
 </style>
 
 <div class="row">
@@ -256,7 +320,9 @@
                     {% endif %}
                     - {{ article.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
                 </h6>
-                <p class="card-text">{{ article.summary }}</p>
+                <p class="card-text">
+                    {{ article.enhanced_summary|safe }}
+                </p>
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <span class="badge bg-secondary me-2">{{ article.category }}</span>
