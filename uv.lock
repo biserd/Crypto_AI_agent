@@ -945,6 +945,7 @@ dependencies = [
     { name = "schedule" },
     { name = "spacy" },
     { name = "sqlalchemy" },
+    { name = "stripe" },
     { name = "telegram" },
     { name = "trafilatura" },
     { name = "tweepy" },
@@ -969,6 +970,7 @@ requires-dist = [
     { name = "schedule", specifier = ">=1.2.2" },
     { name = "spacy", specifier = "==3.5.3" },
     { name = "sqlalchemy", specifier = ">=2.0.36" },
+    { name = "stripe", specifier = ">=11.4.1" },
     { name = "telegram", specifier = ">=0.0.1" },
     { name = "trafilatura", specifier = ">=2.0.0" },
     { name = "tweepy", specifier = ">=4.14.0" },
@@ -1189,6 +1191,19 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/95/3d/2dd76d2fd99f0fb632c40273755d99466bdee2aaebd40866507249debd43/srsly-2.5.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2a657d8c1486d47910868cfadd5a80cd77719c6228fed5b01b878329b95f0752", size = 1127978 },
     { url = "https://files.pythonhosted.org/packages/54/93/22d3f4d3c1d35d83f15f56a995777535288388f5e6161fbe36ac4bf466a5/srsly-2.5.0-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:9f4430fab1bd62fea7b23ad2bd7822bf80cdd4a75c7d051a555c69aa10f4bfdc", size = 1100354 },
     { url = "https://files.pythonhosted.org/packages/23/51/b448c7ffb15bf9e1af0369bdf3e00e87e893a9ea7fca7ea3f020af5a105a/srsly-2.5.0-cp313-cp313-win_amd64.whl", hash = "sha256:35fa3aadfc0d983e80fc5e0319825e91f792d13b414c1aff20cbbb47569d5109", size = 630642 },
+]
+
+[[package]]
+name = "stripe"
+version = "11.4.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/42/84/b72eeda51c6033e6a88c71de74de56e3a529a60728159e200b42220b21a9/stripe-11.4.1.tar.gz", hash = "sha256:7ddd251b622d490fe57d78487855dc9f4d95b1bb113607e81fd377037a133d5a", size = 1379118 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/70/a0/e416502214c2da3f78015956127e6e44ef789cfcfa7a78f6e564fc05d2c6/stripe-11.4.1-py2.py3-none-any.whl", hash = "sha256:8aa47a241de0355c383c916c4ef7273ab666f096a44ee7081e357db4a36f0cce", size = 1627969 },
 ]
 
 [[package]]
