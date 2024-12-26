@@ -21,32 +21,33 @@ def analyze_sentiment(text):
         # Enhanced crypto-specific sentiment words and phrases with weights
         positive_patterns = {
             # Price movements (weight: 1.0)
-            'surge': 1.0, 'rally': 1.0, 'jump': 1.0, 'gain': 1.0, 'soar': 1.0, 'rise': 1.0, 'climb': 1.0, 
-            'peak': 1.0, 'record high': 1.2,
+            'surge': 1.2, 'rally': 1.2, 'jump': 1.0, 'gain': 1.0, 'soar': 1.2, 'rise': 1.0, 'climb': 1.0, 
+            'peak': 1.0, 'record high': 1.5, 'breakout': 1.2, 'outperform': 1.2,
             # Market sentiment (weight: 1.2)
-            'bullish': 1.2, 'optimistic': 1.2, 'confident': 1.2, 'strong': 1.0, 'positive': 1.0, 
-            'opportunity': 1.0,
+            'bullish': 1.5, 'optimistic': 1.2, 'confident': 1.2, 'strong': 1.0, 'positive': 1.0, 
+            'opportunity': 1.0, 'support': 1.0,
             # Adoption/Development (weight: 1.5)
             'adoption': 1.5, 'partnership': 1.5, 'launch': 1.2, 'upgrade': 1.2, 'integration': 1.2, 
             'milestone': 1.2, 'development': 1.2, 'progress': 1.2, 'innovation': 1.5, 'breakthrough': 1.5,
-            'success': 1.2,
+            'success': 1.2, 'approval': 1.3,
         }
 
         negative_patterns = {
             # Price movements (weight: 1.5)
-            'crash': 1.5, 'plunge': 1.5, 'drop': 1.2, 'fall': 1.2, 'decline': 1.2, 'tumble': 1.5, 
-            'slump': 1.5, 'correction': 1.2,
+            'crash': 2.0, 'plunge': 1.8, 'drop': 1.2, 'fall': 1.2, 'decline': 1.2, 'tumble': 1.5, 
+            'slump': 1.5, 'correction': 1.2, 'collapse': 2.0, 'tank': 1.8,
             # Market sentiment (weight: 1.2)
-            'bearish': 1.2, 'pessimistic': 1.2, 'fear': 1.2, 'concern': 1.0, 'worry': 1.0, 
-            'uncertain': 1.0, 'volatile': 1.0,
+            'bearish': 1.5, 'pessimistic': 1.2, 'fear': 1.5, 'concern': 1.2, 'worry': 1.2, 
+            'uncertain': 1.0, 'volatile': 1.2, 'panic': 1.8,
             # Security/Risk (weight: 2.0)
             'hack': 2.0, 'breach': 2.0, 'scam': 2.0, 'fraud': 2.0, 'vulnerability': 1.5, 
-            'exploit': 1.5, 'risk': 1.2,
+            'exploit': 1.5, 'risk': 1.2, 'attack': 1.8,
             # Regulatory (weight: 1.5)
-            'ban': 1.5, 'restrict': 1.5, 'crack down': 1.5, 'investigate': 1.2, 'sue': 1.5, 
-            'lawsuit': 1.5, 'illegal': 1.5,
+            'ban': 1.8, 'restrict': 1.5, 'crack down': 1.8, 'investigate': 1.2, 'sue': 1.5, 
+            'lawsuit': 1.5, 'illegal': 1.5, 'regulation': 1.2,
             # Market problems (weight: 1.8)
-            'sell-off': 1.8, 'dump': 1.8, 'liquidation': 1.8, 'margin call': 1.8, 'default': 1.8
+            'sell-off': 1.8, 'dump': 1.8, 'liquidation': 1.8, 'margin call': 1.8, 'default': 1.8,
+            'loss': 1.5, 'bearish': 1.5
         }
 
         if not text or len(text.strip()) == 0:
@@ -65,25 +66,28 @@ def analyze_sentiment(text):
                 continue
 
             has_negation = any(neg in sentence for neg in {'not', 'no', "n't", 'never', 'without', 'rarely'})
+            logger.debug(f"Analyzing sentence: '{sentence.strip()}', has_negation: {has_negation}")
 
             # Calculate weighted sentiment scores
             for pattern, weight in positive_patterns.items():
                 if pattern in sentence:
                     if has_negation:
                         weighted_neg_score += weight
+                        logger.debug(f"Found negated positive pattern '{pattern}' (weight: {weight}) in sentence")
                     else:
                         weighted_pos_score += weight
+                        logger.debug(f"Found positive pattern '{pattern}' (weight: {weight}) in sentence")
                     total_matches += 1
-                    logger.debug(f"Found positive pattern '{pattern}' (weight: {weight}) in sentence")
 
             for pattern, weight in negative_patterns.items():
                 if pattern in sentence:
                     if has_negation:
                         weighted_pos_score += weight * 0.5  # Negated negative is less positive
+                        logger.debug(f"Found negated negative pattern '{pattern}' (weight: {weight}) in sentence")
                     else:
                         weighted_neg_score += weight
+                        logger.debug(f"Found negative pattern '{pattern}' (weight: {weight}) in sentence")
                     total_matches += 1
-                    logger.debug(f"Found negative pattern '{pattern}' (weight: {weight}) in sentence")
 
         if total_matches == 0:
             logger.debug("No sentiment patterns found in text")
@@ -96,8 +100,8 @@ def analyze_sentiment(text):
                     f"negative={weighted_neg_score}, total_matches={total_matches}, "
                     f"score={sentiment_score:.4f}")
 
-        # Adjusted thresholds with bias towards negative sentiment
-        if sentiment_score > 0.3:
+        # Adjusted thresholds with higher sensitivity to negative sentiment
+        if sentiment_score > 0.2:  # Lowered threshold for positive sentiment
             logger.info(f"Positive sentiment detected with score {sentiment_score:.4f}")
             return sentiment_score, 'positive'
         elif sentiment_score < -0.1:  # More sensitive to negative sentiment
