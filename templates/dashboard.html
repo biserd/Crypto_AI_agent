@@ -44,6 +44,30 @@
     background-color: rgba(220, 53, 69, 0.1);
 }
 
+.btn-buy {
+    background: linear-gradient(90deg, #28a745 0%, #34ce57 100%);
+    color: white;
+    border: none;
+    transition: opacity 0.3s;
+}
+
+.btn-buy:hover {
+    opacity: 0.9;
+    color: white;
+}
+
+.btn-sell {
+    background: linear-gradient(90deg, #dc3545 0%, #e4606d 100%);
+    color: white;
+    border: none;
+    transition: opacity 0.3s;
+}
+
+.btn-sell:hover {
+    opacity: 0.9;
+    color: white;
+}
+
 .crypto-prices {
     display: flex;
     flex-wrap: wrap;
@@ -93,6 +117,12 @@
     margin-top: 0.5rem;
     font-size: 0.9rem;
     color: #6c757d;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
 }
 </style>
 
@@ -163,7 +193,22 @@
                             </span>
                         {% endif %}
                     </div>
-                    <a href="{{ article.source_url }}" class="btn btn-primary btn-sm" target="_blank">Read More</a>
+                    <div class="action-buttons">
+                        {% if article.sentiment_label == 'positive' %}
+                            {% for crypto in ['BTC', 'ETH', 'BNB', 'ADA', 'SOL', 'XRP', 'DOGE', 'MATIC', 'AVAX'] %}
+                                {% if crypto.lower() in article.content.lower() or crypto in article.content %}
+                                    <button class="btn btn-sm btn-buy">Buy {{ crypto }}</button>
+                                {% endif %}
+                            {% endfor %}
+                        {% elif article.sentiment_label == 'negative' %}
+                            {% for crypto in ['BTC', 'ETH', 'BNB', 'ADA', 'SOL', 'XRP', 'DOGE', 'MATIC', 'AVAX'] %}
+                                {% if crypto.lower() in article.content.lower() or crypto in article.content %}
+                                    <button class="btn btn-sm btn-sell">Sell {{ crypto }}</button>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                        <a href="{{ article.source_url }}" class="btn btn-primary btn-sm" target="_blank">Read More</a>
+                    </div>
                 </div>
             </div>
         </div>
