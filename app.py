@@ -292,6 +292,14 @@ def create_checkout_session():
     except Exception as e:
         return jsonify({'error': str(e)}), 403
 
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
+@app.route('/contact')
+def contact():
+    return render_template('contact.html')
+
 @app.route('/success')
 def success():
     session_id = request.args.get('session_id')

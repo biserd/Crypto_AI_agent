@@ -424,8 +424,19 @@ updateLastRunTime();
             {% for price in crypto_prices %}
                 <a href="/crypto/{{ price.symbol }}" class="text-decoration-none">
                     <div class="crypto-tooltip crypto-price {% if price.percent_change_24h > 0 %}price-up{% else %}price-down{% endif %}">
-                        {{ price.symbol }}: ${{ "%.2f"|format(price.price_usd) }}
-                        <small>({{ "%.1f"|format(price.percent_change_24h) }}%)</small>
+                        {% set currency_names = {
+                        'BTC': 'Bitcoin',
+                        'ETH': 'Ethereum',
+                        'BNB': 'Binance Coin',
+                        'ADA': 'Cardano',
+                        'SOL': 'Solana',
+                        'XRP': 'Ripple',
+                        'DOGE': 'Dogecoin',
+                        'MATIC': 'Polygon',
+                        'AVAX': 'Avalanche'
+                    } %}
+                    {{ currency_names[price.symbol] }} ({{ price.symbol }}): ${{ "%.2f"|format(price.price_usd) }}
+                    <small>({{ "%.1f"|format(price.percent_change_24h) }}%)</small>
                         <div class="tooltip-content">
                             <span class="tooltip-price">${{ "%.2f"|format(price.price_usd) }}</span>
                             <span class="tooltip-change {% if price.percent_change_24h > 0 %}positive{% else %}negative{% endif %}">
