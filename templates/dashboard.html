@@ -1,6 +1,33 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+.sentiment-indicator {
+    padding: 0.5rem;
+    border-radius: 4px;
+    color: white;
+    font-weight: bold;
+}
+
+.sentiment-positive {
+    background: linear-gradient(90deg, #28a745 0%, #34ce57 100%);
+}
+
+.sentiment-negative {
+    background: linear-gradient(90deg, #dc3545 0%, #e4606d 100%);
+}
+
+.sentiment-neutral {
+    background: linear-gradient(90deg, #ffc107 0%, #ffcd39 100%);
+    color: #000;
+}
+
+.sentiment-score {
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+}
+</style>
+
 <div class="row">
     <div class="col-12">
         <h1 class="mb-4">Recent Articles</h1>
@@ -15,15 +42,13 @@
                     <div>
                         <span class="badge bg-secondary me-2">{{ article.category }}</span>
                         {% if article.sentiment_label %}
-                            <span class="badge 
-                                {% if article.sentiment_label == 'positive' %}
-                                    bg-success
-                                {% elif article.sentiment_label == 'negative' %}
-                                    bg-danger
-                                {% else %}
-                                    bg-warning
-                                {% endif %}">
+                            <span class="sentiment-indicator sentiment-{{ article.sentiment_label.lower() }}">
                                 {{ article.sentiment_label|title }}
+                                <span class="sentiment-score">
+                                    {% if article.sentiment_score %}
+                                        {{ "%.2f"|format(article.sentiment_score) }}
+                                    {% endif %}
+                                </span>
                             </span>
                         {% endif %}
                     </div>
