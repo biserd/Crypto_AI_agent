@@ -16,6 +16,10 @@ logger = logging.getLogger(__name__)
 def analyze_sentiment(text):
     """Analyze sentiment using crypto-specific lexicon and contextual analysis"""
     try:
+        if not text or not isinstance(text, str):
+            logger.warning("Invalid text input for sentiment analysis")
+            return 0.0, 'neutral'
+
         logger.debug(f"Starting sentiment analysis for text (length: {len(text)})")
 
         # Enhanced crypto-specific sentiment words and phrases with weights
@@ -50,12 +54,10 @@ def analyze_sentiment(text):
             'loss': 1.5, 'bearish': 1.5
         }
 
-        if not text or len(text.strip()) == 0:
-            logger.warning("Empty text provided for sentiment analysis")
-            return 0.0, 'neutral'
-
+        # Clean and normalize text
         text = text.lower()
-        sentences = text.split('.')
+        text = re.sub(r'[^\w\s-]', ' ', text)  # Remove special characters except hyphens
+        sentences = [s.strip() for s in text.split('.') if s.strip()]
 
         weighted_pos_score = 0
         weighted_neg_score = 0
@@ -73,20 +75,20 @@ def analyze_sentiment(text):
                 if pattern in sentence:
                     if has_negation:
                         weighted_neg_score += weight
-                        logger.debug(f"Found negated positive pattern '{pattern}' (weight: {weight}) in sentence")
+                        logger.debug(f"Found negated positive pattern '{pattern}' (weight: {weight})")
                     else:
                         weighted_pos_score += weight
-                        logger.debug(f"Found positive pattern '{pattern}' (weight: {weight}) in sentence")
+                        logger.debug(f"Found positive pattern '{pattern}' (weight: {weight})")
                     total_matches += 1
 
             for pattern, weight in negative_patterns.items():
                 if pattern in sentence:
                     if has_negation:
                         weighted_pos_score += weight * 0.5  # Negated negative is less positive
-                        logger.debug(f"Found negated negative pattern '{pattern}' (weight: {weight}) in sentence")
+                        logger.debug(f"Found negated negative pattern '{pattern}' (weight: {weight})")
                     else:
                         weighted_neg_score += weight
-                        logger.debug(f"Found negative pattern '{pattern}' (weight: {weight}) in sentence")
+                        logger.debug(f"Found negative pattern '{pattern}' (weight: {weight})")
                     total_matches += 1
 
         if total_matches == 0:
@@ -96,9 +98,11 @@ def analyze_sentiment(text):
         # Calculate weighted sentiment score
         sentiment_score = (weighted_pos_score - weighted_neg_score) / max(total_matches, 1)
 
-        logger.debug(f"Sentiment analysis results: positive={weighted_pos_score}, "
-                    f"negative={weighted_neg_score}, total_matches={total_matches}, "
-                    f"score={sentiment_score:.4f}")
+        logger.debug(f"Final sentiment analysis results:"
+                    f"\n- Positive score: {weighted_pos_score}"
+                    f"\n- Negative score: {weighted_neg_score}"
+                    f"\n- Total matches: {total_matches}"
+                    f"\n- Final score: {sentiment_score:.4f}")
 
         # Adjusted thresholds with higher sensitivity to negative sentiment
         if sentiment_score > 0.2:  # Lowered threshold for positive sentiment
@@ -112,7 +116,7 @@ def analyze_sentiment(text):
             return sentiment_score, 'neutral'
 
     except Exception as e:
-        logger.error(f"Error in sentiment analysis: {str(e)}")
+        logger.error(f"Error in sentiment analysis: {str(e)}", exc_info=True)
         return 0.0, 'neutral'
 
 def process_articles():
@@ -154,9 +158,16 @@ def process_articles():
         }
 
         processed_count = 0
+        error_count = 0
+
         for article in articles:
             try:
                 logger.debug(f"Processing article {article.id}: {article.title}")
+
+                # Validate content
+                if not article.content or not isinstance(article.content, str):
+                    logger.warning(f"Invalid content for article {article.id}")
+                    continue
 
                 # Combine title and content for better context
                 full_text = f"{article.title}. {article.content}"
@@ -173,6 +184,7 @@ def process_articles():
                     formatted_content = pattern.sub(replacement, formatted_content)
                     formatted_title = pattern.sub(replacement, formatted_title)
 
+                # Update article content
                 article.content = formatted_content
                 article.title = formatted_title
 
@@ -185,18 +197,21 @@ def process_articles():
                 logger.info(f"Successfully processed article {article.id}: Sentiment={label} (score={score:.4f})")
 
             except Exception as e:
-                logger.error(f"Error processing article {article.id}: {str(e)}")
+                error_count += 1
+                logger.error(f"Error processing article {article.id}: {str(e)}", exc_info=True)
                 continue
 
         # Commit all changes
         if processed_count > 0:
             db.session.commit()
             logger.info(f"Successfully processed and committed {processed_count} articles")
+            if error_count > 0:
+                logger.warning(f"Encountered {error_count} errors during processing")
         else:
             logger.info("No articles were processed successfully")
 
     except Exception as e:
-        logger.error(f"Error in process_articles: {str(e)}")
+        logger.error(f"Error in process_articles: {str(e)}", exc_info=True)
         db.session.rollback()
         raise
 

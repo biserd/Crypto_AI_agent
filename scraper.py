@@ -14,7 +14,6 @@ import re
 from html.parser import HTMLParser
 from html.parser import HTMLParser as HTMLParser2 # Added to resolve Comment ambiguity
 
-
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -40,12 +39,14 @@ class MLStripper(HTMLParser2):
 def strip_tags(html):
     """Strip HTML tags from content"""
     try:
+        if not html:
+            return ""
         s = MLStripper()
         s.feed(html)
         return s.get_data()
     except Exception as e:
         logger.error(f"Error stripping HTML tags: {str(e)}")
-        return html
+        return re.sub(r'<[^>]+>', '', html)  # Fallback to regex cleaning
 
 def clean_html_content(html_content):
     """Clean HTML content and extract readable text with enhanced cleaning"""
@@ -57,16 +58,19 @@ def clean_html_content(html_content):
 
         # First try trafilatura for better content extraction
         try:
-            cleaned_text = trafilatura.extract(html_content)
-            if cleaned_text:
+            downloaded = trafilatura.extract(html_content, include_links=False, include_images=False, 
+                                          include_tables=False, no_fallback=False)
+            if downloaded:
+                cleaned_text = downloaded.strip()
                 logger.debug("Successfully cleaned content using trafilatura")
-                return cleaned_text.strip()
+                return cleaned_text
         except Exception as e:
             logger.warning(f"Trafilatura extraction failed: {str(e)}, falling back to BeautifulSoup")
 
         # Fallback to BeautifulSoup if trafilatura fails
         # Remove problematic unicode characters
         html_content = html_content.replace('\xa0', ' ')
+        html_content = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]', '', html_content)
 
         # Parse with BeautifulSoup
         try:
@@ -75,11 +79,20 @@ def clean_html_content(html_content):
             logger.error(f"BeautifulSoup parsing failed: {str(e)}")
             return strip_tags(html_content)
 
+        # Remove all comments first
+        try:
+            for comment in soup.find_all(string=lambda text: isinstance(text, Comment)):
+                comment.extract()
+        except Exception as e:
+            logger.warning(f"Error removing HTML comments: {str(e)}")
+
         # Remove unwanted tags and their contents
         unwanted_tags = [
             "script", "style", "iframe", "form", "nav", "header", "footer",
-            "aside", "noscript", "figure", "figcaption", "time", "button"
+            "aside", "noscript", "figure", "figcaption", "time", "button",
+            "meta", "link", "img", "svg", "path", "source", "picture"
         ]
+
         for tag in unwanted_tags:
             for element in soup.find_all(tag):
                 try:
@@ -87,18 +100,10 @@ def clean_html_content(html_content):
                 except Exception as e:
                     logger.warning(f"Error removing {tag} tag: {str(e)}")
 
-        # Remove all HTML comments
-        try:
-            for comment in soup.find_all(text=lambda text: isinstance(text, Comment)):
-                comment.extract()
-        except Exception as e:
-            logger.warning(f"Error removing HTML comments: {str(e)}")
-
-        # Replace <br> with newlines for better text flow
+        # Replace breaks and paragraphs with newlines
         for br in soup.find_all("br"):
             br.replace_with("\n")
 
-        # Replace paragraph tags with double newlines for better readability
         for p in soup.find_all("p"):
             p.replace_with(f"\n{p.get_text()}\n")
 
@@ -117,7 +122,11 @@ def clean_html_content(html_content):
 
     except Exception as e:
         logger.error(f"Error cleaning HTML content: {str(e)}")
-        return strip_tags(html_content)  # Return stripped content as fallback
+        # Last resort: try simple tag stripping
+        cleaned = strip_tags(html_content)
+        if cleaned:
+            return cleaned.strip()
+        return ""  # Return empty string if all cleaning methods fail
 
 def create_session():
     """Create a requests session with advanced retry strategy"""

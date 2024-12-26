@@ -19,39 +19,46 @@ def run_pipeline():
                 price_tracker.fetch_current_prices()
                 logging.info("Updated cryptocurrency prices")
             except Exception as e:
-                logging.error(f"Price tracking failed: {str(e)}")
+                logging.error(f"Price tracking failed: {str(e)}", exc_info=True)
 
             # Run scraper
             try:
+                logging.info("Starting article scraping process")
                 articles_added = scrape_articles()
-                logging.info(f"Scraper added {articles_added} new articles")
+                logging.info(f"Scraper completed: {articles_added} new articles added")
             except Exception as e:
-                logging.error(f"Scraping failed: {str(e)}")
+                logging.error(f"Scraping failed: {str(e)}", exc_info=True)
                 articles_added = 0
 
             # Process articles
             try:
-                logging.info("Processing articles for sentiment analysis")
-                process_articles()
+                if articles_added > 0:
+                    logging.info("Starting sentiment analysis for new articles")
+                    process_articles()
+                    logging.info("Completed sentiment analysis processing")
+                else:
+                    logging.info("No new articles to process for sentiment")
             except Exception as e:
-                logging.error(f"Sentiment analysis failed: {str(e)}")
+                logging.error(f"Sentiment analysis failed: {str(e)}", exc_info=True)
 
             # Only distribute if we have new articles
             if articles_added > 0:
                 try:
-                    logging.info("Distributing processed articles")
+                    logging.info("Starting article distribution")
                     distribute_articles()
+                    logging.info("Completed article distribution")
                 except Exception as e:
-                    logging.error(f"Distribution failed: {str(e)}")
+                    logging.error(f"Distribution failed: {str(e)}", exc_info=True)
 
             logging.info("Completed news pipeline")
         except Exception as e:
-            logging.error(f"Pipeline error: {str(e)}")
+            logging.error(f"Pipeline error: {str(e)}", exc_info=True)
 
 def start_scheduler():
     """Initialize and start the scheduler with proper error handling"""
+    # Configure logging with more detail
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.DEBUG,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
 
@@ -62,7 +69,7 @@ def start_scheduler():
         logging.info("Running initial pipeline")
         run_pipeline()
     except Exception as e:
-        logging.error(f"Initial pipeline run failed: {str(e)}")
+        logging.error(f"Initial pipeline run failed: {str(e)}", exc_info=True)
 
     # Schedule regular runs
     schedule.every(15).minutes.do(run_pipeline)
@@ -73,7 +80,7 @@ def start_scheduler():
             schedule.run_pending()
             time.sleep(60)
         except Exception as e:
-            logging.error(f"Scheduler error: {str(e)}")
+            logging.error(f"Scheduler error: {str(e)}", exc_info=True)
             time.sleep(60)
             continue
 
