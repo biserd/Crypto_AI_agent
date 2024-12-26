@@ -434,7 +434,7 @@
         {% for article in articles %}
         <div class="card mb-3">
             <div class="card-body">
-                <h5 class="card-title">{{ article.title.replace('**', '').replace('($ADA)', '').replace('($Ada)', '') }}</h5>
+                <h5 class="card-title">{{ article.title.replace('**', '').replace('($BTC)', '').replace('($Btc)', '').replace('($ADA)', '').replace('($Ada)', '').replace('($ETH)', '').replace('($AVAX)', '').replace('($SOL)', '').replace('($XRP)', '').replace('($MATIC)', '').replace('($DOGE)', '').replace('($BNB)', '') }}</h5>
                 <h6 class="card-subtitle mb-2 text-muted">
                     {{ article.source_name }}
                     {% if article.source_metrics %}
@@ -492,7 +492,7 @@
                 <div class="social-preview twitter">
                     <h5>Twitter Preview</h5>
                     <div class="social-preview-content">
-                        <h6>{{ article.title.replace('**', '').replace('($ADA)', '').replace('($Ada)', '') }}</h6>
+                        <h6>{{ article.title.replace('**', '').replace('($BTC)', '').replace('($Btc)', '').replace('($ADA)', '').replace('($Ada)', '').replace('($ETH)', '').replace('($AVAX)', '').replace('($SOL)', '').replace('($XRP)', '').replace('($MATIC)', '').replace('($DOGE)', '').replace('($BNB)', '') }}</h6>
                         <p>{{ article.summary[:140] }}...</p>
                         <div class="share-buttons">
                             <button class="share-btn twitter" onclick="shareOnTwitter('{{ article.title.replace('**', '').replace('($ADA)', '').replace('($Ada)', '') }}', '{{ article.source_url }}')">
@@ -506,7 +506,7 @@
                 <div class="social-preview linkedin">
                     <h5>LinkedIn Preview</h5>
                     <div class="social-preview-content">
-                        <h6>{{ article.title.replace('**', '').replace('($ADA)', '').replace('($Ada)', '') }}</h6>
+                        <h6>{{ article.title.replace('**', '').replace('($BTC)', '').replace('($Btc)', '').replace('($ADA)', '').replace('($Ada)', '').replace('($ETH)', '').replace('($AVAX)', '').replace('($SOL)', '').replace('($XRP)', '').replace('($MATIC)', '').replace('($DOGE)', '').replace('($BNB)', '') }}</h6>
                         <p>{{ article.summary }}</p>
                         <div class="share-buttons">
                             <button class="share-btn linkedin" onclick="shareOnLinkedIn('{{ article.title.replace('**', '').replace('($ADA)', '').replace('($Ada)', '') }}', '{{ article.summary }}', '{{ article.source_url }}')">
