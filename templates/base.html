@@ -163,18 +163,9 @@
                 if (session.error) {
                     throw new Error(session.error);
                 }
-                
-                if (!session.id) {
-                    throw new Error('No session ID received');
-                }
 
-                const result = await stripe.redirectToCheckout({
-                    sessionId: session.id
-                });
-                
-                if (result.error) {
-                    throw new Error(result.error.message);
-                }
+                // Open Stripe checkout in the current window
+                window.top.location.href = session.url;
             } catch (error) {
                 console.error('Payment error:', error);
                 alert(error.message || 'Something went wrong with the payment process.');
