@@ -145,7 +145,7 @@ def create_session():
 SOURCES = [
     NewsSource(
         "CoinDesk",
-        "https://www.coindesk.com/arc/outboundfeeds/rss",
+        "https://www.coindesk.com/arc/outboundfeeds/rss/",
         is_rss=True
     ),
     NewsSource(
@@ -208,9 +208,17 @@ def scrape_rss_feed(source):
             response = session.get(source.url, timeout=10)
             response.raise_for_status()
             feed = feedparser.parse(response.content)
+            
+            if not feed or not hasattr(feed, 'entries'):
+                logger.error(f"Invalid feed structure from {source.name}")
+                return 0
 
             if feed.bozo:
                 logger.error(f"Error parsing RSS feed for {source.name}: {feed.bozo_exception}")
+                return 0
+
+            if 'status' in feed and feed.status != 200:
+                logger.error(f"Feed status error for {source.name}: {feed.status}")
                 return 0
                 
             if not hasattr(feed, 'entries'):
