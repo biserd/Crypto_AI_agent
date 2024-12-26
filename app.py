@@ -15,6 +15,9 @@ from datetime import datetime, timedelta
 import stripe
 from datetime import datetime
 
+# Create Flask app
+
+
 # Initialize last run time in app config
 app.config['LAST_SCRAPER_RUN'] = datetime.utcnow()
 
@@ -25,8 +28,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
-socketio = SocketIO(app, async_mode='eventlet', cors_allowed_origins="*")
+
 
 # Stripe configuration
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
