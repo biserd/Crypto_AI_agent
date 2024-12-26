@@ -113,7 +113,7 @@
     <script src="https://js.stripe.com/v3/"></script>
     <script>
         let stripe;
-        
+
         function showUpgradeModal() {
             document.getElementById('upgradeModal').style.display = 'block';
         }
@@ -122,22 +122,25 @@
             document.getElementById('upgradeModal').style.display = 'none';
         }
 
-        async function initializeStripe() {
+        async function fetchSubscriptionStatus() {
             try {
-                const response = await fetch('/stripe-config');
-                const config = await response.json();
-                stripe = Stripe(config.publishableKey);
+                const response = await fetch('/subscription/status');
+                const data = await response.json();
+                const badge = document.getElementById('subscriptionStatus');
+                badge.className = `subscription-badge ${data.tier}`;
+                badge.innerHTML = data.tier === 'basic' ? 'Upgrade to Pro' : 'Pro Plan';
             } catch (error) {
-                console.error('Error initializing Stripe:', error);
+                console.error('Error fetching subscription:', error);
             }
         }
 
         async function processUpgrade() {
-            if (!stripe) {
-                await initializeStripe();
-            }
-            
             try {
+                if (!stripe) {
+                    const config = await fetch('/stripe-config').then(r => r.json());
+                    stripe = Stripe(config.publishableKey);
+                }
+
                 const response = await fetch('/create-checkout-session', {
                     method: 'POST',
                 });
@@ -148,12 +151,12 @@
                     return;
                 }
                 
-                const result = await stripe.redirectToCheckout({
+                const { error } = await stripe.redirectToCheckout({
                     sessionId: session.id
                 });
                 
-                if (result.error) {
-                    alert(result.error.message);
+                if (error) {
+                    alert(error.message);
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -161,8 +164,8 @@
             }
         }
 
-        // Initialize Stripe when page loads
-        initializeStripe();
+        // Initialize subscription status when page loads
+        document.addEventListener('DOMContentLoaded', fetchSubscriptionStatus);
     </script>
     // Fetch subscription status on page load
     document.addEventListener('DOMContentLoaded', function() {
