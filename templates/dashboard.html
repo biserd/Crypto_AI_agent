@@ -371,25 +371,25 @@
 }
 </style>
 
-<div class="last-run-timer">
-    Last scraper run: <span id="lastRunTime"></span>
+<div class="news-feed-header text-center mb-4">
+    <h2>Real-Time News Feed</h2>
+    <div class="d-flex justify-content-center align-items-center mt-2">
+        <div class="live-indicator me-3">
+            <div class="live-dot"></div>
+            <span>LIVE</span>
+        </div>
+        <div class="last-run-timer">
+            Last scraper run: <span id="lastRunTime"></span>
+        </div>
+    </div>
 </div>
 <script>
 function updateLastRunTime() {
     const lastRun = new Date('{{ last_scraper_run.isoformat() }}');
     const now = new Date();
     const diff = Math.floor((now - lastRun) / 1000);
-    
-    let text = '';
-    if (diff < 60) {
-        text = `${diff} seconds ago`;
-    } else if (diff < 3600) {
-        text = `${Math.floor(diff/60)} minutes ago`;
-    } else {
-        text = `${Math.floor(diff/3600)} hours ago`;
-    }
-    
-    document.getElementById('lastRunTime').textContent = text;
+    const minutes = Math.floor(Math.abs(diff) / 60);
+    document.getElementById('lastRunTime').textContent = `${minutes} minutes ago`;
 }
 
 setInterval(updateLastRunTime, 1000);
