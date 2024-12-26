@@ -210,6 +210,9 @@
     cursor: pointer;
     font-weight: bold;
     color: #0d6efd;
+    padding: 2px 4px;
+    border-radius: 4px;
+    background-color: rgba(13, 110, 253, 0.1);
 }
 
 .crypto-tooltip .tooltip-content {
@@ -219,14 +222,17 @@
     bottom: 125%;
     left: 50%;
     transform: translateX(-50%);
-    padding: 10px;
-    background: linear-gradient(135deg, #2a2a72 0%, #009ffd 74%);
-    color: white;
+    padding: 12px;
+    background: #fff;
+    color: #333;
     border-radius: 8px;
-    width: 220px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    width: 180px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
     opacity: 0;
     transition: opacity 0.3s, visibility 0.3s;
+    font-weight: normal;
+    text-align: center;
+    border: 1px solid rgba(0,0,0,0.1);
 }
 
 .crypto-tooltip:hover .tooltip-content {
@@ -242,29 +248,32 @@
     margin-left: -5px;
     border-width: 5px;
     border-style: solid;
-    border-color: #009ffd transparent transparent transparent;
+    border-color: #fff transparent transparent transparent;
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.1));
 }
 
 .tooltip-price {
-    font-size: 1.1em;
+    font-size: 1.2em;
     font-weight: bold;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+    color: #2a2a72;
 }
 
 .tooltip-change {
     font-size: 0.9em;
-    padding: 2px 6px;
+    padding: 4px 8px;
     border-radius: 4px;
+    display: inline-block;
 }
 
 .tooltip-change.positive {
-    background-color: rgba(40, 167, 69, 0.2);
-    color: #98ff98;
+    background-color: rgba(40, 167, 69, 0.1);
+    color: #28a745;
 }
 
 .tooltip-change.negative {
-    background-color: rgba(220, 53, 69, 0.2);
-    color: #ffb6c1;
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
 }
 </style>
 
