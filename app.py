@@ -23,7 +23,7 @@ app = Flask(__name__)
 socketio = SocketIO(app, async_mode='eventlet', cors_allowed_origins="*")
 
 # Configuration
-app.secret_key = os.urandom(24)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", os.urandom(24))
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
@@ -166,10 +166,26 @@ def handle_connect():
 def handle_disconnect():
     logger.info("Client disconnected from WebSocket")
 
+def sync_article_counts():
+    """Synchronize article counts with actual numbers in database"""
+    try:
+        with app.app_context():
+            sources = NewsSourceMetrics.query.all()
+            for source in sources:
+                count = Article.query.filter_by(source_name=source.name).count()
+                source.article_count = count
+                logger.info(f"Syncing article count for {source.name}: {count}")
+            db.session.commit()
+            logger.info("Successfully synchronized all article counts")
+    except Exception as e:
+        logger.error(f"Error syncing article counts: {str(e)}")
+        db.session.rollback()
+
 with app.app_context():
     try:
         db.create_all()
-        logger.info("Successfully created database tables")
+        sync_article_counts()  # Sync counts on startup
+        logger.info("Successfully created database tables and synced counts")
     except Exception as e:
         logger.error(f"Error creating database tables: {str(e)}")
 

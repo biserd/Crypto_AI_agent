@@ -163,10 +163,13 @@ SOURCES = [
 def init_source_metrics(source_name):
     """Initialize or get source metrics with proper error handling"""
     try:
+        # Start a new transaction
+        existing_count = Article.query.filter_by(source_name=source_name).count()
+        logger.info(f"Found {existing_count} existing articles for {source_name}")
+
         source_metrics = NewsSourceMetrics.query.filter_by(source_name=source_name).first()
         if not source_metrics:
-            # Count existing articles for this source
-            existing_count = Article.query.filter_by(source_name=source_name).count()
+            # Create new metrics if none exist
             source_metrics = NewsSourceMetrics(
                 source_name=source_name,
                 trust_score=70.0,  # Default initial trust score
@@ -175,9 +178,17 @@ def init_source_metrics(source_name):
                 last_updated=datetime.utcnow()
             )
             db.session.add(source_metrics)
-            db.session.commit()
             logger.info(f"Created new source metrics for {source_name} with initial count {existing_count}")
+        else:
+            # Update existing metrics with correct count
+            source_metrics.article_count = existing_count
+            source_metrics.last_updated = datetime.utcnow()
+            logger.info(f"Updated existing source metrics for {source_name}, count: {existing_count}")
+
+        # Commit changes immediately
+        db.session.commit()
         return source_metrics
+
     except Exception as e:
         logger.error(f"Error initializing source metrics for {source_name}: {str(e)}")
         db.session.rollback()
@@ -291,6 +302,10 @@ def scrape_articles():
     """Scrape articles from cryptocurrency news sources"""
     logger.info("Starting article scraping")
     total_articles_added = 0
+
+    # First, ensure all sources have metrics initialized
+    for source in SOURCES:
+        init_source_metrics(source.name)
 
     for source in SOURCES:
         try:
