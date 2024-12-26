@@ -16,7 +16,8 @@ import stripe
 from datetime import datetime
 
 # Create Flask app
-
+app = Flask(__name__)
+socketio = SocketIO(app, async_mode='eventlet', cors_allowed_origins="*")
 
 # Initialize last run time in app config
 app.config['LAST_SCRAPER_RUN'] = datetime.utcnow()
