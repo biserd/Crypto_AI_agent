@@ -76,7 +76,7 @@
     background: #f8f9fa;
     border-radius: 8px;
     margin-bottom: 1rem;
-    position: relative; 
+    position: relative;
     z-index: 1; /* Added for better stacking */
 }
 
@@ -236,6 +236,7 @@
     border: 1px solid rgba(0,0,0,0.1);
     margin-bottom: 8px;
     pointer-events: none;
+    transition: opacity 0.2s ease-in-out;
 }
 
 .crypto-tooltip:hover .tooltip-content {
@@ -244,6 +245,7 @@
 }
 
 .tooltip-price {
+    display: block;
     font-size: 1.2em;
     font-weight: bold;
     margin-bottom: 8px;
@@ -276,6 +278,11 @@
 .card {
     position: relative;
     z-index: 1;
+}
+
+.crypto-prices {
+    position: relative;
+    z-index: 2;
 }
 </style>
 

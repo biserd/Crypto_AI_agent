@@ -6,6 +6,13 @@ from models import Article, CryptoPrice, NewsSourceMetrics
 import re
 from markupsafe import escape, Markup
 
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 app = Flask(__name__)
 
 # Configuration
@@ -16,13 +23,8 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_pre_ping": True,
 }
 
-# Configure logging
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
-
 db.init_app(app)
 
-# Routes
 @app.route('/')
 def dashboard():
     try:
@@ -67,16 +69,17 @@ def dashboard():
                         # Create tooltip HTML with Markup to prevent double-escaping
                         tooltip_html = Markup(
                             f'<span class="crypto-tooltip">{crypto.symbol}'
-                            f'<span class="tooltip-content">'
-                            f'<div class="tooltip-price">${crypto.price_usd:.2f}</div>'
-                            f'<div class="tooltip-change {("positive" if crypto.percent_change_24h > 0 else "negative")}">'
-                            f'{crypto.percent_change_24h:.1f}% (24h)</div>'
-                            f'</span></span>'
+                            f'<div class="tooltip-content">'
+                            f'<span class="tooltip-price">${crypto.price_usd:.2f}</span>'
+                            f'<span class="tooltip-change {("positive" if crypto.percent_change_24h > 0 else "negative")}">'
+                            f'{crypto.percent_change_24h:.1f}%</span>'
+                            f'</div></span>'
                         )
 
                         pattern = re.compile(re.escape(crypto.symbol), re.IGNORECASE)
-                        enhanced_summary = Markup(pattern.sub(tooltip_html, str(enhanced_summary)))
+                        enhanced_summary = Markup(pattern.sub(str(tooltip_html), str(enhanced_summary)))
                         logger.debug(f"Added tooltip for {crypto.symbol} in article {article.id}")
+                        logger.debug(f"Generated tooltip HTML: {tooltip_html}")
 
                 # Store the enhanced summary in a new attribute
                 article.enhanced_summary = enhanced_summary
