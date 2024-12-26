@@ -151,7 +151,7 @@ def create_session():
 SOURCES = [
     NewsSource(
         "CoinDesk",
-        "https://www.coindesk.com/feed/",
+        "https://www.coindesk.com/feed/rss/",
         is_rss=True
     ),
     NewsSource(
@@ -161,7 +161,7 @@ SOURCES = [
     ),
     NewsSource(
         "Messari",
-        "https://messari.io/api/v1/news/feed",
+        "https://messari.io/rss",
         is_rss=True
     ),
     NewsSource(
