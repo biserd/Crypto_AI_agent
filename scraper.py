@@ -10,44 +10,35 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 import random
 import feedparser
+import re
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-class NewsSource:
-    def __init__(self, name, url, article_selector=None, title_selector=None, is_rss=False):
-        self.name = name
-        self.url = url
-        self.article_selector = article_selector
-        self.title_selector = title_selector
-        self.is_rss = is_rss
+def clean_html_content(html_content):
+    """Clean HTML content and extract readable text"""
+    try:
+        if not html_content:
+            return ""
 
-# Updated sources configuration to use RSS for CoinDesk
-SOURCES = [
-    NewsSource(
-        "CoinDesk",
-        "https://www.coindesk.com/arc/outboundfeeds/rss?_gl=1*15padrx*_up*MQ..*_ga*NTkwODIwNDc2LjE3MzUyMjUwMzc.*_ga_VM3STRYVN8*MTczNTIyNTAzNS4xLjAuMTczNTIyNTAzNS4wLjAuNzI5ODQ3NDEw",
-        is_rss=True
-    ),
-    NewsSource(
-        "Cointelegraph",
-        "https://cointelegraph.com/rss",
-        is_rss=True
-    )
-]
+        # Remove script and style elements
+        soup = BeautifulSoup(html_content, 'html.parser')
+        for script in soup(["script", "style"]):
+            script.decompose()
 
-def create_session():
-    """Create a requests session with advanced retry strategy"""
-    session = requests.Session()
-    retry_strategy = Retry(
-        total=3,
-        backoff_factor=1,
-        status_forcelist=[429, 500, 502, 503, 504],
-    )
-    adapter = HTTPAdapter(max_retries=retry_strategy)
-    session.mount("http://", adapter)
-    session.mount("https://", adapter)
-    return session
+        # Get text and clean it
+        text = soup.get_text(separator=' ', strip=True)
+
+        # Remove extra whitespace and normalize spaces
+        text = re.sub(r'\s+', ' ', text).strip()
+
+        # Remove special characters but keep basic punctuation
+        text = re.sub(r'[^\w\s.,!?-]', '', text)
+
+        return text
+    except Exception as e:
+        logger.error(f"Error cleaning HTML content: {str(e)}")
+        return html_content  # Return original content if cleaning fails
 
 def scrape_rss_feed(source):
     """Scrape articles from RSS feed"""
@@ -72,7 +63,7 @@ def scrape_rss_feed(source):
                     logger.debug(f"Article already exists: {article_url}")
                     continue
 
-                # Extract content from RSS feed entry instead of visiting the article URL
+                # Extract content from RSS feed entry
                 content = entry.get('description', '')
                 if not content and 'content' in entry:
                     content = entry.content[0].value if isinstance(entry.content, list) else entry.content
@@ -81,17 +72,21 @@ def scrape_rss_feed(source):
                     logger.warning(f"No content found in RSS entry for {article_url}")
                     continue
 
-                # Use summary from RSS feed
-                summary = entry.get('summary', '')
+                # Clean HTML content
+                cleaned_content = clean_html_content(content)
+                logger.debug(f"Cleaned content length: {len(cleaned_content)} chars")
+
+                # Use summary from RSS feed or create from cleaned content
+                summary = clean_html_content(entry.get('summary', ''))
                 if not summary:
-                    # Create a summary from the first few sentences of the content
-                    summary = ' '.join(content.split('. ')[:3]) + '.'
+                    # Create a summary from the first few sentences of the cleaned content
+                    summary = ' '.join(cleaned_content.split('. ')[:3]) + '.'
 
                 logger.info(f"Adding new article: {entry.title}")
 
                 new_article = Article(
                     title=entry.title,
-                    content=content,
+                    content=cleaned_content,
                     summary=summary,
                     source_url=article_url,
                     source_name=source.name,
@@ -122,6 +117,19 @@ def scrape_rss_feed(source):
         logger.error(f"Error fetching RSS feed from {source.name}: {str(e)}")
         return 0
 
+def create_session():
+    """Create a requests session with advanced retry strategy"""
+    session = requests.Session()
+    retry_strategy = Retry(
+        total=3,
+        backoff_factor=1,
+        status_forcelist=[429, 500, 502, 503, 504],
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
+
 def scrape_articles():
     """Scrape articles from cryptocurrency news sources"""
     logger.info("Starting article scraping")
@@ -143,6 +151,28 @@ def scrape_articles():
 
     logger.info(f"Completed article scraping. Added {total_articles_added} new articles")
     return total_articles_added
+
+# Updated sources configuration to use RSS for CoinDesk
+SOURCES = [
+    NewsSource(
+        "CoinDesk",
+        "https://www.coindesk.com/arc/outboundfeeds/rss?_gl=1*15padrx*_up*MQ..*_ga*NTkwODIwNDc2LjE3MzUyMjUwMzc.*_ga_VM3STRYVN8*MTczNTIyNTAzNS4xLjAuMTczNTIyNTAzNS4wLjAuNzI5ODQ3NDEw",
+        is_rss=True
+    ),
+    NewsSource(
+        "Cointelegraph",
+        "https://cointelegraph.com/rss",
+        is_rss=True
+    )
+]
+
+class NewsSource:
+    def __init__(self, name, url, article_selector=None, title_selector=None, is_rss=False):
+        self.name = name
+        self.url = url
+        self.article_selector = article_selector
+        self.title_selector = title_selector
+        self.is_rss = is_rss
 
 if __name__ == "__main__":
     scrape_articles()
