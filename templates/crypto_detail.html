@@ -176,8 +176,19 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 async function fetchPriceHistory() {
-    const symbol = '{{ crypto.symbol.lower() }}';
-    const response = await fetch(`https://api.coingecko.com/api/v3/coins/${symbol}/market_chart?vs_currency=usd&days=7&interval=daily`);
+    const symbolMapping = {
+        'BTC': 'bitcoin',
+        'ETH': 'ethereum',
+        'BNB': 'binancecoin',
+        'ADA': 'cardano',
+        'SOL': 'solana',
+        'XRP': 'ripple',
+        'DOGE': 'dogecoin',
+        'MATIC': 'matic-network',
+        'AVAX': 'avalanche-2'
+    };
+    const coinId = symbolMapping['{{ crypto.symbol }}'] || '{{ crypto.symbol.lower() }}';
+    const response = await fetch(`https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=7&interval=daily`);
     const data = await response.json();
     return data.prices.map(price => ({
         timestamp: new Date(price[0]),
@@ -195,12 +206,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     const chart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: [],
+            labels: labels,
             datasets: [{
                 label: 'Price (USD)',
-                data: [],
+                data: prices,
                 borderColor: '#2a2a72',
-                tension: 0.4
+                tension: 0.4,
+                fill: false
             }]
         },
         options: {
