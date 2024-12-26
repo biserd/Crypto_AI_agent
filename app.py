@@ -2,15 +2,16 @@ import eventlet
 eventlet.monkey_patch()
 
 import os
-from flask import Flask, render_template
-import logging
+from functools import wraps
+from flask import Flask, render_template, request, jsonify
 from database import db
-from models import Article, CryptoPrice, NewsSourceMetrics, CryptoGlossary
+from models import Article, CryptoPrice, NewsSourceMetrics, CryptoGlossary, Subscription
+import logging
 import re
 from markupsafe import escape, Markup
 from flask_socketio import SocketIO, emit
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Configure logging
 logging.basicConfig(
@@ -49,7 +50,36 @@ def broadcast_new_article(article):
     except Exception as e:
         logger.error(f"Error broadcasting article: {str(e)}")
 
+def check_subscription(feature='basic'):
+    """
+    Decorator to check subscription status and rate limits
+    feature: 'basic' or 'pro' to indicate required subscription level
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            # For now, we'll use a test user_id of 1
+            # This should be replaced with actual user authentication later
+            request.subscription = Subscription.query.filter_by(user_id=1, active=True).first()
+
+            if feature == 'pro' and (not request.subscription or request.subscription.tier != 'pro'):
+                return jsonify({'error': 'Pro subscription required'}), 403
+
+            # Check rate limiting for basic features
+            if request.subscription and request.subscription.rate_limit:
+                current = Article.query.filter(
+                    Article.created_at > datetime.utcnow() - timedelta(days=1)
+                ).count()
+
+                if current >= request.subscription.rate_limit:
+                    return jsonify({'error': 'Rate limit exceeded'}), 429
+
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
 @app.route('/')
+@check_subscription('basic')
 def dashboard():
     try:
         logger.info("Starting dashboard view generation")
@@ -180,6 +210,20 @@ def sync_article_counts():
     except Exception as e:
         logger.error(f"Error syncing article counts: {str(e)}")
         db.session.rollback()
+
+# Add routes for subscription management
+@app.route('/subscription/status')
+def subscription_status():
+    subscription = Subscription.query.filter_by(user_id=1, active=True).first()
+    if subscription:
+        return jsonify({
+            'tier': subscription.tier,
+            'active': subscription.active,
+            'expires_at': subscription.expires_at.isoformat(),
+            'rate_limit': subscription.rate_limit
+        })
+    return jsonify({'tier': 'basic', 'active': True})
+
 
 with app.app_context():
     try:

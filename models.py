@@ -1,6 +1,18 @@
 from datetime import datetime
 from database import db
 
+class Subscription(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False)  # Will be linked to User model later
+    tier = db.Column(db.String(20), nullable=False)  # 'basic', 'pro'
+    active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    rate_limit = db.Column(db.Integer)  # Requests per day
+
+    def __repr__(self):
+        return f'<Subscription {self.tier}>'
+
 class NewsSourceMetrics(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     source_name = db.Column(db.String(100), unique=True, nullable=False)
