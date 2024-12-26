@@ -300,6 +300,10 @@ def create_checkout_session():
 def about():
     return render_template('about.html')
 
+@app.route('/pricing')
+def pricing():
+    return render_template('pricing.html')
+
 @app.route('/contact')
 def contact():
     return render_template('contact.html')
