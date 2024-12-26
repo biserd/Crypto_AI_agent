@@ -420,7 +420,7 @@ updateLastRunTime();
             {% endfor %}
         </div>
 
-        <div class="crypto-prices-container mt-4">
+        <div class="crypto-prices-container mt-4 mb-5">
             {% for price in crypto_prices %}
                 <div class="crypto-tooltip crypto-price {% if price.percent_change_24h > 0 %}price-up{% else %}price-down{% endif %}">
                     {{ price.symbol }}: ${{ "%.2f"|format(price.price_usd) }}
@@ -434,6 +434,8 @@ updateLastRunTime();
                 </div>
             {% endfor %}
         </div>
+
+        <hr class="my-5">
 
 
         
