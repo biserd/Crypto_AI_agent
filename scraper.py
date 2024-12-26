@@ -145,7 +145,7 @@ def create_session():
 SOURCES = [
     NewsSource(
         "CoinDesk",
-        "https://www.coindesk.com/arc/outboundfeeds/rss?_gl=1*15padrx*_up*MQ..*_ga*NTkwODIwNDc2LjE3MzUyMjUwMzc.*_ga_VM3STRYVN8*MTczNTIyNTAzNS4xLjAuMTczNTIyNTAzNS4wLjAuNzI5ODQ3NDEw",
+        "https://www.coindesk.com/arc/outboundfeeds/rss/",
         is_rss=True
     ),
     NewsSource(
@@ -203,10 +203,21 @@ def scrape_rss_feed(source):
     """Scrape articles from RSS feed with improved content extraction"""
     try:
         logger.info(f"Fetching RSS feed from {source.name} at {source.url}")
-        feed = feedparser.parse(source.url)
+        try:
+            session = create_session()
+            response = session.get(source.url, timeout=10)
+            response.raise_for_status()
+            feed = feedparser.parse(response.content)
 
-        if feed.bozo:
-            logger.error(f"Error parsing RSS feed for {source.name}: {feed.bozo_exception}")
+            if feed.bozo:
+                logger.error(f"Error parsing RSS feed for {source.name}: {feed.bozo_exception}")
+                return 0
+                
+            if not hasattr(feed, 'entries'):
+                logger.error(f"No entries found in feed for {source.name}")
+                return 0
+        except Exception as e:
+            logger.error(f"Failed to fetch RSS feed for {source.name}: {str(e)}")
             return 0
 
         if not feed.entries:
