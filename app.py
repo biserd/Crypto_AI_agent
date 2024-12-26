@@ -5,7 +5,7 @@ import os
 from flask import Flask, render_template
 import logging
 from database import db
-from models import Article, CryptoPrice, NewsSourceMetrics, CryptoGlossary
+from models import Article, CryptoPrice, NewsSourceMetrics, CryptoGlossary, Subscription
 import re
 from markupsafe import escape, Markup
 from flask_socketio import SocketIO, emit
