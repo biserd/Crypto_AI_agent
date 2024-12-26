@@ -133,14 +133,14 @@
                     {% if article.sentiment_label %}
                     <div class="d-flex align-items-center">
                         <span class="sentiment-indicator sentiment-{{ article.sentiment_label|lower }}">
-    {{ article.sentiment_label|title }}
-    {% if article.sentiment_score %}
-    <span class="sentiment-score">{{ "%.2f"|format(article.sentiment_score) }}</span>
-    {% endif %}
-</span>
+                            {{ article.sentiment_label|title }}
+                            {% if article.sentiment_score %}
                             <span class="sentiment-score">{{ "%.2f"|format(article.sentiment_score) }}</span>
                             {% endif %}
                         </span>
+                        <a href="{{ article.source_url }}" class="btn btn-primary btn-sm ms-auto" target="_blank">Read More</a>
+                    </div>
+                    {% endif %}
                         <a href="{{ article.source_url }}" class="btn btn-primary btn-sm ms-auto" target="_blank">Read More</a>
                     </div>
                     {% endif %}
