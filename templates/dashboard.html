@@ -203,7 +203,7 @@
     background: #0A66C2;
 }
 
-/* New tooltip styles */
+/* Update tooltip styles */
 .crypto-tooltip {
     position: relative;
     display: inline-block;
@@ -215,14 +215,14 @@
     background-color: rgba(13, 110, 253, 0.1);
 }
 
-.crypto-tooltip .tooltip-content {
+.tooltip-content {
     visibility: hidden;
     position: absolute;
     z-index: 1000;
     bottom: 125%;
     left: 50%;
     transform: translateX(-50%);
-    padding: 12px;
+    padding: 12px 16px; /* Added padding for better spacing */
     background: #fff;
     color: #333;
     border-radius: 8px;
@@ -308,9 +308,15 @@
         <!-- Crypto Prices Section -->
         <div class="crypto-prices mb-4">
             {% for price in crypto_prices %}
-                <div class="crypto-price {% if price.percent_change_24h > 0 %}price-up{% else %}price-down{% endif %}">
+                <div class="crypto-tooltip crypto-price {% if price.percent_change_24h > 0 %}price-up{% else %}price-down{% endif %}">
                     {{ price.symbol }}: ${{ "%.2f"|format(price.price_usd) }}
                     <small>({{ "%.1f"|format(price.percent_change_24h) }}%)</small>
+                    <div class="tooltip-content">
+                        <span class="tooltip-price">${{ "%.2f"|format(price.price_usd) }}</span>
+                        <span class="tooltip-change {% if price.percent_change_24h > 0 %}positive{% else %}negative{% endif %}">
+                            {{ "%.1f"|format(price.percent_change_24h) }}%
+                        </span>
+                    </div>
                 </div>
             {% endfor %}
         </div>
