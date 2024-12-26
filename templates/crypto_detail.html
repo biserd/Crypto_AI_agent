@@ -108,8 +108,20 @@
 }
 </style>
 
+{% set crypto_names = {
+    'BTC': 'Bitcoin',
+    'ETH': 'Ethereum', 
+    'BNB': 'Binance Coin',
+    'ADA': 'Cardano',
+    'SOL': 'Solana',
+    'XRP': 'Ripple',
+    'DOGE': 'Dogecoin',
+    'MATIC': 'Polygon',
+    'AVAX': 'Avalanche'
+} %}
+
 <div class="crypto-header text-center">
-    <h1>{{ crypto.symbol }}</h1>
+    <h1>{{ crypto_names[crypto.symbol] }} ({{ crypto.symbol }})</h1>
     <div class="price-display">${{ "%.2f"|format(crypto.price_usd) }}</div>
     <div class="price-change {% if crypto.percent_change_24h > 0 %}price-up{% else %}price-down{% endif %}">
         {{ "%.2f"|format(crypto.percent_change_24h) }}% (24h)
@@ -211,19 +223,85 @@ document.addEventListener('DOMContentLoaded', async function() {
                 label: 'Price (USD)',
                 data: prices,
                 borderColor: '#2a2a72',
+                backgroundColor: 'rgba(42, 42, 114, 0.1)',
+                borderWidth: 2,
                 tension: 0.4,
-                fill: false
+                fill: true,
+                pointRadius: 4,
+                pointBackgroundColor: '#2a2a72',
+                pointBorderColor: '#fff',
+                pointHoverRadius: 6,
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: '#2a2a72'
             }]
         },
         options: {
             responsive: true,
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
             plugins: {
                 legend: {
                     position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20,
+                        font: {
+                            size: 14
+                        }
+                    }
                 },
                 title: {
                     display: true,
-                    text: '7-Day Price History'
+                    text: '7-Day Price History',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    },
+                    padding: {
+                        top: 10,
+                        bottom: 30
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    titleColor: '#2a2a72',
+                    bodyColor: '#666',
+                    borderColor: '#2a2a72',
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            return `$${context.parsed.y.toFixed(2)}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                y: {
+                    grid: {
+                        borderDash: [5, 5]
+                    },
+                    ticks: {
+                        font: {
+                            size: 12
+                        },
+                        callback: function(value) {
+                            return '$' + value.toFixed(2);
+                        }
+                    }
                 }
             }
         }
