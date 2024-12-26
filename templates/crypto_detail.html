@@ -179,14 +179,24 @@ document.addEventListener('DOMContentLoaded', function() {
         "hide_side_toolbar": false,
         "allow_symbol_change": false,
         "studies": [
-            "RSI@tv-basicstudies",
-            "MACD@tv-basicstudies",
             "MAExp@tv-basicstudies"
         ],
         "save_image": true,
         "details": true,
         "hotlist": true,
-        "calendar": true
+        "calendar": true,
+        "drawings_access": { "type": "all" },
+        "disabled_features": [
+            "use_localstorage_for_settings"
+        ],
+        "enabled_features": [
+            "study_templates",
+            "hide_left_toolbar_by_default"
+        ],
+        "overrides": {
+            "mainSeriesProperties.candleStyle.upColor": "#28a745",
+            "mainSeriesProperties.candleStyle.downColor": "#dc3545"
+        }
     });
 });
 </script>
