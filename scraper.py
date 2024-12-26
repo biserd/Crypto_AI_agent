@@ -170,12 +170,17 @@ def scrape_rss_feed(source):
             logger.error(f"Error parsing RSS feed for {source.name}: {feed.bozo_exception}")
             return 0
 
+        if not feed.entries:
+            logger.warning(f"No entries found in {source.name} RSS feed")
+            return 0
+
         articles_added = 0
         logger.info(f"Found {len(feed.entries)} entries in {source.name} RSS feed")
 
         for entry in feed.entries[:10]:  # Process latest 10 entries
             try:
                 article_url = entry.link
+                logger.debug(f"Processing article from {source.name}: {article_url}")
 
                 # Check if article already exists
                 exists = Article.query.filter_by(source_url=article_url).first()
@@ -190,19 +195,19 @@ def scrape_rss_feed(source):
 
                     if full_content:
                         content = full_content
-                        logger.debug("Successfully extracted full article content")
+                        logger.debug(f"Successfully extracted full article content from {source.name}")
                     else:
                         # Fallback to RSS content if full article extraction fails
                         content = entry.get('description', '')
                         if not content and 'content' in entry:
                             content = entry.content[0].value if isinstance(entry.content, list) else entry.content
-                        logger.debug("Using RSS feed content as fallback")
+                        logger.debug(f"Using RSS feed content as fallback for {source.name}")
                 except Exception as e:
-                    logger.error(f"Error fetching full article content: {str(e)}")
+                    logger.error(f"Error fetching full article content from {source.name}: {str(e)}")
                     content = entry.get('description', '')
 
                 if not content:
-                    logger.warning(f"No content found for {article_url}")
+                    logger.warning(f"No content found for {article_url} from {source.name}")
                     continue
 
                 # Clean HTML content with detailed logging
@@ -216,7 +221,7 @@ def scrape_rss_feed(source):
                     # Create a summary from the first few sentences of the cleaned content
                     summary = ' '.join(cleaned_content.split('. ')[:3]) + '.'
 
-                logger.info(f"Adding new article: {entry.title}")
+                logger.info(f"Adding new article from {source.name}: {entry.title}")
 
                 new_article = Article(
                     title=entry.title,
@@ -230,7 +235,7 @@ def scrape_rss_feed(source):
 
                 db.session.add(new_article)
                 articles_added += 1
-                logger.info(f"Successfully added article: {entry.title}")
+                logger.info(f"Successfully added article from {source.name}: {entry.title}")
 
             except Exception as e:
                 logger.error(f"Error processing RSS entry from {source.name}: {str(e)}")

@@ -9,10 +9,10 @@ from crypto_price_tracker import CryptoPriceTracker
 
 def run_pipeline():
     """Run the complete news pipeline with proper error handling"""
+    logging.info("Starting news pipeline")
+
     with app.app_context():
         try:
-            logging.info("Starting news pipeline")
-
             # Update crypto prices
             try:
                 price_tracker = CryptoPriceTracker()
@@ -64,7 +64,7 @@ def start_scheduler():
 
     logging.info("Starting news aggregator scheduler")
 
-    # Run once immediately on startup
+    # Run once immediately on startup with app context
     try:
         logging.info("Running initial pipeline")
         run_pipeline()
@@ -72,8 +72,16 @@ def start_scheduler():
         logging.error(f"Initial pipeline run failed: {str(e)}", exc_info=True)
 
     # Schedule regular runs
-    schedule.every(15).minutes.do(run_pipeline)
-    schedule.every(5).minutes.do(lambda: CryptoPriceTracker().fetch_current_prices())
+    def scheduled_pipeline():
+        with app.app_context():
+            run_pipeline()
+
+    def scheduled_price_update():
+        with app.app_context():
+            CryptoPriceTracker().fetch_current_prices()
+
+    schedule.every(15).minutes.do(scheduled_pipeline)
+    schedule.every(5).minutes.do(scheduled_price_update)
 
     while True:
         try:
