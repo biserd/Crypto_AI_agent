@@ -2,7 +2,7 @@ import os
 from flask import Flask, render_template
 import logging
 from database import db
-from models import Article, CryptoPrice, NewsSourceMetrics
+from models import Article, CryptoPrice, NewsSourceMetrics, CryptoGlossary # Added CryptoGlossary import
 import re
 from markupsafe import escape, Markup
 
@@ -104,6 +104,41 @@ def dashboard():
     except Exception as e:
         logger.error(f"Error generating dashboard: {str(e)}")
         return "Error loading dashboard", 500
+
+@app.route('/glossary')
+def glossary():
+    try:
+        logger.info("Accessing crypto glossary page")
+        terms = CryptoGlossary.query.order_by(CryptoGlossary.term).all()
+        categories = db.session.query(CryptoGlossary.category).distinct().all()
+        categories = [cat[0] for cat in categories if cat[0]]
+
+        return render_template('glossary.html', 
+                             terms=terms,
+                             categories=categories)
+    except Exception as e:
+        logger.error(f"Error accessing glossary: {str(e)}")
+        return "Error loading glossary", 500
+
+@app.route('/glossary/term/<term_id>')
+def get_term_details(term_id):
+    try:
+        term = CryptoGlossary.query.get_or_404(term_id)
+        term.usage_count += 1
+        db.session.commit()
+
+        related_terms = []
+        if term.related_terms:
+            related_terms = CryptoGlossary.query.filter(
+                CryptoGlossary.term.in_(term.related_terms.split(','))
+            ).all()
+
+        return render_template('term_details.html', 
+                             term=term,
+                             related_terms=related_terms)
+    except Exception as e:
+        logger.error(f"Error getting term details: {str(e)}")
+        return "Error loading term details", 500
 
 with app.app_context():
     try:

@@ -47,3 +47,17 @@ class CryptoPrice(db.Model):
 
     def __repr__(self):
         return f'<CryptoPrice {self.symbol}: ${self.price_usd:.2f}>'
+
+class CryptoGlossary(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    term = db.Column(db.String(100), unique=True, nullable=False)
+    definition = db.Column(db.Text, nullable=False)
+    category = db.Column(db.String(50))  # e.g., Technical, Trading, DeFi
+    difficulty_level = db.Column(db.String(20))  # Beginner, Intermediate, Advanced
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    usage_count = db.Column(db.Integer, default=0)  # Track how often term is viewed
+    related_terms = db.Column(db.String(200))  # Comma-separated related terms
+
+    def __repr__(self):
+        return f'<CryptoGlossary {self.term}>'

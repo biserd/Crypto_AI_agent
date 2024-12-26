@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+.glossary-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.glossary-header {
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.glossary-filters {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+.glossary-terms {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.term-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+}
+
+.term-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.term-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.term-title {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #2a2a72;
+}
+
+.difficulty-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.difficulty-beginner {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.difficulty-intermediate {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.difficulty-advanced {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.term-category {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.term-preview {
+    font-size: 0.95rem;
+    color: #495057;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.search-box {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+}
+
+.search-box:focus {
+    border-color: #2a2a72;
+    outline: none;
+}
+
+.category-filter {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.category-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    background: #e9ecef;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.category-badge:hover,
+.category-badge.active {
+    background: #2a2a72;
+    color: white;
+}
+
+#noResults {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+    grid-column: 1 / -1;
+    display: none;
+}
+</style>
+
+<div class="glossary-container">
+    <div class="glossary-header">
+        <h1>Cryptocurrency Glossary</h1>
+        <p class="lead">Explore and understand key cryptocurrency terms and concepts</p>
+    </div>
+
+    <input type="text" class="search-box" placeholder="Search terms..." id="searchBox">
+
+    <div class="glossary-filters">
+        <div class="filter-group">
+            <h5>Categories</h5>
+            <div class="category-filter">
+                <span class="category-badge active" data-category="all">All</span>
+                {% for category in categories %}
+                    <span class="category-badge" data-category="{{ category }}">{{ category }}</span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="glossary-terms">
+        {% for term in terms %}
+        <div class="term-card" data-category="{{ term.category }}" onclick="location.href='/glossary/term/{{ term.id }}'">
+            <div class="term-header">
+                <span class="term-title">{{ term.term }}</span>
+                <span class="difficulty-badge difficulty-{{ term.difficulty_level.lower() }}">
+                    {{ term.difficulty_level }}
+                </span>
+            </div>
+            <div class="term-category">{{ term.category }}</div>
+            <div class="term-preview">{{ term.definition }}</div>
+        </div>
+        {% endfor %}
+        <div id="noResults">No matching terms found</div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchBox = document.getElementById('searchBox');
+    const termCards = document.querySelectorAll('.term-card');
+    const categoryBadges = document.querySelectorAll('.category-badge');
+    const noResults = document.getElementById('noResults');
+
+    function filterTerms() {
+        const searchText = searchBox.value.toLowerCase();
+        const activeCategory = document.querySelector('.category-badge.active').dataset.category;
+        let visibleCount = 0;
+
+        termCards.forEach(card => {
+            const term = card.querySelector('.term-title').textContent.toLowerCase();
+            const definition = card.querySelector('.term-preview').textContent.toLowerCase();
+            const category = card.dataset.category;
+            
+            const matchesSearch = term.includes(searchText) || definition.includes(searchText);
+            const matchesCategory = activeCategory === 'all' || category === activeCategory;
+
+            if (matchesSearch && matchesCategory) {
+                card.style.display = 'block';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+    }
+
+    searchBox.addEventListener('input', filterTerms);
+
+    categoryBadges.forEach(badge => {
+        badge.addEventListener('click', () => {
+            categoryBadges.forEach(b => b.classList.remove('active'));
+            badge.classList.add('active');
+            filterTerms();
+        });
+    });
+});
+</script>
+{% endblock %}
