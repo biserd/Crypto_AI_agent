@@ -7,23 +7,33 @@ from nlp_processor import process_articles
 from distributors import distribute_articles
 
 def run_pipeline():
-    """Run the complete news pipeline"""
+    """Run the complete news pipeline with proper error handling"""
     with app.app_context():
         try:
             logging.info("Starting news pipeline")
 
             # Run scraper
-            articles_added = scrape_articles()
-            logging.info(f"Scraper added {articles_added} new articles")
+            try:
+                articles_added = scrape_articles()
+                logging.info(f"Scraper added {articles_added} new articles")
+            except Exception as e:
+                logging.error(f"Scraping failed: {str(e)}")
+                articles_added = 0
 
             if articles_added > 0:
                 # Process articles
-                logging.info("Processing new articles")
-                process_articles()
+                try:
+                    logging.info("Processing new articles")
+                    process_articles()
+                except Exception as e:
+                    logging.error(f"Processing failed: {str(e)}")
 
                 # Distribute articles
-                logging.info("Distributing processed articles")
-                distribute_articles()
+                try:
+                    logging.info("Distributing processed articles")
+                    distribute_articles()
+                except Exception as e:
+                    logging.error(f"Distribution failed: {str(e)}")
             else:
                 logging.info("No new articles to process")
 
@@ -32,7 +42,7 @@ def run_pipeline():
             logging.error(f"Pipeline error: {str(e)}")
 
 def start_scheduler():
-    """Initialize and start the scheduler"""
+    """Initialize and start the scheduler with proper error handling"""
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -41,8 +51,11 @@ def start_scheduler():
     logging.info("Starting news aggregator scheduler")
 
     # Run once immediately on startup
-    logging.info("Running initial pipeline")
-    run_pipeline()
+    try:
+        logging.info("Running initial pipeline")
+        run_pipeline()
+    except Exception as e:
+        logging.error(f"Initial pipeline run failed: {str(e)}")
 
     # Schedule regular runs
     schedule.every(1).hours.do(run_pipeline)

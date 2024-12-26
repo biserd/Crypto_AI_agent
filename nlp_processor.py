@@ -124,8 +124,13 @@ def process_articles():
         articles = Article.query.all()
         logger.info(f"Found {len(articles)} articles to process")
 
+        processed_count = 0
         for article in articles:
             try:
+                if article.sentiment_label is not None:
+                    logger.debug(f"Article {article.id} already has sentiment, skipping")
+                    continue
+
                 # Analyze sentiment
                 score, label = analyze_sentiment(article.content)
                 article.sentiment_score = score
@@ -140,6 +145,7 @@ def process_articles():
                 else:
                     article.category = 'General'
 
+                processed_count += 1
                 logger.info(f"Processed article {article.id}: Category={article.category}, Sentiment={label}")
 
             except Exception as e:
@@ -147,10 +153,11 @@ def process_articles():
                 continue
 
         db.session.commit()
-        logger.info("Successfully processed all articles")
+        logger.info(f"Successfully processed {processed_count} articles")
 
     except Exception as e:
         logger.error(f"Error in process_articles: {str(e)}")
+        db.session.rollback()
 
 if __name__ == "__main__":
     process_articles()
