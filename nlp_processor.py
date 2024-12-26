@@ -211,7 +211,7 @@ def process_articles():
             logger.info("No articles were processed successfully")
 
     except Exception as e:
-        logger.error(f"Error in process_articles: {str(e)}", exc_info=True)
+        logger.error(f"Error in process_articles: {str(e)}")
         db.session.rollback()
         raise
 
