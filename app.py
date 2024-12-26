@@ -4,6 +4,7 @@ import logging
 from database import db
 from models import Article, CryptoPrice, NewsSourceMetrics
 import re
+from markupsafe import escape
 
 app = Flask(__name__)
 
@@ -53,18 +54,26 @@ def dashboard():
 
         # Prepare articles with enhanced summaries
         for article in recent_articles:
-            # Create a copy of the summary for modification
-            enhanced_summary = article.summary
+            try:
+                # Create a copy of the summary for modification
+                enhanced_summary = escape(article.summary)
+                logger.debug(f"Processing article {article.id} summary: {enhanced_summary[:100]}...")
 
-            # Add crypto price tooltips to the summary
-            for crypto in crypto_prices:
-                if crypto.symbol.lower() in enhanced_summary.lower():
-                    tooltip_html = f'<span class="crypto-tooltip">{crypto.symbol}<span class="tooltip-content"><div class="tooltip-price">${crypto.price_usd:.2f}</div><div class="tooltip-change {("positive" if crypto.percent_change_24h > 0 else "negative")}">{crypto.percent_change_24h:.1f}% (24h)</div></span></span>'
-                    pattern = re.compile(re.escape(crypto.symbol), re.IGNORECASE)
-                    enhanced_summary = pattern.sub(tooltip_html, enhanced_summary)
+                # Add crypto price tooltips to the summary
+                for crypto in crypto_prices:
+                    if crypto.symbol.lower() in enhanced_summary.lower():
+                        logger.debug(f"Found crypto {crypto.symbol} in article {article.id}")
+                        tooltip_html = f'<span class="crypto-tooltip">{crypto.symbol}<span class="tooltip-content"><div class="tooltip-price">${crypto.price_usd:.2f}</div><div class="tooltip-change {("positive" if crypto.percent_change_24h > 0 else "negative")}">{crypto.percent_change_24h:.1f}% (24h)</div></span></span>'
+                        pattern = re.compile(re.escape(crypto.symbol), re.IGNORECASE)
+                        enhanced_summary = pattern.sub(tooltip_html, enhanced_summary)
+                        logger.debug(f"Added tooltip for {crypto.symbol} in article {article.id}")
 
-            # Store the enhanced summary in a new attribute
-            article.enhanced_summary = enhanced_summary
+                # Store the enhanced summary in a new attribute
+                article.enhanced_summary = enhanced_summary
+
+            except Exception as e:
+                logger.error(f"Error processing tooltips for article {article.id}: {str(e)}")
+                article.enhanced_summary = article.summary
 
             # Attach source metrics
             article.source_metrics = next(
@@ -74,9 +83,9 @@ def dashboard():
 
         logger.info("Successfully prepared all data for dashboard")
         return render_template('dashboard.html', 
-                             articles=recent_articles,
-                             crypto_prices=crypto_prices,
-                             news_sources=news_sources)
+                            articles=recent_articles,
+                            crypto_prices=crypto_prices,
+                            news_sources=news_sources)
     except Exception as e:
         logger.error(f"Error generating dashboard: {str(e)}")
         return "Error loading dashboard", 500
