@@ -186,10 +186,12 @@ def glossary():
         logger.error(f"Error accessing glossary: {str(e)}")
         return "Error loading glossary", 500
 
-@app.route('/glossary/term/<term_id>')
-def get_term_details(term_id):
+@app.route('/glossary/<term_name>')
+def get_term_details(term_name):
     try:
-        term = CryptoGlossary.query.get_or_404(term_id)
+        # Convert URL-friendly term name back to proper format
+        decoded_term = term_name.replace('-', ' ').title()
+        term = CryptoGlossary.query.filter_by(term=decoded_term).first_or_404()
         term.usage_count += 1
         db.session.commit()
 

@@ -162,7 +162,7 @@
 
     <div class="glossary-terms">
         {% for term in terms %}
-        <div class="term-card" data-category="{{ term.category }}" onclick="location.href='/glossary/term/{{ term.id }}'">
+        <div class="term-card" data-category="{{ term.category }}" onclick="location.href='/glossary/{{ term.term.lower().replace(' ', '-') }}'">
             <div class="term-header">
                 <span class="term-title">{{ term.term }}</span>
                 <span class="difficulty-badge difficulty-{{ term.difficulty_level.lower() }}">
