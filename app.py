@@ -27,6 +27,12 @@ socketio = SocketIO(app, async_mode='eventlet', cors_allowed_origins="*")
 # Stripe configuration
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 
+@app.route('/stripe-config')
+def stripe_config():
+    return jsonify({
+        'publishableKey': os.environ.get('STRIPE_PUBLISHABLE_KEY')
+    })
+
 # Configuration
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", os.urandom(24))
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
