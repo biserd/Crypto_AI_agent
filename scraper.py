@@ -16,16 +16,17 @@ SOURCES = [
     NewsSource(
         "Tech Crunch",
         "https://techcrunch.com",
-        "article.post-block",
+        ".post-block",  # Updated selector
     ),
     NewsSource(
         "The Verge",
         "https://www.theverge.com",
-        "div.relative.group.mb-8",
+        ".duet--article--standard",  # Updated selector
     ),
 ]
 
 def scrape_articles():
+    """Scrape articles from configured sources"""
     logging.info("Starting article scraping")
     articles_added = 0
 
@@ -41,6 +42,9 @@ def scrape_articles():
             soup = BeautifulSoup(response.text, 'html.parser')
             logging.info(f"Successfully parsed HTML from {source.name}")
 
+            # Log the HTML structure for debugging
+            logging.debug(f"HTML content: {soup.prettify()[:1000]}")  # First 1000 chars
+
             articles = soup.select(source.article_selector)
             logging.info(f"Found {len(articles)} articles on {source.name}")
 
@@ -54,7 +58,10 @@ def scrape_articles():
 
                     article_url = link.get('href')
                     if not article_url.startswith('http'):
-                        article_url = f"{source.url.rstrip('/')}/{article_url.lstrip('/')}"
+                        if article_url.startswith('//'):
+                            article_url = f"https:{article_url}"
+                        else:
+                            article_url = f"{source.url.rstrip('/')}/{article_url.lstrip('/')}"
 
                     logging.info(f"Processing article URL: {article_url}")
 
@@ -82,6 +89,15 @@ def scrape_articles():
                         if title_tag and title_tag.text.strip():
                             title = title_tag.text.strip()
                             break
+
+                    if not title:
+                        # Try finding title in article content if not found in preview
+                        soup_article = BeautifulSoup(downloaded, 'html.parser')
+                        for tag in ['h1', 'h2']:
+                            title_tag = soup_article.find(tag)
+                            if title_tag and title_tag.text.strip():
+                                title = title_tag.text.strip()
+                                break
 
                     if not title:
                         logging.warning(f"No title found for article: {article_url}")
