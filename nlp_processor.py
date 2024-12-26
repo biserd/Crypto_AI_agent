@@ -74,6 +74,7 @@ def analyze_sentiment(text):
                     else:
                         weighted_pos_score += weight
                     total_matches += 1
+                    logger.debug(f"Found positive pattern '{pattern}' (weight: {weight}) in sentence")
 
             for pattern, weight in negative_patterns.items():
                 if pattern in sentence:
@@ -82,6 +83,7 @@ def analyze_sentiment(text):
                     else:
                         weighted_neg_score += weight
                     total_matches += 1
+                    logger.debug(f"Found negative pattern '{pattern}' (weight: {weight}) in sentence")
 
         if total_matches == 0:
             logger.debug("No sentiment patterns found in text")
