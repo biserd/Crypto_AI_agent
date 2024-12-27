@@ -157,7 +157,7 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        user = User.query.filter_by(email=request.form.get('email')).first()
+        user = Users.query.filter_by(email=request.form.get('email')).first()
         if user and user.check_password(request.form.get('password')):
             login_user(user)
             next_page = request.args.get('next')
