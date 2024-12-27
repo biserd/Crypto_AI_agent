@@ -101,16 +101,22 @@ document.addEventListener('DOMContentLoaded', function() {
     fetch(`/api/price-history/{{ crypto.symbol }}`)
         .then(response => response.json())
         .then(data => {
+            if (!data || data.length === 0) {
+                console.error('No price data available');
+                return;
+            }
             const ctx = document.getElementById('priceChart').getContext('2d');
             new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: data.map(d => new Date(d.time * 1000).toLocaleDateString()),
+                    labels: data.map(d => new Date(d.time * 1000).toLocaleString()),
                     datasets: [{
                         label: '{{ crypto.symbol }} Price (USD)',
                         data: data.map(d => d.value),
                         borderColor: '#2196F3',
-                        tension: 0.1
+                        backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                        fill: true,
+                        tension: 0.4
                     }]
                 },
                 options: {
@@ -118,16 +124,34 @@ document.addEventListener('DOMContentLoaded', function() {
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            display: false
+                            display: true
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
                         }
                     },
                     scales: {
                         y: {
-                            beginAtZero: false
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
                         }
                     }
                 }
             });
+        })
+        .catch(error => {
+            console.error('Error loading chart data:', error);
         });
 });
 </script>
