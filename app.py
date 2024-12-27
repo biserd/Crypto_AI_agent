@@ -48,6 +48,7 @@ logger = logging.getLogger(__name__)
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 
 @app.route('/stripe-config')
+@login_required
 def stripe_config():
     return jsonify({
         'publishableKey': os.environ.get('STRIPE_PUBLISHABLE_KEY', 'pk_test_yourdefaultkey')
@@ -65,6 +66,7 @@ db.init_app(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
+login_manager.login_view = 'login'
 
 def broadcast_new_article(article):
     """Broadcast new article to all connected clients"""
@@ -151,7 +153,8 @@ def login():
         user = User.query.filter_by(username=request.form.get('username')).first()
         if user and user.check_password(request.form.get('password')):
             login_user(user)
-            return redirect(url_for('dashboard'))
+            next_page = request.args.get('next')
+            return redirect(next_page if next_page else url_for('dashboard'))
         flash('Invalid username or password')
     return render_template('login.html')
 
@@ -245,6 +248,7 @@ def dashboard():
         return "Error loading dashboard", 500
 
 @app.route('/glossary')
+@login_required
 def glossary():
     try:
         logger.info("Accessing crypto glossary page")
@@ -346,6 +350,7 @@ def sync_article_counts():
 
 # Add routes for subscription management
 @app.route('/create-checkout-session', methods=['POST'])
+@login_required
 def create_checkout_session():
     try:
         domain_url = request.host_url.rstrip('/')
@@ -474,6 +479,7 @@ def success():
     return redirect('/')
 
 @app.route('/subscription/status')
+@login_required
 def subscription_status():
     subscription = Subscription.query.filter_by(user_id=1, active=True).first()
     if subscription:
