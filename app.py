@@ -364,15 +364,19 @@ def price_history(symbol):
         if len(prices) < 2:
             base_time = int(datetime.utcnow().timestamp())
             data = []
+            import random
+            base_price = current_price
             for i in range(30):
-                time = base_time - (i * 3600)  # Hourly intervals
-                # Simulate slight price variations
-                price = current_price * (1 + ((30-i) * 0.001))
+                time = base_time - (i * 3600 * 24)  # Daily intervals
+                # Create more noticeable price variations
+                variation = random.uniform(-0.05, 0.05)  # 5% variation
+                price = base_price * (1 + variation)
+                base_price = price  # Use this as base for next variation
                 data.append({
                     'time': time,
                     'value': float(price)
                 })
-            return jsonify(data[::-1])  # Reverse to get ascending order
+            return jsonify(sorted(data, key=lambda x: x['time']))  # Sort by time ascending
             
         data = [{
             'time': int(price.last_updated.timestamp()),

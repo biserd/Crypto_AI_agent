@@ -109,14 +109,16 @@ document.addEventListener('DOMContentLoaded', function() {
             new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: data.map(d => new Date(d.time * 1000).toLocaleString()),
+                    labels: data.map(d => new Date(d.time * 1000).toLocaleDateString()),
                     datasets: [{
                         label: '{{ crypto.symbol }} Price (USD)',
                         data: data.map(d => d.value),
                         borderColor: '#2196F3',
                         backgroundColor: 'rgba(33, 150, 243, 0.1)',
                         fill: true,
-                        tension: 0.4
+                        tension: 0.3,
+                        pointRadius: 3,
+                        borderWidth: 2
                     }]
                 },
                 options: {
