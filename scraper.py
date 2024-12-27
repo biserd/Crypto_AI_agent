@@ -266,17 +266,17 @@ def scrape_rss_feed(source):
                         continue
 
                     try:
-                        downloaded = trafilatura.fetch_url(article_url)
-                        full_content = trafilatura.extract(downloaded)
-
-                        if full_content:
-                            content = full_content
-                            logger.debug(f"Successfully extracted full article content from {source.name}")
-                        else:
-                            content = entry.get('description', '')
-                            if not content and 'content' in entry:
-                                content = entry.content[0].value if isinstance(entry.content, list) else entry.content
-                            logger.debug(f"Using RSS feed content as fallback for {source.name}")
+                        content = entry.get('description', '')
+                        if not content and 'content' in entry:
+                            content = entry.content[0].value if isinstance(entry.content, list) else entry.content
+                            
+                        # Try to get extended content if available
+                        if 'content' in entry:
+                            extended_content = entry.content[0].value if isinstance(entry.content, list) else entry.content
+                            if len(extended_content) > len(content):
+                                content = extended_content
+                                
+                        logger.debug(f"Using RSS feed content for {source.name}")
                     except Exception as e:
                         logger.error(f"Error fetching full article content from {source.name}: {str(e)}")
                         content = entry.get('description', '')
