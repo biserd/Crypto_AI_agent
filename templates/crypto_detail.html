@@ -116,10 +116,6 @@
 
     <div class="row">
         <div class="col-12">
-            <div class="chart-container" style="height: 800px; margin-bottom: 2rem;">
-                <div id="tradingview_chart" style="height: 100%;"></div>
-            </div>
-
             <!-- News Section -->
             <h3>Latest {{ crypto.symbol }} News</h3>
             {% for article in news %}
@@ -148,71 +144,5 @@
     </div>
 </div>
 
-<!-- Lightweight Charts -->
-<script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
-<script type="text/javascript">
-document.addEventListener('DOMContentLoaded', function() {
-    const chart = LightweightCharts.createChart(document.getElementById('tradingview_chart'), {
-        width: document.getElementById('tradingview_chart').clientWidth,
-        height: 600,
-        layout: {
-            background: { color: '#ffffff' },
-            textColor: '#333',
-        },
-        grid: {
-            vertLines: { color: '#f0f3fa' },
-            horzLines: { color: '#f0f3fa' },
-        },
-        handleScale: {
-            mouseWheel: true,
-            pinch: true,
-        },
-        crosshair: {
-            mode: LightweightCharts.CrosshairMode.Normal,
-        },
-        rightPriceScale: {
-            borderColor: '#f0f3fa',
-        },
-        timeScale: {
-            borderColor: '#f0f3fa',
-            timeVisible: true,
-            secondsVisible: false,
-        },
-    });
 
-    const series = chart.addLineSeries({
-        color: '#2196F3',
-        lineWidth: 2,
-        priceFormat: {
-            type: 'price',
-            precision: 2,
-            minMove: 0.01,
-        },
-    });
-
-    // Fetch price data from our backend
-    fetch(`/api/price-history/{{ crypto.symbol }}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data && data.length > 0) {
-                series.setData(data);
-                chart.timeScale().fitContent();
-            }
-        })
-        .catch(error => console.error('Error loading chart data:', error));
-
-    // Handle window resize
-    function handleResize() {
-        const container = document.getElementById('tradingview_chart');
-        chart.applyOptions({
-            width: container.clientWidth,
-            height: container.clientHeight
-        });
-        chart.timeScale().fitContent();
-    }
-    
-    window.addEventListener('resize', handleResize);
-    handleResize();
-});
-</script>
 {% endblock %}
