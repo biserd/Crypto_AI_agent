@@ -104,6 +104,9 @@ def check_subscription(feature='basic'):
 def dashboard():
     try:
         logger.info("Starting dashboard view generation")
+        recent_articles = []
+        crypto_prices = []
+        news_sources = []
 
         # Fetch articles with error handling
         try:
@@ -111,7 +114,6 @@ def dashboard():
             logger.info(f"Retrieved {len(recent_articles)} articles from database")
         except Exception as e:
             logger.error(f"Error fetching articles: {str(e)}")
-            recent_articles = []
 
         # Fetch crypto prices with error handling
         try:
@@ -119,7 +121,6 @@ def dashboard():
             logger.info(f"Retrieved {len(crypto_prices)} crypto prices")
         except Exception as e:
             logger.error(f"Error fetching crypto prices: {str(e)}")
-            crypto_prices = []
 
         # Fetch news sources with error handling
         try:
@@ -127,7 +128,9 @@ def dashboard():
             logger.info(f"Retrieved {len(news_sources)} news sources")
         except Exception as e:
             logger.error(f"Error fetching news sources: {str(e)}")
-            news_sources = []
+
+        if not recent_articles and not crypto_prices and not news_sources:
+            return "Error: Unable to load data", 500
 
         # Prepare articles with enhanced summaries
         for article in recent_articles:
