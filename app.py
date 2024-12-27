@@ -171,8 +171,6 @@ def profile():
     return render_template('profile.html', user=current_user, subscription=subscription)
 
 @app.route('/')
-@login_required
-@check_subscription('basic')
 def dashboard():
     try:
         logger.info("Starting dashboard view generation")
@@ -248,7 +246,6 @@ def dashboard():
         return "Error loading dashboard", 500
 
 @app.route('/glossary')
-@login_required
 def glossary():
     try:
         logger.info("Accessing crypto glossary page")
