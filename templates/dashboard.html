@@ -386,30 +386,7 @@
 }
 </style>
 
-<div class="news-feed-header text-center mb-4">
-    <h2>Real-Time News Feed</h2>
-    <div class="d-flex justify-content-center align-items-center mt-2">
-        <div class="live-indicator me-3">
-            <div class="live-dot"></div>
-            <span>LIVE</span>
-        </div>
-        <div class="last-run-timer">
-            Updated: <span id="lastRunTime"></span>
-        </div>
-    </div>
-</div>
-<script>
-function updateLastRunTime() {
-    const lastRun = new Date('{{ last_scraper_run.isoformat() }}Z');
-    const now = new Date();
-    const diff = Math.floor((now - lastRun) / 1000);
-    const minutes = Math.floor(diff / 60);
-    document.getElementById('lastRunTime').textContent = `${minutes} minutes ago`;
-}
 
-setInterval(updateLastRunTime, 60000);
-updateLastRunTime();
-</script>
 <div class="row">
     <div class="col-12">
         <div class="trust-score-container mt-4">
@@ -480,8 +457,6 @@ updateLastRunTime();
                 </a>
             {% endfor %}
         </div>
-
-        <hr class="my-5">
 
 
         <!-- Articles Section -->
