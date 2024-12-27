@@ -6,7 +6,7 @@ from functools import wraps
 from flask import Flask, render_template, request, jsonify, redirect, flash, url_for
 from flask_login import LoginManager, UserMixin, current_user, login_required, login_user, logout_user
 from database import db
-from models import Article, CryptoPrice, NewsSourceMetrics, CryptoGlossary, Subscription, User
+from models import Article, CryptoPrice, NewsSourceMetrics, CryptoGlossary, Subscription, Users
 import logging
 import re
 from markupsafe import escape, Markup
@@ -123,7 +123,7 @@ def register():
         confirm_password = request.form.get('confirm_password')
         terms = request.form.get('terms')
         
-        if User.query.filter_by(email=email).first():
+        if Users.query.filter_by(email=email).first():
             flash('Email already registered')
             return redirect(url_for('register'))
             
@@ -135,7 +135,7 @@ def register():
             flash('You must accept the terms and conditions')
             return redirect(url_for('register'))
             
-        user = User(email=email)
+        user = Users(email=email)
         user.set_password(password)
         db.session.add(user)
         db.session.commit()
@@ -335,7 +335,7 @@ def handle_disconnect():
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return Users.query.get(int(user_id))
 
 def sync_article_counts():
     """Synchronize article counts with actual numbers in database"""
