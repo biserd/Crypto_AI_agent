@@ -104,56 +104,22 @@ def check_subscription(feature='basic'):
 def dashboard():
     try:
         logger.info("Starting dashboard view generation")
-        recent_articles = []
-        crypto_prices = []
-        news_sources = []
-
-        # Initialize sentiment counts
-        total_articles = 0
-        sentiment_counts = {
-            'positive': 0,
-            'negative': 0,
-            'neutral': 0
-        }
 
         # Fetch articles with error handling
         try:
             recent_articles = Article.query.order_by(Article.created_at.desc()).limit(20).all()
-            total_articles = len(recent_articles)
-
-            # Count sentiments
-            for article in recent_articles:
-                if article.sentiment_label:
-                    sentiment_counts[article.sentiment_label.lower()] += 1
-
-            logger.info(f"Retrieved {total_articles} articles from database")
+            logger.info(f"Retrieved {len(recent_articles)} articles from database")
         except Exception as e:
             logger.error(f"Error fetching articles: {str(e)}")
+            recent_articles = []
 
         # Fetch crypto prices with error handling
         try:
-            crypto_prices = CryptoPrice.query.order_by(CryptoPrice.percent_change_24h.desc()).all()
+            crypto_prices = CryptoPrice.query.all()
             logger.info(f"Retrieved {len(crypto_prices)} crypto prices")
-            
-            # Pre-process sentiment counts for each crypto
-            for price in crypto_prices:
-                price.sentiment_stats = {
-                    'positive': 0,
-                    'negative': 0,
-                    'neutral': 0,
-                    'total': 0
-                }
-                
-                for article in recent_articles:
-                    if price.symbol.lower() in article.content.lower():
-                        if article.sentiment_label:
-                            price.sentiment_stats[article.sentiment_label.lower()] += 1
-                            price.sentiment_stats['total'] += 1
-
         except Exception as e:
             logger.error(f"Error fetching crypto prices: {str(e)}")
             crypto_prices = []
-
 
         # Fetch news sources with error handling
         try:
@@ -162,11 +128,6 @@ def dashboard():
         except Exception as e:
             logger.error(f"Error fetching news sources: {str(e)}")
             news_sources = []
-
-        # Return error if no data is available
-        if not recent_articles and not crypto_prices and not news_sources:
-            logger.error("No data available for dashboard")
-            return "Error: No data available", 500
 
         # Prepare articles with enhanced summaries
         for article in recent_articles:
