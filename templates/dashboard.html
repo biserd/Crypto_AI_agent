@@ -18,144 +18,122 @@
     </div>
 </div>
 
-<div class="row">
-    <div class="col-12">
-        <div class="data-pulse">
-            <span class="pulse-indicator"></span>
-            Last Updated: {{ last_scraper_run.strftime('%Y-%m-%d %H:%M:%S UTC') }}
-        </div>
-        
-        <div class="crypto-prices-container mt-4 mb-5">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5 class="mb-3">Biggest Gainers</h5>
-            <div class="mb-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <strong>{{ source.source_name }}</strong>
-                    <span class="badge {% if source.trust_score >= 70 %}bg-success{% elif source.trust_score >= 40 %}bg-warning{% else %}bg-danger{% endif %}">
-                        {{ "%.1f"|format(source.trust_score) }}%
-                    </span>
-                </div>
-                <div class="trust-score-bar">
-                    <div class="trust-score-fill {% if source.trust_score >= 70 %}trust-high{% elif source.trust_score >= 40 %}trust-medium{% else %}trust-low{% endif %}"
-                         style="width: {{ source.trust_score }}%"></div>
-                </div>
-                <div class="source-metrics">
-                    <span>Articles: {{ source.article_count }}</span>
-                    <span>Fact-Check Score: {{ "%.1f"|format(source.accuracy_score) }}%</span>
-                    <span>Last Updated: {{ source.last_updated.strftime('%Y-%m-%d %H:%M') }}</span>
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="data-pulse">
+                <span class="pulse-indicator"></span>
+                Last Updated: {{ last_scraper_run.strftime('%Y-%m-%d %H:%M:%S UTC') }}
+            </div>
+            
+            <div class="crypto-prices-container mt-4 mb-5">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="mb-3">Biggest Gainers</h5>
+                        {% with sorted_gainers = crypto_prices|filter_by_positive|sort(attribute='percent_change_24h', reverse=True) %}
+                        {% for price in sorted_gainers[:5] %}
+                            <div class="crypto-item">
+                                <a href="/crypto/{{ price.symbol }}" class="text-decoration-none">
+                                    <div class="crypto-tooltip crypto-price {{ 'price-up' if price.percent_change_24h|float > 0 else 'price-down' }}">
+                                        {{ price.symbol }}: ${{ "%.2f"|format(price.price_usd) }}
+                                        <small>({{ "%.1f"|format(price.percent_change_24h) }}%)</small>
+                                    </div>
+                                </a>
+                            </div>
+                        {% endfor %}
+                        {% endwith %}
+                    </div>
+                    <div class="col-md-6">
+                        <h5 class="mb-3">Biggest Losers</h5>
+                        {% with sorted_losers = crypto_prices|filter_by_negative|sort(attribute='percent_change_24h') %}
+                        {% for price in sorted_losers[:5] %}
+                            <div class="crypto-item">
+                                <a href="/crypto/{{ price.symbol }}" class="text-decoration-none">
+                                    <div class="crypto-tooltip crypto-price {{ 'price-up' if price.percent_change_24h|float > 0 else 'price-down' }}">
+                                        {{ price.symbol }}: ${{ "%.2f"|format(price.price_usd) }}
+                                        <small>({{ "%.1f"|format(price.percent_change_24h) }}%)</small>
+                                    </div>
+                                </a>
+                            </div>
+                        {% endfor %}
+                        {% endwith %}
+                    </div>
                 </div>
             </div>
-            {% endfor %}
-        </div>
 
-        <div class="crypto-prices-container mt-4 mb-5">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5 class="mb-3">Biggest Gainers</h5>
-                    {% with sorted_gainers = crypto_prices|filter_by_positive|sort(attribute='percent_change_24h', reverse=True) %}
-                    {% for price in sorted_gainers[:5] %}
-                        <div class="crypto-item">
-                            <a href="/crypto/{{ price.symbol }}" class="text-decoration-none">
-                                <div class="crypto-tooltip crypto-price {{ 'price-up' if price.percent_change_24h|float > 0 else 'price-down' }}">
-                                    {{ price.symbol }}: {{ "%.2f"|format(price.price_usd) }}
-                                    <small>({{ "%.1f"|format(price.percent_change_24h) }}%)</small>
-                                </div>
-                            </a>
-                        </div>
-                    {% endfor %}
-                    {% endwith %}
+            <div class="trust-score-container mt-4 mb-5">
+                <h4 class="mb-3">AI Trust Score</h4>
+                {% for source in news_sources %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <strong>{{ source.source_name }}</strong>
+                        <span class="badge {% if source.trust_score >= 70 %}bg-success{% elif source.trust_score >= 40 %}bg-warning{% else %}bg-danger{% endif %}">
+                            {{ "%.1f"|format(source.trust_score) }}%
+                        </span>
+                    </div>
+                    <div class="trust-score-bar">
+                        <div class="trust-score-fill {% if source.trust_score >= 70 %}trust-high{% elif source.trust_score >= 40 %}trust-medium{% else %}trust-low{% endif %}"
+                             style="width: {{ source.trust_score }}%"></div>
+                    </div>
+                    <div class="source-metrics">
+                        <span>Articles: {{ source.article_count }}</span>
+                        <span>Fact-Check Score: {{ "%.1f"|format(source.accuracy_score) }}%</span>
+                        <span>Last Updated: {{ source.last_updated.strftime('%Y-%m-%d %H:%M') }}</span>
+                    </div>
                 </div>
-                <div class="col-md-6">
-                    <h5 class="mb-3">Biggest Losers</h5>
-                    {% with sorted_losers = crypto_prices|filter_by_negative|sort(attribute='percent_change_24h') %}
-                    {% for price in sorted_losers[:5] %}
-                        <div class="crypto-item">
-                            <a href="/crypto/{{ price.symbol }}" class="text-decoration-none">
-                                <div class="crypto-tooltip crypto-price {{ 'price-up' if price.percent_change_24h|float > 0 else 'price-down' }}">
-                                    {{ price.symbol }}: {{ "%.2f"|format(price.price_usd) }}
-                                    <small>({{ "%.1f"|format(price.percent_change_24h) }}%)</small>
-                                </div>
-                            </a>
-                        </div>
-                    {% endfor %}
-                    {% endwith %}
-                </div>
+                {% endfor %}
             </div>
-        </div>
 
-        <div class="trust-score-container mt-4 mb-5">
-            <h4 class="mb-3">AI Trust Score</h4>
-            {% for source in news_sources %}
-            <div class="mb-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <strong>{{ source.source_name }}</strong>
-                    <span class="badge {% if source.trust_score >= 70 %}bg-success{% elif source.trust_score >= 40 %}bg-warning{% else %}bg-danger{% endif %}">
-                        {{ "%.1f"|format(source.trust_score) }}%
-                    </span>
-                </div>
-                <div class="trust-score-bar">
-                    <div class="trust-score-fill {% if source.trust_score >= 70 %}trust-high{% elif source.trust_score >= 40 %}trust-medium{% else %}trust-low{% endif %}"
-                         style="width: {{ source.trust_score }}%"></div>
-                </div>
-                <div class="source-metrics">
-                    <span>Articles: {{ source.article_count }}</span>
-                    <span>Fact-Check Score: {{ "%.1f"|format(source.accuracy_score) }}%</span>
-                    <span>Last Updated: {{ source.last_updated.strftime('%Y-%m-%d %H:%M') }}</span>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-
-        <!-- Articles Section -->
-        {% for article in articles %}
-        <div class="card mb-3">
-            <div class="card-body">
-                <h5 class="card-title">{{ article.title.replace('**', '').replace('($BTC)', '').replace('($Btc)', '').replace('($ADA)', '').replace('($Ada)', '').replace('($ETH)', '').replace('($AVAX)', '').replace('($SOL)', '').replace('($XRP)', '').replace('($MATIC)', '').replace('($DOGE)', '').replace('($BNB)', '') }}</h5>
-                <h6 class="card-subtitle mb-2 text-muted">
-                    {{ article.source_name }}
-                    {% if article.source_metrics %}
-                    <span class="badge {% if article.source_metrics.trust_score >= 70 %}bg-success{% elif article.source_metrics.trust_score >= 40 %}bg-warning{% else %}bg-danger{% endif %}" title="Source Trust Score">
-                        Source Trust: {{ "%.1f"|format(article.source_metrics.trust_score) }}%
-                    </span>
-                    {% endif %}
-                    - {{ article.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
-                </h6>
-                <p class="card-text">{{ article.enhanced_summary|safe }}</p>
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        {% if article.sentiment_label %}
-                            <span class="sentiment-indicator sentiment-{{ article.sentiment_label.lower() }}">
-                                {{ article.sentiment_label|title }}
-                                <span class="sentiment-score">
-                                    {% if article.sentiment_score %}
-                                        {{ "%.2f"|format(article.sentiment_score) }}
-                                    {% endif %}
+            <!-- Articles Section -->
+            {% for article in articles %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">{{ article.title.replace('**', '').replace('($BTC)', '').replace('($Btc)', '').replace('($ADA)', '').replace('($Ada)', '').replace('($ETH)', '').replace('($AVAX)', '').replace('($SOL)', '').replace('($XRP)', '').replace('($MATIC)', '').replace('($DOGE)', '').replace('($BNB)', '') }}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">
+                        {{ article.source_name }}
+                        {% if article.source_metrics %}
+                        <span class="badge {% if article.source_metrics.trust_score >= 70 %}bg-success{% elif article.source_metrics.trust_score >= 40 %}bg-warning{% else %}bg-danger{% endif %}" title="Source Trust Score">
+                            Source Trust: {{ "%.1f"|format(article.source_metrics.trust_score) }}%
+                        </span>
+                        {% endif %}
+                        - {{ article.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                    </h6>
+                    <p class="card-text">{{ article.enhanced_summary|safe }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            {% if article.sentiment_label %}
+                                <span class="sentiment-indicator sentiment-{{ article.sentiment_label.lower() }}">
+                                    {{ article.sentiment_label|title }}
+                                    <span class="sentiment-score">
+                                        {% if article.sentiment_score %}
+                                            {{ "%.2f"|format(article.sentiment_score) }}
+                                        {% endif %}
+                                    </span>
                                 </span>
-                            </span>
-                        {% endif %}
-                    </div>
-                    <div class="action-buttons">
-                        {% if article.sentiment_label == 'positive' %}
-                            {% for crypto in ['BTC', 'ETH', 'BNB', 'ADA', 'SOL', 'XRP', 'DOGE', 'MATIC', 'AVAX'] %}
-                                {% if crypto.lower() in article.content.lower() or crypto in article.content %}
-                                    <button class="btn btn-sm btn-buy">Buy {{ crypto }}</button>
-                                {% endif %}
-                            {% endfor %}
-                        {% elif article.sentiment_label == 'negative' %}
-                            {% for crypto in ['BTC', 'ETH', 'BNB', 'ADA', 'SOL', 'XRP', 'DOGE', 'MATIC', 'AVAX'] %}
-                                {% if crypto.lower() in article.content.lower() or crypto in article.content %}
-                                    <button class="btn btn-sm btn-sell">Sell {{ crypto }}</button>
-                                {% endif %}
-                            {% endfor %}
-                        {% endif %}
-                        <button class="btn btn-info btn-sm" onclick="showShareModal('{{ article.id }}')">Share</button>
-                        <a href="{{ article.source_url }}" class="btn btn-primary btn-sm" target="_blank">Read More</a>
+                            {% endif %}
+                        </div>
+                        <div class="action-buttons">
+                            {% if article.sentiment_label == 'positive' %}
+                                {% for crypto in ['BTC', 'ETH', 'BNB', 'ADA', 'SOL', 'XRP', 'DOGE', 'MATIC', 'AVAX'] %}
+                                    {% if crypto.lower() in article.content.lower() or crypto in article.content %}
+                                        <button class="btn btn-sm btn-buy">Buy {{ crypto }}</button>
+                                    {% endif %}
+                                {% endfor %}
+                            {% elif article.sentiment_label == 'negative' %}
+                                {% for crypto in ['BTC', 'ETH', 'BNB', 'ADA', 'SOL', 'XRP', 'DOGE', 'MATIC', 'AVAX'] %}
+                                    {% if crypto.lower() in article.content.lower() or crypto in article.content %}
+                                        <button class="btn btn-sm btn-sell">Sell {{ crypto }}</button>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                            <button class="btn btn-info btn-sm" onclick="showShareModal('{{ article.id }}')">Share</button>
+                            <a href="{{ article.source_url }}" class="btn btn-primary btn-sm" target="_blank">Read More</a>
+                        </div>
                     </div>
                 </div>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
 </div>
 
