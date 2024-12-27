@@ -468,19 +468,38 @@ def price_history(symbol):
         return jsonify([])
 
 @app.route('/success')
+@login_required
 def success():
     session_id = request.args.get('session_id')
     if session_id:
-        # Update user subscription
-        subscription = Subscription(
-            user_id=1,  # Replace with actual user ID
-            tier='pro',
-            expires_at=datetime.utcnow() + timedelta(days=30),
-            rate_limit=1000
-        )
-        db.session.add(subscription)
-        db.session.commit()
-    return redirect('/')
+        try:
+            # Verify the session with Stripe
+            session = stripe.checkout.Session.retrieve(session_id)
+            
+            if session.payment_status == 'paid':
+                # Deactivate any existing subscriptions
+                existing_subs = Subscription.query.filter_by(user_id=current_user.id, active=True).all()
+                for sub in existing_subs:
+                    sub.active = False
+                
+                # Create new subscription
+                subscription = Subscription(
+                    user_id=current_user.id,
+                    tier='pro',
+                    active=True,
+                    expires_at=datetime.utcnow() + timedelta(days=30),
+                    rate_limit=1000
+                )
+                db.session.add(subscription)
+                db.session.commit()
+                flash('Thank you for your subscription!', 'success')
+                return redirect(url_for('profile'))
+            
+        except Exception as e:
+            flash('Error processing payment', 'error')
+            return redirect(url_for('profile'))
+            
+    return redirect(url_for('profile'))
 
 @app.route('/subscription/status')
 def subscription_status():

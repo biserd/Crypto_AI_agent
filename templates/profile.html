@@ -18,13 +18,15 @@
                     
                     <div class="subscription-info mt-4">
                         <h3>Subscription Details</h3>
-                        {% if subscription %}
+                        {% if subscription and subscription.active %}
                             <p><strong>Plan:</strong> {{ subscription.tier|title }}</p>
-                            <p><strong>Status:</strong> {% if subscription.active %}Active{% else %}Inactive{% endif %}</p>
+                            <p><strong>Status:</strong> Active</p>
+                            <p><strong>Member Since:</strong> {{ subscription.created_at.strftime('%B %d, %Y') }}</p>
                             <p><strong>Expires:</strong> {{ subscription.expires_at.strftime('%B %d, %Y') }}</p>
                             <p><strong>Daily Rate Limit:</strong> {{ subscription.rate_limit }}</p>
                         {% else %}
                             <p>No active subscription</p>
+                            <a href="{{ url_for('pricing') }}" class="btn btn-primary mt-3">Upgrade to Pro</a>
                         {% endif %}
                         
                         {% if not subscription or subscription.tier == 'basic' %}
