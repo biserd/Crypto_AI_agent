@@ -111,6 +111,11 @@
     margin: 0;
     overflow: hidden;
     border-bottom: 1px solid #e5e7eb;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.ticker-wrap {
+    margin-top: 10px;
 }
 
 .ticker-wrap {

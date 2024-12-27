@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="crypto-ticker-container">
+<div class="crypto-ticker-container" style="position: fixed; top: 56px; width: 100%; z-index: 1000;">
     <div class="ticker-wrap">
         <div class="ticker">
             {% for price in crypto_prices %}
@@ -437,8 +437,9 @@ updateLastRunTime();
 
         
 
-        <div class="crypto-prices-container mt-4 mb-5">
-            {% for price in crypto_prices %}
+        <h3 class="text-center mt-5 pt-5 mb-4">Trending Crypto 24hrs</h3>
+        <div class="crypto-prices-container mb-5">
+            {% for price in crypto_prices|sort(attribute='percent_change_24h', reverse=True)[:10] %}
                 {% set sentiment_count = {'positive': 0, 'negative': 0} %}
                 {% for article in articles %}
                     {% if price.symbol.lower() in article.content.lower() %}
