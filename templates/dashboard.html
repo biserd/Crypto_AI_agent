@@ -47,7 +47,7 @@
             <div class="row">
                 <div class="col-md-6">
                     <h5 class="mb-3">Biggest Gainers</h5>
-                    {% with sorted_gainers = crypto_prices|sort(attribute='percent_change_24h', reverse=True)|select('filter_by_positive')|list %}
+                    {% with sorted_gainers = crypto_prices|filter_by_positive|sort(attribute='percent_change_24h', reverse=True) %}
                     {% for price in sorted_gainers[:5] %}
                         <div class="crypto-item">
                             <a href="/crypto/{{ price.symbol }}" class="text-decoration-none">
@@ -62,7 +62,7 @@
                 </div>
                 <div class="col-md-6">
                     <h5 class="mb-3">Biggest Losers</h5>
-                    {% with sorted_losers = crypto_prices|sort(attribute='percent_change_24h')|select('filter_by_negative')|list %}
+                    {% with sorted_losers = crypto_prices|filter_by_negative|sort(attribute='percent_change_24h') %}
                     {% for price in sorted_losers[:5] %}
                         <div class="crypto-item">
                             <a href="/crypto/{{ price.symbol }}" class="text-decoration-none">
