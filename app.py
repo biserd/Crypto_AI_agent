@@ -346,6 +346,9 @@ def search():
     
     return redirect(f'/crypto/{symbol}')
 
+import requests
+from crypto_price_tracker import CryptoPriceTracker
+
 @app.route('/api/price-history/<symbol>')
 def price_history(symbol):
     try:
