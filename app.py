@@ -118,19 +118,14 @@ def check_subscription(feature='basic'):
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        username = request.form.get('username')
         email = request.form.get('email')
         password = request.form.get('password')
         
-        if User.query.filter_by(username=username).first():
-            flash('Username already exists')
-            return redirect(url_for('register'))
-            
         if User.query.filter_by(email=email).first():
             flash('Email already registered')
             return redirect(url_for('register'))
             
-        user = User(username=username, email=email)
+        user = User(email=email)
         user.set_password(password)
         db.session.add(user)
         db.session.commit()
@@ -152,12 +147,12 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        user = User.query.filter_by(username=request.form.get('username')).first()
+        user = User.query.filter_by(email=request.form.get('email')).first()
         if user and user.check_password(request.form.get('password')):
             login_user(user)
             next_page = request.args.get('next')
             return redirect(next_page if next_page else url_for('dashboard'))
-        flash('Invalid username or password')
+        flash('Invalid email or password')
     return render_template('login.html')
 
 @app.route('/logout')
