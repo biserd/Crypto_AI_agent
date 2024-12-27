@@ -346,6 +346,27 @@ def search():
     
     return redirect(f'/crypto/{symbol}')
 
+@app.route('/api/price-history/<symbol>')
+def price_history(symbol):
+    try:
+        # Get last 30 days of price data
+        prices = CryptoPrice.query.filter_by(symbol=symbol)\
+            .order_by(CryptoPrice.timestamp.desc())\
+            .limit(30).all()
+        
+        data = [{
+            'time': price.timestamp.timestamp(),
+            'open': float(price.price_usd),
+            'high': float(price.price_usd) * 1.02,  # Simulate OHLC data
+            'low': float(price.price_usd) * 0.98,
+            'close': float(price.price_usd)
+        } for price in prices]
+        
+        return jsonify(data)
+    except Exception as e:
+        logger.error(f"Error fetching price history: {str(e)}")
+        return jsonify([])
+
 @app.route('/success')
 def success():
     session_id = request.args.get('session_id')
