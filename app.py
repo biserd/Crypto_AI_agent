@@ -478,7 +478,7 @@ def success():
 @app.route('/subscription/status')
 @login_required
 def subscription_status():
-    subscription = Subscription.query.filter_by(user_id=1, active=True).first()
+    subscription = Subscription.query.filter_by(user_id=current_user.id, active=True).first()
     if subscription:
         return jsonify({
             'tier': subscription.tier,
@@ -486,7 +486,7 @@ def subscription_status():
             'expires_at': subscription.expires_at.isoformat(),
             'rate_limit': subscription.rate_limit
         })
-    return jsonify({'tier': 'basic', 'active': True})
+    return jsonify({'tier': 'basic', 'active': True, 'expires_at': None, 'rate_limit': 100})
 
 
 with app.app_context():
