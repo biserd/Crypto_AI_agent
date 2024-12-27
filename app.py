@@ -4,7 +4,8 @@ eventlet.monkey_patch()
 import os
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, redirect
-from flask_login import LoginManager, UserMixin, current_user
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from models import User, Subscription, Article, CryptoPrice, NewsSourceMetrics, CryptoGlossary
 from database import db
 from models import Article, CryptoPrice, NewsSourceMetrics, CryptoGlossary, Subscription
 import logging
@@ -91,9 +92,13 @@ def check_subscription(feature='basic'):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            # For now, we'll use a test user_id of 1
-            # This should be replaced with actual user authentication later
-            request.subscription = Subscription.query.filter_by(user_id=1, active=True).first()
+            if not current_user.is_authenticated:
+                return redirect(url_for('login'))
+                
+            request.subscription = Subscription.query.filter_by(
+                user_id=current_user.id, 
+                active=True
+            ).first()
 
             if feature == 'pro' and (not request.subscription or request.subscription.tier != 'pro'):
                 return jsonify({'error': 'Pro subscription required'}), 403
@@ -111,7 +116,49 @@ def check_subscription(feature='basic'):
         return decorated_function
     return decorator
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        user = User.query.filter_by(email=request.form.get('email')).first()
+        if user and user.check_password(request.form.get('password')):
+            login_user(user)
+            return redirect(url_for('dashboard'))
+        return render_template('login.html', error="Invalid credentials")
+    return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        if User.query.filter_by(email=request.form.get('email')).first():
+            return render_template('register.html', error="Email already registered")
+        if User.query.filter_by(username=request.form.get('username')).first():
+            return render_template('register.html', error="Username taken")
+            
+        user = User(
+            email=request.form.get('email'),
+            username=request.form.get('username')
+        )
+        user.set_password(request.form.get('password'))
+        db.session.add(user)
+        db.session.commit()
+        login_user(user)
+        return redirect(url_for('dashboard'))
+    return render_template('register.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
+@app.route('/profile')
+@login_required
+def profile():
+    subscription = Subscription.query.filter_by(user_id=current_user.id, active=True).first()
+    return render_template('profile.html', user=current_user, subscription=subscription)
+
 @app.route('/')
+@login_required
 @check_subscription('basic')
 def dashboard():
     try:
