@@ -361,7 +361,6 @@ def price_history(symbol):
             'high': float(price.price_usd) * 1.01,
             'low': float(price.price_usd) * 0.99,
             'close': float(price.price_usd)
-            'close': float(price.price_usd)
         } for price in prices]
         
         return jsonify(data)
