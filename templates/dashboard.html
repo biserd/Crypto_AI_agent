@@ -16,28 +16,6 @@
         </div>
     </div>
 </div>
-
-<!-- Add mini charts for biggest movers -->
-<div class="biggest-movers-container mt-3 mb-4">
-    <h5 class="text-muted mb-3">Biggest Movers (24h)</h5>
-    <div class="row">
-        {% set sorted_prices = crypto_prices|sort(attribute='percent_change_24h', reverse=true)[:5] %}
-        {% for price in sorted_prices %}
-        <div class="col">
-            <div class="mini-chart-card">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="symbol">{{ price.symbol }}</span>
-                    <span class="change {% if price.percent_change_24h > 0 %}text-success{% else %}text-danger{% endif %}">
-                        {{ "%.1f"|format(price.percent_change_24h) }}%
-                    </span>
-                </div>
-                <canvas id="chart-{{ price.symbol }}" class="mini-chart"></canvas>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-</div>
-
 <style>
 .sentiment-indicator {
     display: inline-flex;
@@ -198,6 +176,7 @@
     margin-top: 1rem;
 }
 
+/* New styles for share modal */
 .share-modal {
     display: none;
     position: fixed;
@@ -275,6 +254,7 @@
     background: #0A66C2;
 }
 
+/* Tooltip styles */
 .crypto-tooltip {
     position: relative;
     display: inline-block;
@@ -339,6 +319,7 @@
     color: #dc3545;
 }
 
+/* Fix stacking context issues */
 .card {
     position: relative;
     z-index: 1;
@@ -354,6 +335,7 @@
     z-index: 3;
 }
 
+/* Add these new styles for real-time news feed */
 .news-feed {
     position: relative;
     margin-bottom: 2rem;
@@ -402,36 +384,8 @@
         transform: translateY(0);
     }
 }
-
-.biggest-movers-container {
-    background: white;
-    padding: 1rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.mini-chart-card {
-    background: #f8f9fa;
-    padding: 0.75rem;
-    border-radius: 8px;
-    border: 1px solid rgba(0,0,0,0.1);
-}
-
-.mini-chart-card .symbol {
-    font-weight: bold;
-    font-size: 0.9rem;
-}
-
-.mini-chart-card .change {
-    font-size: 0.8rem;
-    font-weight: 500;
-}
-
-.mini-chart {
-    height: 50px !important;
-    width: 100% !important;
-}
 </style>
+
 
 <div class="row">
     <div class="col-12">
@@ -458,6 +412,7 @@
             {% endfor %}
         </div>
 
+        
 
         <div class="crypto-prices-container mt-4 mb-5">
             {% for price in crypto_prices %}
@@ -502,6 +457,7 @@
                 </a>
             {% endfor %}
         </div>
+
 
         <!-- Articles Section -->
         {% for article in articles %}
@@ -613,6 +569,7 @@ function shareOnLinkedIn(title, summary, url) {
     window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`, '_blank');
 }
 
+// Close modal when clicking outside
 window.onclick = function(event) {
     if (event.target.classList.contains('share-modal')) {
         event.target.style.display = 'none';
@@ -621,7 +578,6 @@ window.onclick = function(event) {
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const socket = io();
@@ -632,9 +588,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     socket.on('new_article', (article) => {
+        // Create new article card
         const articleCard = document.createElement('div');
         articleCard.className = 'card mb-3 new-article';
 
+        // Generate sentiment badge HTML
         const sentimentClass = article.sentiment_label ? 
             `sentiment-${article.sentiment_label.toLowerCase()}` : '';
         const sentimentScore = article.sentiment_score ? 
@@ -645,6 +603,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 ${sentimentScore}
             </span>` : '';
 
+        // Set article card content
         articleCard.innerHTML = `
             <div class="card-body">
                 <h5 class="card-title">${article.title}</h5>
@@ -664,8 +623,10 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
 
+        // Add the new article to the beginning of the feed
         newsContainer.insertBefore(articleCard, newsContainer.firstChild);
 
+        // Remove old articles if there are too many
         const maxArticles = 20;
         const articles = newsContainer.getElementsByClassName('card');
         if (articles.length > maxArticles) {
@@ -676,44 +637,6 @@ document.addEventListener('DOMContentLoaded', function() {
     socket.on('disconnect', () => {
         console.log('Disconnected from WebSocket server');
     });
-
-    {% for price in sorted_prices %}
-    new Chart(document.getElementById('chart-{{ price.symbol }}').getContext('2d'), {
-        type: 'line',
-        data: {
-            labels: Array(24).fill(''),
-            datasets: [{
-                data: Array(24).fill(null).map(() => Math.random() * 100),
-                borderColor: '{{ price.percent_change_24h > 0 and "#28a745" or "#dc3545" }}',
-                borderWidth: 1.5,
-                fill: true,
-                backgroundColor: '{{ price.percent_change_24h > 0 and "rgba(40, 167, 69, 0.1)" or "rgba(220, 53, 69, 0.1)" }}',
-                tension: 0.4,
-                pointRadius: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    enabled: false
-                }
-            },
-            scales: {
-                x: {
-                    display: false
-                },
-                y: {
-                    display: false
-                }
-            }
-        }
-    });
-    {% endfor %}
 });
 </script>
 
