@@ -461,7 +461,7 @@
         <div class="top-movers-charts">
             <h4 class="text-center mb-4">Top Movers (24h)</h4>
             <div class="chart-grid">
-                {% for price in crypto_prices|sort(attribute='percent_change_24h', reverse=true)[:5] %}
+                {% for price in crypto_prices|sort(attribute='percent_change_24h', reverse=True)[:5] %}
                 <div class="mini-chart-container">
                     <canvas id="chart-{{ price.symbol }}"></canvas>
                     <div class="chart-label">
@@ -645,7 +645,7 @@ window.onclick = function(event) {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    {% for price in crypto_prices|sort(attribute='percent_change_24h', reverse=true)[:5] %}
+    {% for price in crypto_prices|sort(attribute='percent_change_24h', reverse=True)[:5] %}
     new Chart(document.getElementById('chart-{{ price.symbol }}'), {
         type: 'line',
         data: {
