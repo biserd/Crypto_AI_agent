@@ -183,9 +183,9 @@
                 const response = await fetch('/create-checkout-session', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/json'
                     }
-                }););
+                });
                 const session = await response.json();
                 
                 if (!stripe) {
