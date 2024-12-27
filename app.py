@@ -3,7 +3,7 @@ eventlet.monkey_patch()
 
 import os
 from functools import wraps
-from flask import Flask, render_template, request, jsonify, redirect, flash, url_for
+from flask import Flask, render_template, request, jsonify, redirect, flash, url_for, session
 from flask_login import LoginManager, UserMixin, current_user, login_required, login_user, logout_user
 from database import db
 from models import Article, CryptoPrice, NewsSourceMetrics, CryptoGlossary, Subscription, Users
