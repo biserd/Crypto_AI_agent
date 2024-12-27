@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 
 
 # Stripe configuration
-stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+stripe.api_key = os.environ.get('STRIPE_TEST_SECRET_KEY', 'sk_test_your_test_key')
 
 @app.route('/stripe-config')
 def stripe_config():
