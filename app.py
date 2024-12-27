@@ -349,34 +349,35 @@ def search():
 @app.route('/api/price-history/<symbol>')
 def price_history(symbol):
     try:
-        # Get last 30 days of price data
-        prices = CryptoPrice.query.filter_by(symbol=symbol)\
-            .order_by(CryptoPrice.last_updated.desc())\
-            .limit(30).all()
+        # Get coin id from symbol
+        tracker = CryptoPriceTracker()
+        coin_id = tracker.crypto_ids.get(symbol)
+        if not coin_id:
+            return jsonify([])
+
+        # Fetch 30 days of historical data from CoinGecko
+        days = 30
+        response = requests.get(
+            f"{tracker.base_url}/coins/{coin_id}/market_chart",
+            params={
+                'vs_currency': 'usd',
+                'days': days,
+                'interval': 'daily'
+            }
+        )
         
-        if not prices:
+        if response.status_code != 200:
             return jsonify([])
             
-        prices = sorted(prices, key=lambda x: x.last_updated)
-        current_price = prices[-1].price_usd if prices else 0
+        data = response.json()
+        prices = data.get('prices', [])
         
-        # Generate test data points if we don't have enough history
-        if len(prices) < 2:
-            base_time = int(datetime.utcnow().timestamp())
-            data = []
-            import random
-            # Start from current price and work backwards with realistic variations
-            base_price = current_price * 0.85  # Start ~15% lower for historical data
-            for i in range(30):
-                time = base_time - ((29-i) * 3600 * 24)  # Daily intervals
-                # Create gradual upward trend with smaller variations
-                variation = random.uniform(-0.02, 0.03)  # -2% to +3% daily variation
-                base_price = base_price * (1 + variation)
-                data.append({
-                    'time': time,
-                    'value': float(base_price)
-                })
-            return jsonify(sorted(data, key=lambda x: x['time']))  # Sort by time ascending
+        formatted_data = [{
+            'time': int(timestamp/1000),  # Convert milliseconds to seconds
+            'value': float(price)
+        } for timestamp, price in prices]
+        
+        return jsonify(formatted_data)
             
         data = [{
             'time': int(price.last_updated.timestamp()),
