@@ -107,20 +107,32 @@
 
 .crypto-price {
     font-weight: bold;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    margin-right: 0.5rem;
-    border-left: 4px solid transparent;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    margin-right: 0.75rem;
+    background: #f8f9fa;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: transform 0.2s ease;
+}
+
+.crypto-price:hover {
+    transform: translateY(-2px);
 }
 
 .crypto-price.sentiment-positive {
-    border-left-color: #34d399;
+    background: linear-gradient(135deg, #f8f9fa 0%, #dcfce7 100%);
+    border: 1px solid #34d399;
+    color: #065f46;
 }
 
 .crypto-price.sentiment-negative {
-    border-left-color: #f87171;
+    background: linear-gradient(135deg, #f8f9fa 0%, #fee2e2 100%);
+    border: 1px solid #f87171;
+    color: #991b1b;
 }
 
 .crypto-price.sentiment-neutral {
-    border-left-color: #fbbf24;
+    background: linear-gradient(135deg, #f8f9fa 0%, #fef3c7 100%);
+    border: 1px solid #fbbf24;
+    color: #92400e;
 }
