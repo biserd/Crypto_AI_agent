@@ -351,11 +351,11 @@ def price_history(symbol):
     try:
         # Get last 30 days of price data
         prices = CryptoPrice.query.filter_by(symbol=symbol)\
-            .order_by(CryptoPrice.timestamp.desc())\
+            .order_by(CryptoPrice.last_updated.desc())\
             .limit(30).all()
         
         data = [{
-            'time': price.last_updated.timestamp(),
+            'time': int(price.last_updated.timestamp()),
             'open': float(price.price_usd),
             'high': float(price.price_usd) * 1.02,  # Simulate OHLC data
             'low': float(price.price_usd) * 0.98,

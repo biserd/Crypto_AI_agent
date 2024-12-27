@@ -22,7 +22,7 @@ class NewsSourceMetrics(db.Model):
     last_updated = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
-        return f'<NewsSourceMetrics {self.name}: {self.trust_score}>'
+        return f'<NewsSourceMetrics {self.source_name}: {self.trust_score}>'
 
 class Article(db.Model):
     id = db.Column(db.Integer, primary_key=True)
