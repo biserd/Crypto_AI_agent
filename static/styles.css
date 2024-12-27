@@ -174,12 +174,12 @@
 
 .change-up {
     background: rgba(52, 211, 153, 0.2);
-    color: #34d399;
+    color: #10b981;
 }
 
 .change-down {
     background: rgba(248, 113, 113, 0.2);
-    color: #f87171;
+    color: #ef4444;
 }
 
 @keyframes ticker {
