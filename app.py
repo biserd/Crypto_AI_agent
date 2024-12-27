@@ -355,7 +355,7 @@ def price_history(symbol):
             .limit(30).all()
         
         data = [{
-            'time': int(price.last_updated.timestamp()),
+            'time': int(price.last_updated.timestamp()) * 1000,  # Convert to milliseconds
             'open': float(price.price_usd),
             'high': float(price.price_usd) * 1.02,  # Simulate OHLC data
             'low': float(price.price_usd) * 0.98,
