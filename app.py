@@ -128,9 +128,12 @@ def dashboard():
             logger.info(f"Retrieved {len(news_sources)} news sources")
         except Exception as e:
             logger.error(f"Error fetching news sources: {str(e)}")
+            news_sources = []
 
+        # Return error if no data is available
         if not recent_articles and not crypto_prices and not news_sources:
-            return "Error: Unable to load data", 500
+            logger.error("No data available for dashboard")
+            return "Error: No data available", 500
 
         # Prepare articles with enhanced summaries
         for article in recent_articles:
