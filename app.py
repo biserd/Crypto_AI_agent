@@ -21,6 +21,15 @@ from sqlalchemy import desc
 app = Flask(__name__)
 socketio = SocketIO(app, async_mode='eventlet', cors_allowed_origins="*")
 
+def filter_by_positive(price):
+    return price.percent_change_24h > 0
+
+def filter_by_negative(price):
+    return price.percent_change_24h < 0
+
+app.jinja_env.filters['filter_by_positive'] = filter_by_positive
+app.jinja_env.filters['filter_by_negative'] = filter_by_negative
+
 # Initialize last run time in app config
 app.config['LAST_SCRAPER_RUN'] = datetime.utcnow()
 
