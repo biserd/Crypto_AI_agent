@@ -111,7 +111,64 @@ def check_subscription(feature='basic'):
         return decorated_function
     return decorator
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        if User.query.filter_by(username=username).first():
+            flash('Username already exists')
+            return redirect(url_for('register'))
+            
+        if User.query.filter_by(email=email).first():
+            flash('Email already registered')
+            return redirect(url_for('register'))
+            
+        user = User(username=username, email=email)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        
+        subscription = Subscription(
+            user_id=user.id,
+            tier='basic',
+            expires_at=datetime.utcnow() + timedelta(days=365),
+            rate_limit=100
+        )
+        db.session.add(subscription)
+        db.session.commit()
+        
+        login_user(user)
+        return redirect(url_for('dashboard'))
+        
+    return render_template('register.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        user = User.query.filter_by(username=request.form.get('username')).first()
+        if user and user.check_password(request.form.get('password')):
+            login_user(user)
+            return redirect(url_for('dashboard'))
+        flash('Invalid username or password')
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('dashboard'))
+
+@app.route('/profile')
+@login_required
+def profile():
+    subscription = Subscription.query.filter_by(user_id=current_user.id, active=True).first()
+    return render_template('profile.html', user=current_user, subscription=subscription)
+
 @app.route('/')
+@login_required
 @check_subscription('basic')
 def dashboard():
     try:

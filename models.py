@@ -1,9 +1,29 @@
+
 from datetime import datetime
 from database import db
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
+
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(128))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    subscriptions = db.relationship('Subscription', backref='user', lazy=True)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    def __repr__(self):
+        return f'<User {self.username}>'
 
 class Subscription(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, nullable=False)  # Will be linked to User model later
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     tier = db.Column(db.String(20), nullable=False)  # 'basic', 'pro'
     active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -34,10 +54,10 @@ class Article(db.Model):
     category = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     published = db.Column(db.Boolean, default=False)
-    sentiment_score = db.Column(db.Float)  # Overall sentiment score
-    sentiment_label = db.Column(db.String(20))  # Positive, Negative, or Neutral
-    accuracy_verified = db.Column(db.Boolean, default=False)  # For fact-checking tracking
-    trust_impact = db.Column(db.Float, default=0.0)  # Impact on source trust score
+    sentiment_score = db.Column(db.Float)
+    sentiment_label = db.Column(db.String(20))
+    accuracy_verified = db.Column(db.Boolean, default=False)
+    trust_impact = db.Column(db.Float, default=0.0)
 
     def __repr__(self):
         return f'<Article {self.title}>'
@@ -45,14 +65,14 @@ class Article(db.Model):
 class DistributionLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
-    platform = db.Column(db.String(50), nullable=False)  # 'twitter' or 'telegram'
+    platform = db.Column(db.String(50), nullable=False)
     status = db.Column(db.String(50), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     message = db.Column(db.Text)
 
 class CryptoPrice(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    symbol = db.Column(db.String(10), nullable=False)  # e.g., BTC, ETH
+    symbol = db.Column(db.String(10), nullable=False)
     price_usd = db.Column(db.Float, nullable=False)
     percent_change_24h = db.Column(db.Float)
     last_updated = db.Column(db.DateTime, default=datetime.utcnow)
@@ -64,12 +84,12 @@ class CryptoGlossary(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     term = db.Column(db.String(100), unique=True, nullable=False)
     definition = db.Column(db.Text, nullable=False)
-    category = db.Column(db.String(50))  # e.g., Technical, Trading, DeFi
-    difficulty_level = db.Column(db.String(20))  # Beginner, Intermediate, Advanced
+    category = db.Column(db.String(50))
+    difficulty_level = db.Column(db.String(20))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    usage_count = db.Column(db.Integer, default=0)  # Track how often term is viewed
-    related_terms = db.Column(db.String(200))  # Comma-separated related terms
+    usage_count = db.Column(db.Integer, default=0)
+    related_terms = db.Column(db.String(200))
 
     def __repr__(self):
         return f'<CryptoGlossary {self.term}>'
