@@ -421,9 +421,13 @@
                     {% with sorted_gainers = crypto_prices|sort(attribute='percent_change_24h', reverse=True)|select('filter_by_positive')|list %}
                     {% for price in sorted_gainers[:5] %}
                         {% set sentiment_count = {'positive': 0, 'negative': 0} %}
-                        <!-- Content for gainers -->
                         <div class="crypto-item">
-                            {{ price.symbol }}: {{ price.percent_change_24h }}%
+                            <a href="/crypto/{{ price.symbol }}" class="text-decoration-none">
+                                <div class="crypto-tooltip crypto-price {{ 'price-up' if price.percent_change_24h|float > 0 else 'price-down' }}">
+                                    {{ price.symbol }}: {{ "%.2f"|format(price.price_usd) }}
+                                    <small>({{ "%.1f"|format(price.percent_change_24h) }}%)</small>
+                                </div>
+                            </a>
                         </div>
                     {% endfor %}
                     {% endwith %}
@@ -433,14 +437,22 @@
                     {% with sorted_losers = crypto_prices|sort(attribute='percent_change_24h')|select('filter_by_negative')|list %}
                     {% for price in sorted_losers[:5] %}
                         {% set sentiment_count = {'positive': 0, 'negative': 0} %}
-                        <!-- Content for losers -->
                         <div class="crypto-item">
-                            {{ price.symbol }}: {{ price.percent_change_24h }}%
+                            <a href="/crypto/{{ price.symbol }}" class="text-decoration-none">
+                                <div class="crypto-tooltip crypto-price {{ 'price-up' if price.percent_change_24h|float > 0 else 'price-down' }}">
+                                    {{ price.symbol }}: {{ "%.2f"|format(price.price_usd) }}
+                                    <small>({{ "%.1f"|format(price.percent_change_24h) }}%)</small>
+                                </div>
+                            </a>
                         </div>
                     {% endfor %}
                     {% endwith %}
                 </div>
-                {% for article in articles %}
+            </div>
+        </div>
+
+        <!-- Articles Section -->
+        {% for article in articles %}
                     {% if price.symbol.lower() in article.content.lower() %}
                         {% if article.sentiment_label == 'positive' %}
                             {% set _ = sentiment_count.update({'positive': sentiment_count['positive'] + 1}) %}
