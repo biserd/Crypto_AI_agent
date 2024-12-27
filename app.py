@@ -322,6 +322,30 @@ def pricing():
 def contact():
     return render_template('contact.html')
 
+@app.route('/search')
+def search():
+    query = request.args.get('q', '').lower()
+    if not query:
+        return redirect('/')
+    
+    # Map common names to symbols
+    name_to_symbol = {
+        'bitcoin': 'BTC',
+        'ethereum': 'ETH',
+        'binance': 'BNB',
+        'cardano': 'ADA',
+        'solana': 'SOL',
+        'ripple': 'XRP',
+        'dogecoin': 'DOGE',
+        'polygon': 'MATIC',
+        'avalanche': 'AVAX'
+    }
+    
+    # Try to find the symbol
+    symbol = name_to_symbol.get(query, query.upper())
+    
+    return redirect(f'/crypto/{symbol}')
+
 @app.route('/success')
 def success():
     session_id = request.args.get('session_id')
