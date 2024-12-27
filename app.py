@@ -354,11 +354,13 @@ def price_history(symbol):
             .order_by(CryptoPrice.last_updated.desc())\
             .limit(30).all()
         
+        prices = sorted(prices, key=lambda x: x.last_updated)
         data = [{
-            'time': int(price.last_updated.timestamp()) * 1000,  # Convert to milliseconds
+            'time': int(price.last_updated.timestamp()),
             'open': float(price.price_usd),
-            'high': float(price.price_usd) * 1.02,  # Simulate OHLC data
-            'low': float(price.price_usd) * 0.98,
+            'high': float(price.price_usd) * 1.01,
+            'low': float(price.price_usd) * 0.99,
+            'close': float(price.price_usd)
             'close': float(price.price_usd)
         } for price in prices]
         

@@ -163,6 +163,10 @@ document.addEventListener('DOMContentLoaded', function() {
             vertLines: { color: '#f0f3fa' },
             horzLines: { color: '#f0f3fa' },
         },
+        handleScale: {
+            mouseWheel: true,
+            pinch: true,
+        },
         crosshair: {
             mode: LightweightCharts.CrosshairMode.Normal,
         },
@@ -194,11 +198,17 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
     // Handle window resize
-    window.addEventListener('resize', () => {
+    function handleResize() {
+        const container = document.getElementById('tradingview_chart');
         chart.applyOptions({
-            width: document.getElementById('tradingview_chart').clientWidth
+            width: container.clientWidth,
+            height: container.clientHeight
         });
-    });
+        chart.timeScale().fitContent();
+    }
+    
+    window.addEventListener('resize', handleResize);
+    handleResize();
 });
 </script>
 {% endblock %}
