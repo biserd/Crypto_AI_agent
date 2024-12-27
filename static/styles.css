@@ -106,11 +106,10 @@
 }
 
 .crypto-ticker-container {
-    background: white;
+    background: #1a1a1a;
     padding: 10px 0;
-    margin: 0;
+    margin-bottom: 20px;
     overflow: hidden;
-    border-bottom: 1px solid #e5e7eb;
 }
 
 .ticker-wrap {
@@ -132,7 +131,7 @@
     display: inline-flex;
     align-items: center;
     margin: 0 20px;
-    color: #000;
+    color: white;
     font-family: 'Courier New', monospace;
 }
 
@@ -168,18 +167,6 @@
     100% {
         transform: translateX(-50%);
     }
-}
-
-.trending-crypto-container {
-    background: white;
-    border-radius: 12px;
-    padding: 2rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.trending-crypto-container h3 {
-    color: #2a2a72;
-    font-weight: bold;
 }
 
 .crypto-price {

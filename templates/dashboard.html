@@ -1,21 +1,6 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="crypto-ticker-container">
-    <div class="ticker-wrap">
-        <div class="ticker">
-            {% for price in crypto_prices %}
-                <div class="ticker-item">
-                    <span class="ticker-symbol">{{ price.symbol }}</span>
-                    <span class="ticker-price">${{ "%.2f"|format(price.price_usd) }}</span>
-                    <span class="ticker-change {% if price.percent_change_24h > 0 %}change-up{% else %}change-down{% endif %}">
-                        {{ "%.1f"|format(price.percent_change_24h) }}%
-                    </span>
-                </div>
-            {% endfor %}
-        </div>
-    </div>
-</div>
 <style>
 .sentiment-indicator {
     display: inline-flex;
@@ -435,24 +420,31 @@ updateLastRunTime();
             {% endfor %}
         </div>
 
-        
+        <div class="crypto-ticker-container">
+            <div class="ticker-wrap">
+                <div class="ticker">
+                    {% for price in crypto_prices %}
+                        <div class="ticker-item">
+                            <span class="ticker-symbol">{{ price.symbol }}</span>
+                            <span class="ticker-price">${{ "%.2f"|format(price.price_usd) }}</span>
+                            <span class="ticker-change {% if price.percent_change_24h > 0 %}change-up{% else %}change-down{% endif %}">
+                                {{ "%.1f"|format(price.percent_change_24h) }}%
+                            </span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
 
-        <div class="trending-crypto-container mt-4 mb-5">
-            <h3 class="text-center mb-4">Trending Crypto 24hrs</h3>
-            <div class="crypto-prices-container">
-                {% for price in crypto_prices|sort(attribute='percent_change_24h', reverse=True)|slice(0, 10) %}
-                    {% set sentiment_count = {'positive': 0, 'negative': 0, 'neutral': 0, 'total': 0} %}
+        <div class="crypto-prices-container mt-4 mb-5">
+            {% for price in crypto_prices %}
+                {% set sentiment_count = {'positive': 0, 'negative': 0} %}
                 {% for article in articles %}
-                    {% if article.content and price.symbol.lower() in article.content.lower() %}
-                        {% if article.sentiment_label %}
-                            {% if article.sentiment_label == 'positive' %}
-                                {% set _ = sentiment_count.update({'positive': sentiment_count['positive'] + 1}) %}
-                            {% elif article.sentiment_label == 'negative' %}
-                                {% set _ = sentiment_count.update({'negative': sentiment_count['negative'] + 1}) %}
-                            {% else %}
-                                {% set _ = sentiment_count.update({'neutral': sentiment_count['neutral'] + 1}) %}
-                            {% endif %}
-                            {% set _ = sentiment_count.update({'total': sentiment_count['total'] + 1}) %}
+                    {% if price.symbol.lower() in article.content.lower() %}
+                        {% if article.sentiment_label == 'positive' %}
+                            {% set _ = sentiment_count.update({'positive': sentiment_count['positive'] + 1}) %}
+                        {% elif article.sentiment_label == 'negative' %}
+                            {% set _ = sentiment_count.update({'negative': sentiment_count['negative'] + 1}) %}
                         {% endif %}
                     {% endif %}
                 {% endfor %}
