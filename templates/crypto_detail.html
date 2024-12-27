@@ -180,12 +180,14 @@ document.addEventListener('DOMContentLoaded', function() {
         },
     });
 
-    const candleSeries = chart.addCandlestickSeries({
-        upColor: '#26a69a', 
-        downColor: '#ef5350',
-        borderVisible: false,
-        wickUpColor: '#26a69a', 
-        wickDownColor: '#ef5350'
+    const series = chart.addLineSeries({
+        color: '#2196F3',
+        lineWidth: 2,
+        priceFormat: {
+            type: 'price',
+            precision: 2,
+            minMove: 0.01,
+        },
     });
 
     // Fetch price data from our backend
@@ -193,7 +195,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data && data.length > 0) {
-                candleSeries.setData(data);
+                series.setData(data);
                 chart.timeScale().fitContent();
             }
         })
