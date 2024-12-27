@@ -180,20 +180,16 @@ document.addEventListener('DOMContentLoaded', function() {
         },
     });
 
-    const candleSeries = chart.addCandlestickSeries({
-        upColor: '#28a745',
-        downColor: '#dc3545',
-        borderDownColor: '#dc3545',
-        borderUpColor: '#28a745',
-        wickDownColor: '#dc3545',
-        wickUpColor: '#28a745',
+    const lineSeries = chart.addLineSeries({
+        color: '#2196F3',
+        lineWidth: 2,
     });
 
     // Fetch price data from our backend
     fetch(`/api/price-history/{{ crypto.symbol }}`)
         .then(response => response.json())
         .then(data => {
-            candleSeries.setData(data);
+            lineSeries.setData(data);
             chart.timeScale().fitContent();
         });
 
