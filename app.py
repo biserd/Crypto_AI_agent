@@ -338,7 +338,7 @@ def sync_article_counts():
             for source in sources:
                 count = Article.query.filter_by(source_name=source.source_name).count()
                 source.article_count = count
-                logger.info(f"Syncing article count for {source.name}: {count}")
+                logger.info(f"Syncing article count for {source.source_name}: {count}")
             db.session.commit()
             logger.info("Successfully synchronized all article counts")
     except Exception as e:
