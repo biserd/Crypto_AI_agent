@@ -104,3 +104,23 @@
     font-family: 'Courier New', monospace;
     font-weight: bold;
 }
+
+.crypto-price {
+    font-weight: bold;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    margin-right: 0.5rem;
+    border-left: 4px solid transparent;
+}
+
+.crypto-price.sentiment-positive {
+    border-left-color: #34d399;
+}
+
+.crypto-price.sentiment-negative {
+    border-left-color: #f87171;
+}
+
+.crypto-price.sentiment-neutral {
+    border-left-color: #fbbf24;
+}

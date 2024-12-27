@@ -422,8 +422,24 @@ updateLastRunTime();
 
         <div class="crypto-prices-container mt-4 mb-5">
             {% for price in crypto_prices %}
+                {% set sentiment_count = {'positive': 0, 'negative': 0} %}
+                {% for article in articles %}
+                    {% if price.symbol.lower() in article.content.lower() %}
+                        {% if article.sentiment_label == 'positive' %}
+                            {% set _ = sentiment_count.update({'positive': sentiment_count['positive'] + 1}) %}
+                        {% elif article.sentiment_label == 'negative' %}
+                            {% set _ = sentiment_count.update({'negative': sentiment_count['negative'] + 1}) %}
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+                {% set sentiment_class = 'neutral' %}
+                {% if sentiment_count['positive'] > sentiment_count['negative'] %}
+                    {% set sentiment_class = 'positive' %}
+                {% elif sentiment_count['negative'] > sentiment_count['positive'] %}
+                    {% set sentiment_class = 'negative' %}
+                {% endif %}
                 <a href="/crypto/{{ price.symbol }}" class="text-decoration-none">
-                    <div class="crypto-tooltip crypto-price {% if price.percent_change_24h > 0 %}price-up{% else %}price-down{% endif %}">
+                    <div class="crypto-tooltip crypto-price sentiment-{{ sentiment_class }} {% if price.percent_change_24h > 0 %}price-up{% else %}price-down{% endif %}">
                         {% set currency_names = {
                         'BTC': 'Bitcoin',
                         'ETH': 'Ethereum',
