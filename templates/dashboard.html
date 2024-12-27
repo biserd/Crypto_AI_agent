@@ -29,7 +29,7 @@
             <div class="crypto-prices-container mt-4 mb-5">
                 <div class="row">
                     <div class="col-md-6">
-                        <h5 class="mb-3">Biggest Gainers</h5>
+                        <h5 class="mb-3">Exploding Crypto</h5>
                         {% with sorted_gainers = crypto_prices|filter_by_positive|sort(attribute='percent_change_24h', reverse=True) %}
                         {% for price in sorted_gainers[:5] %}
                             <div class="crypto-item">
