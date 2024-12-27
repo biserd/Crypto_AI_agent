@@ -476,17 +476,20 @@ def success():
     return redirect('/')
 
 @app.route('/subscription/status')
-@login_required
 def subscription_status():
-    subscription = Subscription.query.filter_by(user_id=current_user.id, active=True).first()
-    if subscription:
-        return jsonify({
-            'tier': subscription.tier,
-            'active': subscription.active,
-            'expires_at': subscription.expires_at.isoformat(),
-            'rate_limit': subscription.rate_limit
-        })
-    return jsonify({'tier': 'basic', 'active': True, 'expires_at': None, 'rate_limit': 100})
+    try:
+        if current_user.is_authenticated:
+            subscription = Subscription.query.filter_by(user_id=current_user.id, active=True).first()
+            if subscription:
+                return jsonify({
+                    'tier': subscription.tier,
+                    'active': subscription.active,
+                    'expires_at': subscription.expires_at.isoformat(),
+                    'rate_limit': subscription.rate_limit
+                })
+        return jsonify({'tier': 'basic', 'active': True, 'expires_at': None, 'rate_limit': 100})
+    except Exception as e:
+        return jsonify({'tier': 'basic', 'active': True, 'expires_at': None, 'rate_limit': 100})
 
 
 with app.app_context():
