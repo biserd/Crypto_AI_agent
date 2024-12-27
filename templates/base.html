@@ -100,6 +100,10 @@
                         <a class="nav-link" href="/contact">Contact</a>
                     </li>
                 </ul>
+                <form class="d-flex mx-3 flex-grow-1" style="max-width: 300px;">
+                    <input type="text" id="searchCrypto" class="form-control" placeholder="Search cryptocurrency..." autocomplete="off">
+                    <div id="searchSuggestions" class="position-absolute bg-white shadow rounded mt-5 w-100 d-none"></div>
+                </form>
                 <div class="d-flex align-items-center">
                     <div id="subscriptionStatus" class="subscription-badge basic" onclick="showUpgradeModal()">
                         Loading...
@@ -195,6 +199,56 @@
                 hideUpgradeModal();
             }
         }
+
+        // Crypto search functionality
+        const cryptoNames = {
+            'bitcoin': 'BTC',
+            'ethereum': 'ETH',
+            'binance': 'BNB',
+            'cardano': 'ADA',
+            'solana': 'SOL',
+            'ripple': 'XRP',
+            'dogecoin': 'DOGE',
+            'polygon': 'MATIC',
+            'avalanche': 'AVAX'
+        };
+
+        const searchInput = document.getElementById('searchCrypto');
+        const suggestionsDiv = document.getElementById('searchSuggestions');
+
+        searchInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            if (query.length < 1) {
+                suggestionsDiv.classList.add('d-none');
+                return;
+            }
+
+            const matches = Object.entries(cryptoNames).filter(([name, symbol]) => 
+                name.includes(query) || symbol.toLowerCase().includes(query)
+            );
+
+            if (matches.length > 0) {
+                suggestionsDiv.innerHTML = matches.map(([name, symbol]) => `
+                    <div class="p-2 hover-bg-light cursor-pointer" onclick="selectCrypto('${symbol}')">
+                        ${name.charAt(0).toUpperCase() + name.slice(1)} (${symbol})
+                    </div>
+                `).join('');
+                suggestionsDiv.classList.remove('d-none');
+            } else {
+                suggestionsDiv.classList.add('d-none');
+            }
+        });
+
+        function selectCrypto(symbol) {
+            window.location.href = `/crypto/${symbol}`;
+        }
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target)) {
+                suggestionsDiv.classList.add('d-none');
+            }
+        });
 
         // Initialize subscription status and Stripe when page loads
         document.addEventListener('DOMContentLoaded', fetchSubscriptionStatus);
