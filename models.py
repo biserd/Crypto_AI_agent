@@ -56,7 +56,6 @@ class CryptoPrice(db.Model):
     price_usd = db.Column(db.Float, nullable=False)
     percent_change_24h = db.Column(db.Float)
     last_updated = db.Column(db.DateTime, default=datetime.utcnow)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
         return f'<CryptoPrice {self.symbol}: ${self.price_usd:.2f}>'

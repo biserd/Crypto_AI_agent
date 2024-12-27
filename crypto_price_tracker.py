@@ -74,8 +74,14 @@ class CryptoPriceTracker:
                         logger.error(f"Error updating {symbol} price: {str(e)}")
                         continue
 
-            db.session.commit()
-            return True
+            try:
+                db.session.commit()
+                return True
+            except:
+                db.session.rollback()
+                # Try one more time
+                db.session.commit()
+                return True
 
         except Exception as e:
             logger.error(f"Error in fetch_current_prices: {str(e)}")
