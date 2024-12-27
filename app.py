@@ -120,9 +120,19 @@ def register():
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        terms = request.form.get('terms')
         
         if User.query.filter_by(email=email).first():
             flash('Email already registered')
+            return redirect(url_for('register'))
+            
+        if password != confirm_password:
+            flash('Passwords do not match')
+            return redirect(url_for('register'))
+            
+        if not terms:
+            flash('You must accept the terms and conditions')
             return redirect(url_for('register'))
             
         user = User(email=email)
