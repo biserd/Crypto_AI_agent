@@ -222,3 +222,13 @@
     border: 1px solid #fbbf24;
     color: #92400e;
 }
+
+.price-up {
+    color: #10b981 !important;
+    background-color: rgba(16, 185, 129, 0.1) !important;
+}
+
+.price-down {
+    color: #ef4444 !important;
+    background-color: rgba(239, 68, 68, 0.1) !important;
+}
