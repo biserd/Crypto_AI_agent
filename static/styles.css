@@ -87,8 +87,19 @@
     color: #28a745;
 }
 
-.feature-list i.fa-times {
+.feature-list i.fa-check.disabled {
+    color: #6c757d;
     opacity: 0.5;
+}
+
+.feature-list li {
+    padding: 8px 0;
+    display: flex;
+    align-items: center;
+}
+
+.feature-list li.text-muted {
+    color: #6c757d;
 }
 
 .feature-list li {
