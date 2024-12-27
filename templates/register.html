@@ -17,12 +17,29 @@
                         </div>
                         <div class="mb-3">
                             <label for="password" class="form-label">Password</label>
-                            <input type="password" class="form-control" id="password" name="password" required>
+                            <input type="password" class="form-control" id="password" name="password" required onchange="validatePassword()">
                         </div>
                         <div class="mb-3">
                             <label for="confirm_password" class="form-label">Confirm Password</label>
-                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required onchange="validatePassword()">
+                            <div id="password-message" class="text-danger"></div>
                         </div>
+                        <script>
+                            function validatePassword() {
+                                var password = document.getElementById("password").value;
+                                var confirm_password = document.getElementById("confirm_password").value;
+                                var message = document.getElementById("password-message");
+                                var submit_button = document.querySelector('button[type="submit"]');
+                                
+                                if (password != confirm_password) {
+                                    message.textContent = "Passwords do not match";
+                                    submit_button.disabled = true;
+                                } else {
+                                    message.textContent = "";
+                                    submit_button.disabled = false;
+                                }
+                            }
+                        </script>
                         <div class="mb-3 form-check">
                             <input type="checkbox" class="form-check-input" id="terms" name="terms" required>
                             <label class="form-check-label" for="terms">I accept the terms and conditions</label>
