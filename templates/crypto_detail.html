@@ -91,6 +91,47 @@
     </div>
 </div>
 
+<div class="chart-container" style="position: relative; height:300px; width:100%; margin-bottom: 20px;">
+    <canvas id="priceChart"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    fetch(`/api/price-history/{{ crypto.symbol }}`)
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(d => new Date(d.time * 1000).toLocaleDateString()),
+                    datasets: [{
+                        label: '{{ crypto.symbol }} Price (USD)',
+                        data: data.map(d => d.value),
+                        borderColor: '#2196F3',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false
+                        }
+                    }
+                }
+            });
+        });
+});
+</script>
+
 <div class="container-fluid px-4">
     <div class="row mb-4">
         <div class="col-md-6">
