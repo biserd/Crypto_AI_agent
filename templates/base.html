@@ -16,8 +16,11 @@
         border-radius: 20px;
         font-size: 0.9rem;
         margin-left: 1rem;
-        cursor: pointer;
         transition: all 0.2s ease;
+    }
+    
+    .subscription-badge.basic {
+        cursor: pointer;
     }
 
     .subscription-badge.basic {
@@ -173,7 +176,11 @@
         }
 
         function showUpgradeModal() {
-            document.getElementById('upgradeModal').style.display = 'block';
+            // Only show modal if user has basic plan
+            const badge = document.getElementById('subscriptionStatus');
+            if (badge && badge.classList.contains('basic')) {
+                document.getElementById('upgradeModal').style.display = 'block';
+            }
         }
 
         function hideUpgradeModal() {
