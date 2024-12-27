@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="crypto-ticker-container" style="position: fixed; top: 56px; width: 100%; z-index: 1000;">
+<div class="crypto-ticker-container">
     <div class="ticker-wrap">
         <div class="ticker">
             {% for price in crypto_prices %}
@@ -437,16 +437,22 @@ updateLastRunTime();
 
         
 
-        <h3 class="text-center mt-5 pt-5 mb-4">Trending Crypto 24hrs</h3>
-        <div class="crypto-prices-container mb-5">
-            {% for price in crypto_prices|sort(attribute='percent_change_24h', reverse=True)[:10] %}
-                {% set sentiment_count = {'positive': 0, 'negative': 0} %}
+        <div class="trending-crypto-container mt-4 mb-5">
+            <h3 class="text-center mb-4">Trending Crypto 24hrs</h3>
+            <div class="crypto-prices-container">
+                {% for price in crypto_prices|sort(attribute='percent_change_24h', reverse=True)|slice(0, 10) %}
+                    {% set sentiment_count = {'positive': 0, 'negative': 0, 'neutral': 0, 'total': 0} %}
                 {% for article in articles %}
-                    {% if price.symbol.lower() in article.content.lower() %}
-                        {% if article.sentiment_label == 'positive' %}
-                            {% set _ = sentiment_count.update({'positive': sentiment_count['positive'] + 1}) %}
-                        {% elif article.sentiment_label == 'negative' %}
-                            {% set _ = sentiment_count.update({'negative': sentiment_count['negative'] + 1}) %}
+                    {% if article.content and price.symbol.lower() in article.content.lower() %}
+                        {% if article.sentiment_label %}
+                            {% if article.sentiment_label == 'positive' %}
+                                {% set _ = sentiment_count.update({'positive': sentiment_count['positive'] + 1}) %}
+                            {% elif article.sentiment_label == 'negative' %}
+                                {% set _ = sentiment_count.update({'negative': sentiment_count['negative'] + 1}) %}
+                            {% else %}
+                                {% set _ = sentiment_count.update({'neutral': sentiment_count['neutral'] + 1}) %}
+                            {% endif %}
+                            {% set _ = sentiment_count.update({'total': sentiment_count['total'] + 1}) %}
                         {% endif %}
                     {% endif %}
                 {% endfor %}

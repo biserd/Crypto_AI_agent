@@ -111,11 +111,6 @@
     margin: 0;
     overflow: hidden;
     border-bottom: 1px solid #e5e7eb;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.ticker-wrap {
-    margin-top: 10px;
 }
 
 .ticker-wrap {
@@ -173,6 +168,18 @@
     100% {
         transform: translateX(-50%);
     }
+}
+
+.trending-crypto-container {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.trending-crypto-container h3 {
+    color: #2a2a72;
+    font-weight: bold;
 }
 
 .crypto-price {
