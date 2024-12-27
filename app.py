@@ -45,13 +45,13 @@ logger = logging.getLogger(__name__)
 
 
 # Stripe configuration
-stripe.api_key = os.environ.get('STRIPE_TEST_SECRET_KEY', 'sk_test_your_test_key')
+stripe.api_key = os.environ.get('STRIPE_TEST_SECRET_KEY')
 
 @app.route('/stripe-config')
 def stripe_config():
     try:
         return jsonify({
-            'publishableKey': os.environ.get('STRIPE_PUBLISHABLE_KEY', 'pk_test_yourdefaultkey')
+            'publishableKey': os.environ.get('STRIPE_PUBLISHABLE_KEY')
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
