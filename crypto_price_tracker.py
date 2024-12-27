@@ -15,12 +15,23 @@ class CryptoPriceTracker:
             'BTC': 'bitcoin',
             'ETH': 'ethereum',
             'BNB': 'binancecoin',
-            'ADA': 'cardano',
             'SOL': 'solana',
             'XRP': 'ripple',
+            'USDC': 'usd-coin',
+            'ADA': 'cardano',
             'DOGE': 'dogecoin',
+            'TON': 'the-open-network',
+            'TRX': 'tron',
+            'DAI': 'dai',
             'MATIC': 'matic-network',
-            'AVAX': 'avalanche-2'
+            'DOT': 'polkadot',
+            'WBTC': 'wrapped-bitcoin',
+            'AVAX': 'avalanche-2',
+            'SHIB': 'shiba-inu',
+            'LEO': 'leo-token',
+            'LTC': 'litecoin',
+            'UNI': 'uniswap',
+            'LINK': 'chainlink'
         }
 
     def fetch_current_prices(self):

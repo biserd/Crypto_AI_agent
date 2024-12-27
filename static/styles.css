@@ -105,6 +105,70 @@
     font-weight: bold;
 }
 
+.crypto-ticker-container {
+    background: #1a1a1a;
+    padding: 10px 0;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.ticker-wrap {
+    width: 100%;
+    overflow: hidden;
+}
+
+.ticker {
+    display: inline-flex;
+    white-space: nowrap;
+    animation: ticker 60s linear infinite;
+}
+
+.ticker:hover {
+    animation-play-state: paused;
+}
+
+.ticker-item {
+    display: inline-flex;
+    align-items: center;
+    margin: 0 20px;
+    color: white;
+    font-family: 'Courier New', monospace;
+}
+
+.ticker-symbol {
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.ticker-price {
+    margin-right: 10px;
+}
+
+.ticker-change {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.change-up {
+    background: rgba(52, 211, 153, 0.2);
+    color: #34d399;
+}
+
+.change-down {
+    background: rgba(248, 113, 113, 0.2);
+    color: #f87171;
+}
+
+@keyframes ticker {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
 .crypto-price {
     font-weight: bold;
     padding: 0.5rem 1rem;
