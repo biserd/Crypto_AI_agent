@@ -77,6 +77,30 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
+.feature-list i {
+    width: 20px;
+    text-align: center;
+    margin-right: 10px;
+}
+
+.feature-list i.fa-check {
+    color: #28a745;
+}
+
+.feature-list i.fa-minus {
+    color: #6c757d;
+}
+
+.feature-list li {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+}
+
+.feature-list li.text-muted {
+    color: #6c757d;
+}
+
 .sentiment-positive {
     background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
     color: white;
