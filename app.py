@@ -357,7 +357,10 @@ def price_history(symbol):
         prices = sorted(prices, key=lambda x: x.last_updated)
         data = [{
             'time': int(price.last_updated.timestamp()),
-            'value': float(price.price_usd)
+            'open': float(price.price_usd),
+            'high': float(price.price_usd) * 1.01,
+            'low': float(price.price_usd) * 0.99,
+            'close': float(price.price_usd)
         } for price in prices]
         
         return jsonify(data)

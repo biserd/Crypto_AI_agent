@@ -180,18 +180,24 @@ document.addEventListener('DOMContentLoaded', function() {
         },
     });
 
-    const lineSeries = chart.addLineSeries({
-        color: '#2196F3',
-        lineWidth: 2,
+    const candleSeries = chart.addCandlestickSeries({
+        upColor: '#26a69a', 
+        downColor: '#ef5350',
+        borderVisible: false,
+        wickUpColor: '#26a69a', 
+        wickDownColor: '#ef5350'
     });
 
     // Fetch price data from our backend
     fetch(`/api/price-history/{{ crypto.symbol }}`)
         .then(response => response.json())
         .then(data => {
-            lineSeries.setData(data);
-            chart.timeScale().fitContent();
-        });
+            if (data && data.length > 0) {
+                candleSeries.setData(data);
+                chart.timeScale().fitContent();
+            }
+        })
+        .catch(error => console.error('Error loading chart data:', error));
 
     // Handle window resize
     function handleResize() {
