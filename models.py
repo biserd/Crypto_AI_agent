@@ -12,10 +12,10 @@ class User(db.Model, UserMixin):
     subscriptions = db.relationship('Subscription', backref='user', lazy=True)
 
     def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
+        self.password_hash = generate_password_hash(password).encode('utf-8')
 
     def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
+        return check_password_hash(self.password_hash.decode('utf-8'), password)
 
     def __repr__(self):
         return f'<User {self.username}>'
