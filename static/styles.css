@@ -106,10 +106,11 @@
 }
 
 .crypto-ticker-container {
-    background: #1a1a1a;
+    background: white;
     padding: 10px 0;
-    margin-bottom: 20px;
+    margin: 0;
     overflow: hidden;
+    border-bottom: 1px solid #e5e7eb;
 }
 
 .ticker-wrap {
@@ -131,7 +132,7 @@
     display: inline-flex;
     align-items: center;
     margin: 0 20px;
-    color: white;
+    color: #000;
     font-family: 'Courier New', monospace;
 }
 
