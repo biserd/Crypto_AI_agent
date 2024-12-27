@@ -145,9 +145,15 @@
         async function initStripe() {
             try {
                 const response = await fetch('/stripe-config');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch Stripe config');
+                }
                 const data = await response.json();
+                if (!data.publishableKey) {
+                    throw new Error('No publishable key found');
+                }
                 stripe = Stripe(data.publishableKey);
-                console.log('Stripe initialized with key');
+                console.log('Stripe initialized successfully');
             } catch (error) {
                 console.error('Stripe initialization failed:', error);
             }
