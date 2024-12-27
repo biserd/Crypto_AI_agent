@@ -87,6 +87,16 @@
     color: #28a745;
 }
 
+.feature-list i.fa-times {
+    opacity: 0.5;
+}
+
+.feature-list li {
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+}
+
 .feature-list i.fa-minus {
     color: #6c757d;
 }
