@@ -334,6 +334,7 @@ def scrape_rss_feed(source):
 def scrape_articles():
     """Scrape articles from cryptocurrency news sources"""
     logger.info("Starting article scraping")
+    logger.info(f"Scraping from sources: {[source.name for source in SOURCES]}")
     total_articles_added = 0
 
     # First, ensure all sources have metrics initialized

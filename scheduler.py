@@ -82,8 +82,8 @@ def start_scheduler():
         with app.app_context():
             CryptoPriceTracker().fetch_current_prices()
 
-    schedule.every(15).minutes.do(scheduled_pipeline)
-    schedule.every(5).minutes.do(scheduled_price_update)
+    schedule.every(5).minutes.do(scheduled_pipeline)
+    schedule.every(2).minutes.do(scheduled_price_update)
 
     while True:
         try:
