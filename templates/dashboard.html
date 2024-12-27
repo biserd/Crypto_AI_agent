@@ -416,20 +416,20 @@
 
         <div class="crypto-prices-container mt-4 mb-5">
             {% for price in crypto_prices %}
-                {% set sentiment_count = namespace(positive=0, negative=0) %}
+                {% set sentiment_count = {'positive': 0, 'negative': 0} %}
                 {% for article in articles %}
                     {% if price.symbol.lower() in article.content.lower() %}
                         {% if article.sentiment_label == 'positive' %}
-                            {% set sentiment_count.positive = sentiment_count.positive + 1 %}
+                            {% set _ = sentiment_count.update({'positive': sentiment_count['positive'] + 1}) %}
                         {% elif article.sentiment_label == 'negative' %}
-                            {% set sentiment_count.negative = sentiment_count.negative + 1 %}
+                            {% set _ = sentiment_count.update({'negative': sentiment_count['negative'] + 1}) %}
                         {% endif %}
                     {% endif %}
                 {% endfor %}
                 {% set sentiment_class = 'neutral' %}
-                {% if sentiment_count.positive > sentiment_count.negative %}
+                {% if sentiment_count['positive'] > sentiment_count['negative'] %}
                     {% set sentiment_class = 'positive' %}
-                {% elif sentiment_count.negative > sentiment_count.positive %}
+                {% elif sentiment_count['negative'] > sentiment_count['positive'] %}
                     {% set sentiment_class = 'negative' %}
                 {% endif %}
                 <a href="/crypto/{{ price.symbol }}" class="text-decoration-none">
@@ -458,24 +458,6 @@
             {% endfor %}
         </div>
 
-        <div class="top-movers-charts">
-            <h4 class="text-center mb-4">Top Movers (24h)</h4>
-            <div class="chart-grid">
-                {% for price in crypto_prices|sort(attribute='percent_change_24h', reverse=True) %}
-                {% if loop.index <= 5 %}
-                <div class="mini-chart-container">
-                    <canvas id="chart-{{ price.symbol }}"></canvas>
-                    <div class="chart-label">
-                        <span class="symbol">{{ price.symbol }}</span>
-                        <span class="change {% if price.percent_change_24h > 0 %}positive{% else %}negative{% endif %}">
-                            {{ "%.1f"|format(price.percent_change_24h) }}%
-                        </span>
-                    </div>
-                </div>
-                {% endif %}
-                {% endfor %}
-            </div>
-        </div>
 
         <!-- Articles Section -->
         {% for article in articles %}
@@ -595,92 +577,7 @@ window.onclick = function(event) {
 }
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-
-<style>
-.top-movers-charts {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    margin: 20px 0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.chart-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 20px;
-    margin-top: 20px;
-}
-
-.mini-chart-container {
-    background: #f8f9fa;
-    padding: 10px;
-    border-radius: 8px;
-    text-align: center;
-}
-
-.chart-label {
-    margin-top: 10px;
-    font-weight: bold;
-}
-
-.chart-label .symbol {
-    margin-right: 10px;
-}
-
-.chart-label .change.positive {
-    color: #28a745;
-}
-
-.chart-label .change.negative {
-    color: #dc3545;
-}
-
-@media (max-width: 768px) {
-    .chart-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-</style>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    {% for price in crypto_prices|sort(attribute='percent_change_24h', reverse=True) %}
-    {% if loop.index <= 5 %}
-    new Chart(document.getElementById('chart-{{ price.symbol }}'), {
-        type: 'line',
-        data: {
-            labels: ['24h ago', 'Now'],
-            datasets: [{
-                data: [100, 100 + {{ price.percent_change_24h }}],
-                borderColor: '{{ price.percent_change_24h > 0 and "#28a745" or "#dc3545" }}',
-                borderWidth: 2,
-                fill: false,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                x: {
-                    display: false
-                },
-                y: {
-                    display: false
-                }
-            }
-        }
-    });
-    {% endfor %}
-});
-</script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const socket = io();
