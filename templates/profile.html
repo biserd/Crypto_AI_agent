@@ -31,7 +31,13 @@
                         
                         {% if not subscription or (not subscription.active or subscription.tier == 'basic') %}
                             <a href="{{ url_for('pricing') }}" class="btn btn-primary mt-3">Upgrade to Pro</a>
+                        {% else %}
+                            <span class="badge bg-success p-2">Pro Plan Active</span>
                         {% endif %}
+                        
+                        <div class="mt-4 border-top pt-3">
+                            <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+                        </div>
                     </div>
                 </div>
             </div>

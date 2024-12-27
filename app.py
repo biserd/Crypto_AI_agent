@@ -169,7 +169,9 @@ def login():
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('dashboard'))
+    session.clear()
+    flash('You have been logged out successfully')
+    return redirect(url_for('login'))
 
 @app.route('/profile')
 @login_required
