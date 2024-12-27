@@ -416,20 +416,20 @@
 
         <div class="crypto-prices-container mt-4 mb-5">
             {% for price in crypto_prices %}
-                {% set sentiment_count = {'positive': 0, 'negative': 0} %}
+                {% set sentiment_count = namespace(positive=0, negative=0) %}
                 {% for article in articles %}
                     {% if price.symbol.lower() in article.content.lower() %}
                         {% if article.sentiment_label == 'positive' %}
-                            {% set _ = sentiment_count.update({'positive': sentiment_count['positive'] + 1}) %}
+                            {% set sentiment_count.positive = sentiment_count.positive + 1 %}
                         {% elif article.sentiment_label == 'negative' %}
-                            {% set _ = sentiment_count.update({'negative': sentiment_count['negative'] + 1}) %}
+                            {% set sentiment_count.negative = sentiment_count.negative + 1 %}
                         {% endif %}
                     {% endif %}
                 {% endfor %}
                 {% set sentiment_class = 'neutral' %}
-                {% if sentiment_count['positive'] > sentiment_count['negative'] %}
+                {% if sentiment_count.positive > sentiment_count.negative %}
                     {% set sentiment_class = 'positive' %}
-                {% elif sentiment_count['negative'] > sentiment_count['positive'] %}
+                {% elif sentiment_count.negative > sentiment_count.positive %}
                     {% set sentiment_class = 'negative' %}
                 {% endif %}
                 <a href="/crypto/{{ price.symbol }}" class="text-decoration-none">
