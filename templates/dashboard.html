@@ -20,9 +20,15 @@
 
 <div class="row">
     <div class="col-12">
-        <div class="trust-score-container mt-4">
-            <h4 class="mb-3">AI Trust Score</h4>
-            {% for source in news_sources %}
+        <div class="data-pulse">
+            <span class="pulse-indicator"></span>
+            Last Updated: {{ last_scraper_run.strftime('%Y-%m-%d %H:%M:%S UTC') }}
+        </div>
+        
+        <div class="crypto-prices-container mt-4 mb-5">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="mb-3">Biggest Gainers</h5>
             <div class="mb-3">
                 <div class="d-flex justify-content-between align-items-center">
                     <strong>{{ source.source_name }}</strong>
@@ -76,6 +82,29 @@
                     {% endwith %}
                 </div>
             </div>
+        </div>
+
+        <div class="trust-score-container mt-4 mb-5">
+            <h4 class="mb-3">AI Trust Score</h4>
+            {% for source in news_sources %}
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <strong>{{ source.source_name }}</strong>
+                    <span class="badge {% if source.trust_score >= 70 %}bg-success{% elif source.trust_score >= 40 %}bg-warning{% else %}bg-danger{% endif %}">
+                        {{ "%.1f"|format(source.trust_score) }}%
+                    </span>
+                </div>
+                <div class="trust-score-bar">
+                    <div class="trust-score-fill {% if source.trust_score >= 70 %}trust-high{% elif source.trust_score >= 40 %}trust-medium{% else %}trust-low{% endif %}"
+                         style="width: {{ source.trust_score }}%"></div>
+                </div>
+                <div class="source-metrics">
+                    <span>Articles: {{ source.article_count }}</span>
+                    <span>Fact-Check Score: {{ "%.1f"|format(source.accuracy_score) }}%</span>
+                    <span>Last Updated: {{ source.last_updated.strftime('%Y-%m-%d %H:%M') }}</span>
+                </div>
+            </div>
+            {% endfor %}
         </div>
 
         <!-- Articles Section -->
