@@ -312,8 +312,17 @@
         });
 
         // Initialize subscription status and Stripe when page loads
-        document.addEventListener('DOMContentLoaded', fetchSubscriptionStatus);
-        document.addEventListener('DOMContentLoaded', initStripe);
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchSubscriptionStatus();
+            initStripe();
+        });
+
+        // Reconnect WebSocket on disconnect
+        socket.on('disconnect', () => {
+            setTimeout(() => {
+                socket.connect();
+            }, 1000);
+        });
 
 
         // Close modal when clicking outside

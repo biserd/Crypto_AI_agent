@@ -336,7 +336,7 @@ def sync_article_counts():
         with app.app_context():
             sources = NewsSourceMetrics.query.all()
             for source in sources:
-                count = Article.query.filter_by(source_name=source.name).count()
+                count = Article.query.filter_by(source_name=source.source_name).count()
                 source.article_count = count
                 logger.info(f"Syncing article count for {source.name}: {count}")
             db.session.commit()
