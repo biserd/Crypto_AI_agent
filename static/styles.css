@@ -170,6 +170,18 @@
     }
 }
 
+.trending-crypto-container {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.trending-crypto-container h3 {
+    color: #2a2a72;
+    font-weight: bold;
+}
+
 .crypto-price {
     font-weight: bold;
     padding: 0.5rem 1rem;
