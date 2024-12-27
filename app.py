@@ -365,13 +365,14 @@ def price_history(symbol):
             base_time = int(datetime.utcnow().timestamp())
             data = []
             import random
-            base_price = current_price
+            # Start from current price and work backwards with realistic variations
+            base_price = current_price * 0.85  # Start ~15% lower for historical data
+            data = []
             for i in range(30):
-                time = base_time - (i * 3600 * 24)  # Daily intervals
-                # Create more noticeable price variations
-                variation = random.uniform(-0.05, 0.05)  # 5% variation
-                price = base_price * (1 + variation)
-                base_price = price  # Use this as base for next variation
+                time = base_time - ((29-i) * 3600 * 24)  # Daily intervals
+                # Create gradual upward trend with smaller variations
+                variation = random.uniform(-0.02, 0.03)  # -2% to +3% daily variation
+                base_price = base_price * (1 + variation)
                 data.append({
                     'time': time,
                     'value': float(price)
