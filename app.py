@@ -367,7 +367,6 @@ def price_history(symbol):
             import random
             # Start from current price and work backwards with realistic variations
             base_price = current_price * 0.85  # Start ~15% lower for historical data
-            data = []
             for i in range(30):
                 time = base_time - ((29-i) * 3600 * 24)  # Daily intervals
                 # Create gradual upward trend with smaller variations
@@ -375,7 +374,7 @@ def price_history(symbol):
                 base_price = base_price * (1 + variation)
                 data.append({
                     'time': time,
-                    'value': float(price)
+                    'value': float(base_price)
                 })
             return jsonify(sorted(data, key=lambda x: x['time']))  # Sort by time ascending
             
