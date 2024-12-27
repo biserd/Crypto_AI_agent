@@ -87,7 +87,7 @@
     <h1>{{ crypto_names[crypto.symbol] }} ({{ crypto.symbol }})</h1>
     <div class="price-display">${{ "%.2f"|format(crypto.price_usd) }}</div>
     <div class="price-change {% if crypto.percent_change_24h > 0 %}price-up{% else %}price-down{% endif %}">
-        {{ "%.2f"|format(crypto.percent_change_24h) }}% (24h)
+        {{ "%.1f"|format(crypto.percent_change_24h) }}% (24h)
     </div>
 </div>
 
