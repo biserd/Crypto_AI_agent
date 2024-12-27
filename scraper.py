@@ -4,8 +4,8 @@ from bs4 import BeautifulSoup, Comment
 import requests
 import trafilatura
 from datetime import datetime
-from app import db, socketio, broadcast_new_article # Added imports
-from models import Article, NewsSourceMetrics # Added NewsSourceMetrics import
+from app import db, socketio, broadcast_new_article
+from models import Article, NewsSourceMetrics
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 import random
@@ -31,7 +31,7 @@ class MLStripper(HTMLParser2):
         super().__init__()
         self.reset()
         self.fed = []
-    def handle_data(self, data):  # Changed parameter name from 'd' to 'data'
+    def handle_data(self, data):
         self.fed.append(data)
     def get_data(self):
         return ''.join(self.fed)
@@ -46,7 +46,7 @@ def strip_tags(html):
         return s.get_data()
     except Exception as e:
         logger.error(f"Error stripping HTML tags: {str(e)}")
-        return re.sub(r'<[^>]+>', '', html)  # Fallback to regex cleaning
+        return re.sub(r'<[^>]+>', '', html)
 
 def clean_html_content(html_content):
     """Clean HTML content and extract readable text with enhanced cleaning"""
@@ -56,7 +56,6 @@ def clean_html_content(html_content):
 
         logger.debug(f"Starting HTML content cleaning (length: {len(html_content)})")
 
-        # First try trafilatura for better content extraction
         try:
             downloaded = trafilatura.extract(html_content, include_links=False, include_images=False, 
                                           include_tables=False, no_fallback=False)
@@ -67,26 +66,21 @@ def clean_html_content(html_content):
         except Exception as e:
             logger.warning(f"Trafilatura extraction failed: {str(e)}, falling back to BeautifulSoup")
 
-        # Fallback to BeautifulSoup if trafilatura fails
-        # Remove problematic unicode characters
         html_content = html_content.replace('\xa0', ' ')
         html_content = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]', '', html_content)
 
-        # Parse with BeautifulSoup
         try:
             soup = BeautifulSoup(html_content, 'html.parser')
         except Exception as e:
             logger.error(f"BeautifulSoup parsing failed: {str(e)}")
             return strip_tags(html_content)
 
-        # Remove all comments first
         try:
             for comment in soup.find_all(string=lambda text: isinstance(text, Comment)):
                 comment.extract()
         except Exception as e:
             logger.warning(f"Error removing HTML comments: {str(e)}")
 
-        # Remove unwanted tags and their contents
         unwanted_tags = [
             "script", "style", "iframe", "form", "nav", "header", "footer",
             "aside", "noscript", "figure", "figcaption", "time", "button",
@@ -100,21 +94,18 @@ def clean_html_content(html_content):
                 except Exception as e:
                     logger.warning(f"Error removing {tag} tag: {str(e)}")
 
-        # Replace breaks and paragraphs with newlines
         for br in soup.find_all("br"):
             br.replace_with("\n")
 
         for p in soup.find_all("p"):
             p.replace_with(f"\n{p.get_text()}\n")
 
-        # Get text and clean it
         text = soup.get_text(separator=' ')
 
-        # Clean up the text
-        text = re.sub(r'<[^>]+>', '', text)  # Remove any remaining HTML tags
-        text = re.sub(r'&nbsp;|&amp;|&lt;|&gt;|&quot;|&#39;|&[a-zA-Z]+;', ' ', text)  # Replace HTML entities
-        text = re.sub(r'\s+', ' ', text)  # Replace multiple spaces with single space
-        text = re.sub(r'\n\s*\n', '\n', text)  # Replace multiple newlines
+        text = re.sub(r'<[^>]+>', '', text)
+        text = re.sub(r'&nbsp;|&amp;|&lt;|&gt;|&quot;|&#39;|&[a-zA-Z]+;', ' ', text)
+        text = re.sub(r'\s+', ' ', text)
+        text = re.sub(r'\n\s*\n', '\n', text)
         text = text.strip()
 
         logger.debug(f"Completed HTML cleaning. Final length: {len(text)}")
@@ -122,11 +113,10 @@ def clean_html_content(html_content):
 
     except Exception as e:
         logger.error(f"Error cleaning HTML content: {str(e)}")
-        # Last resort: try simple tag stripping
         cleaned = strip_tags(html_content)
         if cleaned:
             return cleaned.strip()
-        return ""  # Return empty string if all cleaning methods fail
+        return ""
 
 def create_session():
     """Create a requests session with advanced retry strategy"""
@@ -147,11 +137,10 @@ def create_session():
     })
     return session
 
-# Define news sources
 SOURCES = [
     NewsSource(
         "CoinDesk",
-        "https://www.coindesk.com/feed/rss/",
+        "https://www.coindesk.com/arc/outboundfeeds/rss/",
         is_rss=True
     ),
     NewsSource(
@@ -174,29 +163,25 @@ SOURCES = [
 def init_source_metrics(source_name):
     """Initialize or get source metrics with proper error handling"""
     try:
-        # Start a new transaction
         existing_count = Article.query.filter_by(source_name=source_name).count()
         logger.info(f"Found {existing_count} existing articles for {source_name}")
 
         source_metrics = NewsSourceMetrics.query.filter_by(source_name=source_name).first()
         if not source_metrics:
-            # Create new metrics if none exist
             source_metrics = NewsSourceMetrics(
                 source_name=source_name,
-                trust_score=70.0,  # Default initial trust score
-                article_count=existing_count,  # Initialize with existing count
-                accuracy_score=80.0,  # Default initial accuracy score
+                trust_score=70.0,
+                article_count=existing_count,
+                accuracy_score=80.0,
                 last_updated=datetime.utcnow()
             )
             db.session.add(source_metrics)
             logger.info(f"Created new source metrics for {source_name} with initial count {existing_count}")
         else:
-            # Update existing metrics with correct count
             source_metrics.article_count = existing_count
             source_metrics.last_updated = datetime.utcnow()
             logger.info(f"Updated existing source metrics for {source_name}, count: {existing_count}")
 
-        # Commit changes immediately
         db.session.commit()
         return source_metrics
 
@@ -244,7 +229,6 @@ def scrape_rss_feed(source):
         articles_added = 0
         logger.info(f"Found {len(feed.entries)} entries in {source.name} RSS feed")
 
-        # Initialize source metrics
         source_metrics = init_source_metrics(source.name)
         if not source_metrics:
             logger.error(f"Failed to initialize source metrics for {source.name}")
@@ -254,12 +238,11 @@ def scrape_rss_feed(source):
         logger.info(f"Current article count for {source.name}: {initial_count}")
 
         try:
-            for entry in feed.entries[:10]:  # Process latest 10 entries
+            for entry in feed.entries[:10]:
                 try:
                     article_url = entry.link
                     logger.debug(f"Processing article from {source.name}: {article_url}")
 
-                    # Check if article already exists
                     exists = Article.query.filter_by(source_url=article_url).first()
                     if exists:
                         logger.debug(f"Article already exists: {article_url}")
@@ -270,7 +253,6 @@ def scrape_rss_feed(source):
                         if not content and 'content' in entry:
                             content = entry.content[0].value if isinstance(entry.content, list) else entry.content
                             
-                        # Try to get extended content if available
                         if 'content' in entry:
                             extended_content = entry.content[0].value if isinstance(entry.content, list) else entry.content
                             if len(extended_content) > len(content):
@@ -337,7 +319,6 @@ def scrape_articles():
     logger.info(f"Scraping from sources: {[source.name for source in SOURCES]}")
     total_articles_added = 0
 
-    # First, ensure all sources have metrics initialized
     for source in SOURCES:
         init_source_metrics(source.name)
 
