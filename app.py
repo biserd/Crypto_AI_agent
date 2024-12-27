@@ -108,10 +108,25 @@ def dashboard():
         crypto_prices = []
         news_sources = []
 
+        # Initialize sentiment counts
+        total_articles = 0
+        sentiment_counts = {
+            'positive': 0,
+            'negative': 0,
+            'neutral': 0
+        }
+
         # Fetch articles with error handling
         try:
             recent_articles = Article.query.order_by(Article.created_at.desc()).limit(20).all()
-            logger.info(f"Retrieved {len(recent_articles)} articles from database")
+            total_articles = len(recent_articles)
+            
+            # Count sentiments
+            for article in recent_articles:
+                if article.sentiment_label:
+                    sentiment_counts[article.sentiment_label.lower()] += 1
+                    
+            logger.info(f"Retrieved {total_articles} articles from database")
         except Exception as e:
             logger.error(f"Error fetching articles: {str(e)}")
 
