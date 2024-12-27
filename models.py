@@ -7,15 +7,15 @@ from werkzeug.security import generate_password_hash, check_password_hash
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.LargeBinary)
+    password_hash = db.Column(db.String(512))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     subscriptions = db.relationship('Subscription', backref='user', lazy=True)
 
     def set_password(self, password):
-        self.password_hash = generate_password_hash(password).encode('utf-8')
+        self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
-        return check_password_hash(self.password_hash.decode('utf-8'), password)
+        return check_password_hash(self.password_hash, password)
 
     def __repr__(self):
         return f'<User {self.username}>'
