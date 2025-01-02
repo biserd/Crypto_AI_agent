@@ -241,7 +241,18 @@ def scrape_rss_feed(source):
             for entry in feed.entries[:10]:
                 try:
                     article_url = entry.link
+                    published_date = None
+                    
+                    # Try to get the published date
+                    if hasattr(entry, 'published_parsed'):
+                        published_date = datetime.fromtimestamp(time.mktime(entry.published_parsed))
+                    elif hasattr(entry, 'updated_parsed'):
+                        published_date = datetime.fromtimestamp(time.mktime(entry.updated_parsed))
+                    else:
+                        published_date = datetime.utcnow()
+                        
                     logger.debug(f"Processing article from {source.name}: {article_url}")
+                    logger.debug(f"Article date: {published_date}")
 
                     exists = Article.query.filter_by(source_url=article_url).first()
                     if exists:
