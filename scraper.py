@@ -238,18 +238,26 @@ def scrape_rss_feed(source):
         logger.info(f"Current article count for {source.name}: {initial_count}")
 
         try:
-            for entry in feed.entries[:10]:
+            # Get current time for comparison
+            current_time = datetime.utcnow()
+            cutoff_time = current_time - timedelta(hours=24)  # Only get articles from last 24 hours
+            
+            for entry in feed.entries:
                 try:
                     article_url = entry.link
                     published_date = None
                     
                     # Try to get the published date
-                    if hasattr(entry, 'published_parsed'):
+                    if hasattr(entry, 'published_parsed') and entry.published_parsed:
                         published_date = datetime.fromtimestamp(time.mktime(entry.published_parsed))
-                    elif hasattr(entry, 'updated_parsed'):
+                    elif hasattr(entry, 'updated_parsed') and entry.updated_parsed:
                         published_date = datetime.fromtimestamp(time.mktime(entry.updated_parsed))
                     else:
-                        published_date = datetime.utcnow()
+                        published_date = current_time
+
+                    # Skip old articles
+                    if published_date < cutoff_time:
+                        continue
                         
                     logger.debug(f"Processing article from {source.name}: {article_url}")
                     logger.debug(f"Article date: {published_date}")
