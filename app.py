@@ -124,24 +124,24 @@ def register():
         password = request.form.get('password')
         confirm_password = request.form.get('confirm_password')
         terms = request.form.get('terms')
-        
+
         if Users.query.filter_by(email=email).first():
             flash('Email already registered')
             return redirect(url_for('register'))
-            
+
         if password != confirm_password:
             flash('Passwords do not match')
             return redirect(url_for('register'))
-            
+
         if not terms:
             flash('You must accept the terms and conditions')
             return redirect(url_for('register'))
-            
+
         user = Users(email=email)
         user.set_password(password)
         db.session.add(user)
         db.session.commit()
-        
+
         subscription = Subscription(
             user_id=user.id,
             tier='basic',
@@ -150,10 +150,10 @@ def register():
         )
         db.session.add(subscription)
         db.session.commit()
-        
+
         login_user(user)
         return redirect(url_for('dashboard'))
-        
+
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -189,7 +189,7 @@ def dashboard():
         # Fetch articles with error handling
         try:
             # Get articles from last 24 hours only
-            cutoff_time = datetime.utcnow() - timedelta(days=1)
+            cutoff_time = datetime.utcnow() - timedelta(hours=24) # Corrected to 24 hours
             recent_articles = Article.query.filter(
                 Article.created_at >= cutoff_time
             ).order_by(Article.created_at.desc()).all()
@@ -407,7 +407,7 @@ def search():
     query = request.args.get('q', '').lower()
     if not query:
         return redirect('/')
-    
+
     # Map common names to symbols
     name_to_symbol = {
         'bitcoin': 'BTC',
@@ -420,10 +420,10 @@ def search():
         'polygon': 'MATIC',
         'avalanche': 'AVAX'
     }
-    
+
     # Try to find the symbol
     symbol = name_to_symbol.get(query, query.upper())
-    
+
     return redirect(f'/crypto/{symbol}')
 
 import requests
@@ -448,25 +448,25 @@ def price_history(symbol):
                 'interval': 'daily'
             }
         )
-        
+
         if response.status_code != 200:
             return jsonify([])
-            
+
         data = response.json()
         prices = data.get('prices', [])
-        
+
         formatted_data = [{
             'time': int(timestamp/1000),  # Convert milliseconds to seconds
             'value': float(price)
         } for timestamp, price in prices]
-        
+
         return jsonify(formatted_data)
-            
+
         data = [{
             'time': int(price.last_updated.timestamp()),
             'value': float(price.price_usd)
         } for price in prices]
-        
+
         return jsonify(data)
     except Exception as e:
         logger.error(f"Error fetching price history: {str(e)}")
@@ -483,13 +483,13 @@ def success():
         try:
             # Verify the session with Stripe
             session = stripe.checkout.Session.retrieve(session_id)
-            
+
             if session.payment_status == 'paid':
                 # Deactivate any existing subscriptions
                 existing_subs = Subscription.query.filter_by(user_id=current_user.id, active=True).all()
                 for sub in existing_subs:
                     sub.active = False
-                
+
                 # Create new subscription
                 subscription = Subscription(
                     user_id=current_user.id,
@@ -502,11 +502,11 @@ def success():
                 db.session.commit()
                 flash('Thank you for your subscription!', 'success')
                 return redirect(url_for('profile'))
-            
+
         except Exception as e:
             flash('Error processing payment', 'error')
             return redirect(url_for('profile'))
-            
+
     return redirect(url_for('profile'))
 
 @app.route('/subscription/status')
