@@ -188,8 +188,12 @@ def dashboard():
 
         # Fetch articles with error handling
         try:
-            recent_articles = Article.query.order_by(Article.created_at.desc()).limit(20).all()
-            logger.info(f"Retrieved {len(recent_articles)} articles from database")
+            # Get articles from last 24 hours only
+            cutoff_time = datetime.utcnow() - timedelta(days=1)
+            recent_articles = Article.query.filter(
+                Article.created_at >= cutoff_time
+            ).order_by(Article.created_at.desc()).all()
+            logger.info(f"Retrieved {len(recent_articles)} articles from last 24 hours")
         except Exception as e:
             logger.error(f"Error fetching articles: {str(e)}")
             recent_articles = []
