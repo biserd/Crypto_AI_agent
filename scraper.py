@@ -3,7 +3,7 @@ import time
 from bs4 import BeautifulSoup, Comment
 import requests
 import trafilatura
-from datetime import datetime
+from datetime import datetime, timedelta
 from app import db, socketio, broadcast_new_article
 from models import Article, NewsSourceMetrics
 from requests.adapters import HTTPAdapter
