@@ -40,7 +40,8 @@ class CryptoPriceTracker:
             'MASK': 'mask-network', 'TWT': 'trust-wallet-token', 'DCR': 'decred',
             'GLM': 'golem', 'SKL': 'skale', 'JASMY': 'jasmycoin', 'AMP': 'amp-token',
             'CELR': 'celer-network', 'QTUM': 'qtum', 'RVN': 'ravencoin', 'ONT': 'ontology',
-            'RSR': 'reserve-rights-token', 'ANKR': 'ankr', 'SC': 'siacoin'
+            'RSR': 'reserve-rights-token', 'ANKR': 'ankr', 'SC': 'siacoin',
+            'ONDO': 'ondo-finance'  # Added Ondo token
         }
 
     def fetch_current_prices(self):
