@@ -20,28 +20,6 @@
 <div class="container mt-4">
     <div class="row">
         <div class="col-12">
-            <!-- Top Movers Mini Charts -->
-            <div class="top-movers-charts mb-4">
-                <h5>Top 5 Movers</h5>
-                <div class="row">
-                    {% with sorted_movers = crypto_prices|sort(attribute='percent_change_24h', reverse=True) %}
-                    {% for price in sorted_movers[:5] %}
-                    <div class="col">
-                        <div class="mini-chart-container">
-                            <div class="mini-chart-header">
-                                <span class="mini-chart-symbol">{{ price.symbol }}</span>
-                                <span class="mini-chart-change {{ 'change-up' if price.percent_change_24h > 0 else 'change-down' }}">
-                                    {{ "%.1f"|format(price.percent_change_24h) }}%
-                                </span>
-                            </div>
-                            <canvas id="miniChart{{ price.symbol }}" class="mini-price-chart"></canvas>
-                        </div>
-                    </div>
-                    {% endfor %}
-                    {% endwith %}
-                </div>
-            </div>
-
             <div class="data-pulse">
                 <span class="pulse-indicator"></span>
                 Last Updated: {{ last_scraper_run.strftime('%Y-%m-%d %H:%M:%S UTC') }}
@@ -157,87 +135,6 @@
         </div>
     </div>
 </div>
-
-<!-- Add mini charts initialization script -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    {% with sorted_movers = crypto_prices|sort(attribute='percent_change_24h', reverse=True) %}
-    {% for price in sorted_movers[:5] %}
-    fetch(`/api/price-history/{{ price.symbol }}`)
-        .then(response => response.json())
-        .then(data => {
-            const ctx = document.getElementById('miniChart{{ price.symbol }}').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: data.map(d => new Date(d.time * 1000).toLocaleDateString()),
-                    datasets: [{
-                        label: '{{ price.symbol }} Price',
-                        data: data.map(d => d.value),
-                        borderColor: '{{ "#28a745" if price.percent_change_24h > 0 else "#dc3545" }}',
-                        borderWidth: 1.5,
-                        fill: false,
-                        pointRadius: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        x: {
-                            display: false
-                        },
-                        y: {
-                            display: false
-                        }
-                    }
-                }
-            });
-        })
-        .catch(error => console.error('Error loading mini chart:', error));
-    {% endfor %}
-    {% endwith %}
-});
-</script>
-
-<style>
-.mini-chart-container {
-    background: white;
-    padding: 10px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin-bottom: 15px;
-    height: 120px;
-}
-
-.mini-chart-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.mini-chart-symbol {
-    font-weight: bold;
-    font-size: 0.9rem;
-}
-
-.mini-price-chart {
-    height: 60px !important;
-}
-
-.top-movers-charts h5 {
-    margin-bottom: 20px;
-    padding: 10px;
-    background: #f8f9fa;
-    border-radius: 8px;
-}
-</style>
 
 {{ super() }}
 {% endblock %}

@@ -418,7 +418,8 @@ def search():
         'ripple': 'XRP',
         'dogecoin': 'DOGE',
         'polygon': 'MATIC',
-        'avalanche': 'AVAX'
+        'avalanche': 'AVAX',
+        'ondo': 'ONDO'  # Added Ondo token
     }
 
     # Try to find the symbol
