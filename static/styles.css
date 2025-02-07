@@ -284,6 +284,10 @@
     margin-top: 2rem;
 }
 
+.crypto-prices-container .row > div {
+    margin-bottom: 2rem;
+}
+
 .crypto-prices-container h5 {
     padding: 10px;
     border-radius: 8px;
