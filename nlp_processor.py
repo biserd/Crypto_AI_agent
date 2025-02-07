@@ -33,7 +33,7 @@ def analyze_sentiment(text):
             # Adoption/Development (weight: 1.5)
             'adoption': 1.5, 'partnership': 1.5, 'launch': 1.2, 'upgrade': 1.2, 'integration': 1.2, 
             'milestone': 1.2, 'development': 1.2, 'progress': 1.2, 'innovation': 1.5, 'breakthrough': 1.5,
-            'success': 1.2, 'approval': 1.3,
+            'success': 1.2, 'approval': 1.3, 'etf': 1.8, 'advance': 1.5, 'ready': 1.3,
         }
 
         negative_patterns = {
