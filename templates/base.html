@@ -83,7 +83,13 @@
 <body class="bg-light">
     <nav class="navbar navbar-expand-lg bg-white border-bottom">
         <div class="container">
-            <a class="navbar-brand" href="/">Exploding Crypto</a>
+            <div class="d-flex align-items-center flex-grow-1">
+                <a class="navbar-brand" href="/">Exploding Crypto</a>
+                <form class="d-flex mx-2 flex-grow-1" style="max-width: 300px;">
+                    <input type="text" id="searchCrypto" class="form-control" placeholder="Search cryptocurrency..." autocomplete="off">
+                    <div id="searchSuggestions" class="position-absolute bg-white shadow rounded mt-5 w-100 d-none"></div>
+                </form>
+            </div>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -105,10 +111,6 @@
                         <a class="nav-link" href="/contact">Contact</a>
                     </li>
                 </ul>
-                <form class="d-flex mx-3 flex-grow-1" style="max-width: 300px;">
-                    <input type="text" id="searchCrypto" class="form-control" placeholder="Search cryptocurrency..." autocomplete="off">
-                    <div id="searchSuggestions" class="position-absolute bg-white shadow rounded mt-5 w-100 d-none"></div>
-                </form>
                 <div class="d-flex align-items-center">
                     <div id="subscriptionStatus" class="subscription-badge basic" onclick="showUpgradeModal()">
                         Loading...
