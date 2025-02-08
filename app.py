@@ -412,7 +412,7 @@ def price_history(symbol):
         timeframe_config = timeframe_mapping.get(timeframe, {'days': 30, 'interval': 'daily'})
         logger.debug(f"Using timeframe config: {timeframe_config}")
 
-        # Get historical data using the improved tracker
+        # Get historical data using the tracker
         tracker = CryptoPriceTracker()
         historical_data = tracker.get_historical_prices(
             symbol, 
@@ -433,9 +433,16 @@ def price_history(symbol):
             prices = historical_data.get('prices', [])
             volumes = historical_data.get('total_volumes', [])
 
+            if not prices:
+                logger.error(f"No price data points available for {symbol}")
+                return jsonify({
+                    'error': 'No price data points available',
+                    'symbol': symbol
+                }), 404
+
             logger.info(f"Retrieved {len(prices)} price points for {symbol}")
             logger.debug(f"First price point: {prices[0] if prices else 'No prices'}")
-            logger.debug(f"First volume point: {volumes[0] if volumes else 'No volumes'}")
+            logger.debug(f"Last price point: {prices[-1] if prices else 'No prices'}")
 
             # Calculate SMA for price data
             sma_data = []
@@ -451,12 +458,11 @@ def price_history(symbol):
 
             formatted_data = {
                 'prices': prices,
-                'volumes': volumes,
+                'volumes': volumes if volumes else [],
                 'sma': sma_data
             }
 
             response = jsonify(formatted_data)
-            # Add CORS headers
             response.headers.add('Access-Control-Allow-Origin', '*')
             response.headers.add('Access-Control-Allow-Methods', 'GET')
             return response

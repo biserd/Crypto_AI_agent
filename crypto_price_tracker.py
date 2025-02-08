@@ -20,7 +20,7 @@ class CryptoPriceTracker:
             'DOGE': 'dogecoin', 'TON': 'the-open-network', 'TRX': 'tron', 'DAI': 'dai',
             'MATIC': 'matic-network', 'DOT': 'polkadot', 'WBTC': 'wrapped-bitcoin',
             'AVAX': 'avalanche-2', 'SHIB': 'shiba-inu', 'LEO': 'leo-token', 'LTC': 'litecoin',
-            'UNI': 'uniswap', 'LINK': 'chainlink'
+            'UNI': 'uniswap'
         }
 
     def _rate_limit_wait(self):
@@ -28,70 +28,93 @@ class CryptoPriceTracker:
         current_time = time.time()
         time_since_last_request = current_time - self.last_request_time
         if time_since_last_request < self.min_request_interval:
-            time.sleep(self.min_request_interval - time_since_last_request)
+            wait_time = self.min_request_interval - time_since_last_request
+            logger.debug(f"Rate limiting: waiting {wait_time:.2f} seconds")
+            time.sleep(wait_time)
         self.last_request_time = time.time()
 
     def get_historical_prices(self, symbol, days=30, interval='daily'):
         """
         Fetch historical price data for a cryptocurrency
-
-        Args:
-            symbol: Cryptocurrency symbol (e.g., 'BTC')
-            days: Number of days of historical data
-            interval: Data interval ('daily' or 'hourly')
         """
         try:
+            logger.info(f"Fetching historical data for {symbol} with {days} days interval {interval}")
+
+            # Convert symbol to CoinGecko ID
             coin_id = self.crypto_ids.get(symbol.upper())
             if not coin_id:
-                logger.error(f"Symbol not found: {symbol}")
+                logger.error(f"Symbol not found in mapping: {symbol}")
                 return None
 
             self._rate_limit_wait()
 
+            # Build API URL and params
             api_url = f"{self.base_url}/coins/{coin_id}/market_chart"
             params = {
                 'vs_currency': 'usd',
-                'days': days,
+                'days': str(days),
                 'interval': interval
             }
 
             headers = {
                 'Accept': 'application/json',
-                'User-Agent': 'Mozilla/5.0 (Crypto Intelligence Platform)'
+                'User-Agent': 'Mozilla/5.0 (CryptoIntelligence/1.0)'
             }
 
-            logger.info(f"Fetching historical data for {symbol} ({coin_id})")
-            response = requests.get(api_url, params=params, headers=headers, timeout=15)
+            # Make API request with timeout and retries
+            max_retries = 3
+            retry_delay = 2
 
-            if response.status_code == 429:
-                logger.warning("Rate limit reached, waiting before retry")
-                time.sleep(60)  # Wait for rate limit to reset
-                return None
+            for attempt in range(max_retries):
+                try:
+                    logger.debug(f"Making request to {api_url} with params {params}")
+                    response = requests.get(api_url, params=params, headers=headers, timeout=10)
 
-            if response.status_code != 200:
-                logger.error(f"API Error {response.status_code}: {response.text}")
-                return None
+                    # Check for rate limiting
+                    if response.status_code == 429:
+                        wait_time = float(response.headers.get('Retry-After', retry_delay))
+                        logger.warning(f"Rate limited. Waiting {wait_time} seconds before retry")
+                        time.sleep(wait_time)
+                        continue
 
-            data = response.json()
-            if not data or 'prices' not in data:
-                logger.error(f"Invalid data format received for {symbol}")
-                return None
+                    # Check for successful response
+                    if response.status_code == 200:
+                        data = response.json()
+                        if not data or 'prices' not in data:
+                            logger.error(f"Invalid data format received for {symbol}")
+                            return None
 
-            return data
+                        logger.info(f"Successfully fetched {len(data['prices'])} price points for {symbol}")
+                        return {
+                            'prices': data['prices'],
+                            'market_caps': data.get('market_caps', []),
+                            'total_volumes': data.get('total_volumes', [])
+                        }
+                    else:
+                        logger.error(f"API Error {response.status_code}: {response.text}")
+                        return None
 
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Request failed for {symbol}: {str(e)}")
+                except requests.exceptions.Timeout:
+                    logger.warning(f"Request timeout on attempt {attempt + 1}/{max_retries}")
+                    if attempt < max_retries - 1:
+                        time.sleep(retry_delay)
+                    continue
+
+                except requests.exceptions.RequestException as e:
+                    logger.error(f"Request failed for {symbol}: {str(e)}")
+                    return None
+
+            logger.error(f"Failed to fetch data after {max_retries} attempts")
             return None
+
         except Exception as e:
-            logger.error(f"Unexpected error fetching data for {symbol}: {str(e)}")
+            logger.error(f"Unexpected error fetching data for {symbol}: {str(e)}", exc_info=True)
             return None
 
     def fetch_current_prices(self):
         """Fetch current prices for tracked cryptocurrencies"""
         try:
             self._rate_limit_wait()
-
-            # Join all crypto IDs with commas for the API call
             ids = ','.join(self.crypto_ids.values())
 
             response = requests.get(
@@ -100,7 +123,8 @@ class CryptoPriceTracker:
                     'ids': ids,
                     'vs_currencies': 'usd',
                     'include_24hr_change': 'true'
-                }
+                },
+                headers={'User-Agent': 'Mozilla/5.0 (CryptoIntelligence/1.0)'}
             )
 
             if response.status_code != 200:
@@ -120,12 +144,11 @@ class CryptoPriceTracker:
                             'last_updated': datetime.utcnow()
                         }
                         updates.append(price_data)
-                        logger.info(f"Updated {symbol} price: ${price_data['price_usd']:.2f}")
+                        logger.debug(f"Updated {symbol} price: ${price_data['price_usd']:.2f}")
                     except Exception as e:
                         logger.error(f"Error processing {symbol} price: {str(e)}")
                         continue
 
-            # Batch update prices
             try:
                 for update in updates:
                     price = CryptoPrice.query.filter_by(symbol=update['symbol']).first()
@@ -137,7 +160,9 @@ class CryptoPriceTracker:
                     price.last_updated = update['last_updated']
 
                 db.session.commit()
+                logger.info(f"Successfully updated prices for {len(updates)} cryptocurrencies")
                 return True
+
             except Exception as e:
                 logger.error(f"Database error: {str(e)}")
                 db.session.rollback()

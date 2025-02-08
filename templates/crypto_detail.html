@@ -344,7 +344,7 @@ async function updateChart(timeframe = '30d') {
         const datasets = [{
             label: '{{ crypto.symbol }} Price (USD)',
             data: data.prices.map(p => ({
-                x: p[0],
+                x: moment(p[0]).toDate(), // Format timestamp
                 y: p[1]
             })),
             borderColor: '#2196F3',
@@ -358,7 +358,7 @@ async function updateChart(timeframe = '30d') {
             datasets.push({
                 label: 'SMA (7)',
                 data: data.sma.map(p => ({
-                    x: p.timestamp,
+                    x: moment(p.timestamp).toDate(), // Format timestamp
                     y: p.value
                 })),
                 borderColor: '#FF9800',
@@ -373,7 +373,7 @@ async function updateChart(timeframe = '30d') {
             datasets.push({
                 label: 'Volume',
                 data: data.volumes.map(v => ({
-                    x: v[0],
+                    x: moment(v[0]).toDate(), // Format timestamp
                     y: v[1]
                 })),
                 type: 'bar',
@@ -526,4 +526,5 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 {{ super() }}
+</script>
 {% endblock %}
