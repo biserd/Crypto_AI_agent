@@ -202,14 +202,21 @@ function formatValue(value) {
 
 async function updateChart(timeframe = '30d') {
     try {
+        // Show loading state
         loadingOverlay.classList.add('active');
 
         const response = await fetch(`/api/price-history/{{ crypto.symbol }}?timeframe=${timeframe}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const data = await response.json();
 
+        if (data.error) {
+            throw new Error(data.error);
+        }
+
         if (!data || !data.prices || data.prices.length === 0) {
-            console.error('No price data available');
-            return;
+            throw new Error('No price data available');
         }
 
         const ctx = document.getElementById('priceChart').getContext('2d');
@@ -263,6 +270,9 @@ async function updateChart(timeframe = '30d') {
                 interaction: {
                     intersect: false,
                     mode: 'index'
+                },
+                animation: {
+                    duration: 750
                 },
                 scales: {
                     x: {
@@ -330,6 +340,7 @@ async function updateChart(timeframe = '30d') {
         });
     } catch (error) {
         console.error('Error updating chart:', error);
+        alert('Failed to load price data. Please try again later.');
     } finally {
         loadingOverlay.classList.remove('active');
     }

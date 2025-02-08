@@ -356,12 +356,15 @@ def price_history(symbol):
         timeframe = request.args.get('timeframe', '30d')  # Default to 30 days
         logger.debug(f"Fetching price history for {symbol} with timeframe {timeframe}")
 
+        # Normalize symbol
+        symbol = symbol.upper()
+
         # Get coin id from symbol
         tracker = CryptoPriceTracker()
         coin_id = tracker.crypto_ids.get(symbol)
         if not coin_id:
             logger.error(f"No coin_id found for symbol {symbol}")
-            return jsonify([])
+            return jsonify({'error': 'Cryptocurrency not supported'}), 404
 
         # Map timeframe to days
         timeframe_days = {
@@ -381,15 +384,25 @@ def price_history(symbol):
         }
         logger.debug(f"Calling CoinGecko API: {api_url} with params {params}")
 
-        response = requests.get(api_url, params=params)
+        try:
+            response = requests.get(api_url, params=params, timeout=10)
+            response.raise_for_status()  # Raise an exception for bad status codes
+        except requests.RequestException as e:
+            logger.error(f"CoinGecko API request failed: {str(e)}")
+            return jsonify({'error': 'Failed to fetch price data'}), 503
 
-        if response.status_code != 200:
-            logger.error(f"CoinGecko API error: Status {response.status_code}, Response: {response.text}")
-            return jsonify([])
+        try:
+            data = response.json()
+        except ValueError as e:
+            logger.error(f"Failed to parse JSON response: {str(e)}")
+            return jsonify({'error': 'Invalid response from price API'}), 500
 
-        data = response.json()
         prices = data.get('prices', [])
         volumes = data.get('total_volumes', [])
+
+        if not prices:
+            logger.error("No price data in response")
+            return jsonify({'error': 'No price data available'}), 404
 
         logger.debug(f"Retrieved {len(prices)} price points and {len(volumes)} volume points")
 
@@ -405,32 +418,37 @@ def price_history(symbol):
                 sma.append(sum(data[i-period+1:i+1]) / period)
             return sma
 
-        price_values = [price[1] for price in prices]
-        sma_values = calculate_sma(price_values)
+        try:
+            price_values = [price[1] for price in prices]
+            sma_values = calculate_sma(price_values)
 
-        formatted_data = {
-            'prices': [{
-                'time': int(timestamp/1000),
-                'value': float(price)
-            } for timestamp, price in prices],
-            'volumes': [{
-                'time': int(timestamp/1000),
-                'value': float(volume)
-            } for timestamp, volume in volumes],
-            'sma': [{
-                'time': int(prices[i][0]/1000),
-                'value': sma_values[i]
-            } for i in range(len(prices)) if sma_values[i] is not None]
-        }
+            formatted_data = {
+                'prices': [{
+                    'time': int(timestamp/1000),
+                    'value': float(price)
+                } for timestamp, price in prices],
+                'volumes': [{
+                    'time': int(timestamp/1000),
+                    'value': float(volume)
+                } for timestamp, volume in volumes],
+                'sma': [{
+                    'time': int(prices[i][0]/1000),
+                    'value': sma_values[i]
+                } for i in range(len(prices)) if sma_values[i] is not None]
+            }
 
-        logger.debug(f"Returning formatted data with {len(formatted_data['prices'])} prices, " +
-                    f"{len(formatted_data['volumes'])} volumes, {len(formatted_data['sma'])} SMA points")
+            logger.debug(f"Returning formatted data with {len(formatted_data['prices'])} prices, " +
+                        f"{len(formatted_data['volumes'])} volumes, {len(formatted_data['sma'])} SMA points")
 
-        return jsonify(formatted_data)
+            return jsonify(formatted_data)
+
+        except (TypeError, ValueError, IndexError) as e:
+            logger.error(f"Error processing price data: {str(e)}")
+            return jsonify({'error': 'Failed to process price data'}), 500
 
     except Exception as e:
-        logger.error(f"Error fetching price history: {str(e)}")
-        return jsonify([])
+        logger.error(f"Unexpected error in price history endpoint: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/success')
 @login_required
