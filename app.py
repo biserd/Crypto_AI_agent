@@ -433,20 +433,27 @@ from crypto_price_tracker import CryptoPriceTracker
 @app.route('/api/price-history/<symbol>')
 def price_history(symbol):
     try:
+        timeframe = request.args.get('timeframe', '30d')  # Default to 30 days
         # Get coin id from symbol
         tracker = CryptoPriceTracker()
         coin_id = tracker.crypto_ids.get(symbol)
         if not coin_id:
             return jsonify([])
 
-        # Fetch 30 days of historical data from CoinGecko
-        days = 30
+        # Map timeframe to days
+        timeframe_days = {
+            '24h': 1,
+            '7d': 7,
+            '30d': 30
+        }.get(timeframe, 30)
+
+        # Fetch historical data from CoinGecko
         response = requests.get(
             f"{tracker.base_url}/coins/{coin_id}/market_chart",
             params={
                 'vs_currency': 'usd',
-                'days': days,
-                'interval': 'daily'
+                'days': timeframe_days,
+                'interval': 'hourly' if timeframe == '24h' else 'daily'
             }
         )
 
@@ -455,11 +462,37 @@ def price_history(symbol):
 
         data = response.json()
         prices = data.get('prices', [])
+        volumes = data.get('total_volumes', [])
 
-        formatted_data = [{
-            'time': int(timestamp/1000),  # Convert milliseconds to seconds
-            'value': float(price)
-        } for timestamp, price in prices]
+        # Calculate Simple Moving Average (7-period)
+        def calculate_sma(data, period=7):
+            if len(data) < period:
+                return [None] * len(data)
+            sma = []
+            for i in range(len(data)):
+                if i < period - 1:
+                    sma.append(None)
+                    continue
+                sma.append(sum(data[i-period+1:i+1]) / period)
+            return sma
+
+        price_values = [price[1] for price in prices]
+        sma_values = calculate_sma(price_values)
+
+        formatted_data = {
+            'prices': [{
+                'time': int(timestamp/1000),
+                'value': float(price)
+            } for timestamp, price in prices],
+            'volumes': [{
+                'time': int(timestamp/1000),
+                'value': float(volume)
+            } for timestamp, volume in volumes],
+            'sma': [{
+                'time': int(prices[i][0]/1000),
+                'value': sma_values[i]
+            } for i in range(len(prices)) if sma_values[i] is not None]
+        }
 
         return jsonify(formatted_data)
 

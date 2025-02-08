@@ -1,4 +1,3 @@
-
 {% extends "base.html" %}
 
 {% block content %}
@@ -67,7 +66,46 @@
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     margin-bottom: 2rem;
-    height: 600px;
+}
+.timeframe-selector {
+    margin-bottom: 1rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.timeframe-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.timeframe-btn.active {
+    background: #2196F3;
+    color: white;
+    border-color: #2196F3;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.indicator-toggle {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.indicator-toggle label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
 }
 </style>
 
@@ -91,61 +129,155 @@
     </div>
 </div>
 
-<div class="chart-container" style="position: relative; height:300px; width:100%; margin-bottom: 20px;">
+<div class="chart-container">
+    <div class="chart-header">
+        <div class="timeframe-selector">
+            <button class="timeframe-btn active" data-timeframe="24h">24H</button>
+            <button class="timeframe-btn" data-timeframe="7d">7D</button>
+            <button class="timeframe-btn" data-timeframe="30d">30D</button>
+        </div>
+        <div class="indicator-toggle">
+            <label>
+                <input type="checkbox" id="showSMA" checked>
+                <span>SMA (7)</span>
+            </label>
+            <label>
+                <input type="checkbox" id="showVolume" checked>
+                <span>Volume</span>
+            </label>
+        </div>
+    </div>
     <canvas id="priceChart"></canvas>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    fetch(`/api/price-history/{{ crypto.symbol }}`)
+let priceChart;
+
+function formatValue(value) {
+    if (value >= 1e9) {
+        return (value / 1e9).toFixed(2) + 'B';
+    } else if (value >= 1e6) {
+        return (value / 1e6).toFixed(2) + 'M';
+    } else if (value >= 1e3) {
+        return (value / 1e3).toFixed(2) + 'K';
+    }
+    return value.toFixed(2);
+}
+
+function updateChart(timeframe = '30d') {
+    fetch(`/api/price-history/{{ crypto.symbol }}?timeframe=${timeframe}`)
         .then(response => response.json())
         .then(data => {
-            if (!data || data.length === 0) {
+            if (!data || !data.prices || data.prices.length === 0) {
                 console.error('No price data available');
                 return;
             }
+
             const ctx = document.getElementById('priceChart').getContext('2d');
-            new Chart(ctx, {
+
+            if (priceChart) {
+                priceChart.destroy();
+            }
+
+            const showSMA = document.getElementById('showSMA').checked;
+            const showVolume = document.getElementById('showVolume').checked;
+
+            const datasets = [{
+                label: '{{ crypto.symbol }} Price (USD)',
+                data: data.prices.map(d => ({ x: d.time * 1000, y: d.value })),
+                borderColor: '#2196F3',
+                backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                fill: true,
+                yAxisID: 'y',
+                tension: 0.3
+            }];
+
+            if (showSMA && data.sma) {
+                datasets.push({
+                    label: 'SMA (7)',
+                    data: data.sma.map(d => ({ x: d.time * 1000, y: d.value })),
+                    borderColor: '#FF9800',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    fill: false,
+                    yAxisID: 'y'
+                });
+            }
+
+            if (showVolume && data.volumes) {
+                datasets.push({
+                    label: 'Volume',
+                    data: data.volumes.map(d => ({ x: d.time * 1000, y: d.value })),
+                    type: 'bar',
+                    backgroundColor: 'rgba(156, 39, 176, 0.2)',
+                    borderColor: 'rgba(156, 39, 176, 0.8)',
+                    yAxisID: 'y1',
+                });
+            }
+
+            priceChart = new Chart(ctx, {
                 type: 'line',
-                data: {
-                    labels: data.map(d => new Date(d.time * 1000).toLocaleDateString()),
-                    datasets: [{
-                        label: '{{ crypto.symbol }} Price (USD)',
-                        data: data.map(d => d.value),
-                        borderColor: '#2196F3',
-                        backgroundColor: 'rgba(33, 150, 243, 0.1)',
-                        fill: true,
-                        tension: 0.3,
-                        pointRadius: 3,
-                        borderWidth: 2
-                    }]
-                },
+                data: { datasets },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: true
-                        },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false,
-                        }
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
                     },
                     scales: {
-                        y: {
-                            beginAtZero: false,
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: timeframe === '24h' ? 'hour' : 'day'
+                            },
                             ticks: {
-                                callback: function(value) {
-                                    return '$' + value.toLocaleString();
-                                }
+                                maxRotation: 0
                             }
                         },
-                        x: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Price (USD)'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: showVolume,
+                            position: 'right',
+                            grid: {
+                                drawOnChartArea: false
+                            },
+                            title: {
+                                display: true,
+                                text: 'Volume (USD)'
+                            },
                             ticks: {
-                                maxRotation: 45,
-                                minRotation: 45
+                                callback: function(value) {
+                                    return formatValue(value);
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.datasetIndex === 2) { // Volume dataset
+                                        label += '$' + formatValue(context.parsed.y);
+                                    } else {
+                                        label += '$' + context.parsed.y.toFixed(2);
+                                    }
+                                    return label;
+                                }
                             }
                         }
                     }
@@ -155,6 +287,28 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             console.error('Error loading chart data:', error);
         });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initial chart load
+    updateChart('30d');
+
+    // Timeframe selector
+    document.querySelectorAll('.timeframe-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            document.querySelectorAll('.timeframe-btn').forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            updateChart(this.dataset.timeframe);
+        });
+    });
+
+    // Indicator toggles
+    document.getElementById('showSMA').addEventListener('change', () => updateChart(
+        document.querySelector('.timeframe-btn.active').dataset.timeframe
+    ));
+    document.getElementById('showVolume').addEventListener('change', () => updateChart(
+        document.querySelector('.timeframe-btn.active').dataset.timeframe
+    ));
 });
 </script>
 
@@ -210,6 +364,5 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     </div>
 </div>
-
 
 {% endblock %}
