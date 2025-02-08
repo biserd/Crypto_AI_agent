@@ -181,6 +181,114 @@
     </div>
 </div>
 
+<!-- Moved News Sentiment Analysis here, right after the chart -->
+<div class="container-fluid px-4 mb-4">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">News Sentiment Analysis</h5>
+                    <div class="sentiment-stats">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div>
+                                <h6>Positive Articles</h6>
+                                <span class="badge bg-success">{{ news_impact.positive }}</span>
+                            </div>
+                            <div>
+                                <h6>Neutral Articles</h6>
+                                <span class="badge bg-warning">{{ news_impact.neutral }}</span>
+                            </div>
+                            <div>
+                                <h6>Negative Articles</h6>
+                                <span class="badge bg-danger">{{ news_impact.negative }}</span>
+                            </div>
+                        </div>
+                        <div class="progress mb-3" style="height: 20px;">
+                            {% set positive_percent = (news_impact.positive / news_impact.total_articles * 100) if news_impact.total_articles > 0 else 0 %}
+                            {% set neutral_percent = (news_impact.neutral / news_impact.total_articles * 100) if news_impact.total_articles > 0 else 0 %}
+                            {% set negative_percent = (news_impact.negative / news_impact.total_articles * 100) if news_impact.total_articles > 0 else 0 %}
+
+                            <div class="progress-bar bg-success" style="width: {{ positive_percent }}%" 
+                                 title="Positive: {{ "%.1f"|format(positive_percent) }}%"></div>
+                            <div class="progress-bar bg-warning" style="width: {{ neutral_percent }}%"
+                                 title="Neutral: {{ "%.1f"|format(neutral_percent) }}%"></div>
+                            <div class="progress-bar bg-danger" style="width: {{ negative_percent }}%"
+                                 title="Negative: {{ "%.1f"|format(negative_percent) }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if crypto.symbol == 'ETH' and on_chain_metrics %}
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Ethereum Network Metrics</h5>
+                    {% if on_chain_metrics.gas_prices %}
+                    <div class="mb-3">
+                        <h6>Current Gas Prices</h6>
+                        <div class="d-flex justify-content-between">
+                            <span>Safe Low: {{ on_chain_metrics.gas_prices.SafeGasPrice }} Gwei</span>
+                            <span>Standard: {{ on_chain_metrics.gas_prices.ProposeGasPrice }} Gwei</span>
+                            <span>Fast: {{ on_chain_metrics.gas_prices.FastGasPrice }} Gwei</span>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if on_chain_metrics.daily_transactions %}
+                    <div class="mb-3">
+                        <h6>Daily Transactions (Last 7 Days)</h6>
+                        <canvas id="transactionChart" width="400" height="200"></canvas>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="container-fluid px-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <!-- Trading Recommendation -->
+            <div class="recommendation-indicator recommendation-{{ recommendation }}">
+                Trading Signal: {{ recommendation|upper }}
+            </div>
+        </div>
+    </div>
+
+    <!-- News Section -->
+    <div class="row">
+        <div class="col-12">
+            <h3>Latest {{ crypto.symbol }} News</h3>
+            {% for article in news %}
+            <div class="card mb-3 news-card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ article.title }}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">
+                        {{ article.source_name }} - {{ article.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                    </h6>
+                    <p class="card-text">{{ article.summary }}</p>
+                    {% if article.sentiment_label %}
+                    <div class="d-flex align-items-center">
+                        <span class="sentiment-indicator sentiment-{{ article.sentiment_label|lower }}">
+                            {{ article.sentiment_label|title }}
+                            {% if article.sentiment_score %}
+                            <span class="sentiment-score">{{ "%.2f"|format(article.sentiment_score) }}</span>
+                            {% endif %}
+                        </span>
+                        <a href="{{ article.source_url }}" class="btn btn-primary btn-sm ms-auto" target="_blank">Read More</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js"></script>
@@ -390,115 +498,6 @@ document.addEventListener('DOMContentLoaded', function() {
         debouncedUpdateChart(document.querySelector('.timeframe-btn.active').dataset.timeframe);
     });
 });
-</script>
-
-<!-- News Sentiment Analysis moved here, right after the chart -->
-<div class="container-fluid px-4 mb-4">
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">News Sentiment Analysis</h5>
-                    <div class="sentiment-stats">
-                        <div class="d-flex justify-content-between mb-3">
-                            <div>
-                                <h6>Positive Articles</h6>
-                                <span class="badge bg-success">{{ news_impact.positive }}</span>
-                            </div>
-                            <div>
-                                <h6>Neutral Articles</h6>
-                                <span class="badge bg-warning">{{ news_impact.neutral }}</span>
-                            </div>
-                            <div>
-                                <h6>Negative Articles</h6>
-                                <span class="badge bg-danger">{{ news_impact.negative }}</span>
-                            </div>
-                        </div>
-                        <div class="progress mb-3" style="height: 20px;">
-                            {% set positive_percent = (news_impact.positive / news_impact.total_articles * 100) if news_impact.total_articles > 0 else 0 %}
-                            {% set neutral_percent = (news_impact.neutral / news_impact.total_articles * 100) if news_impact.total_articles > 0 else 0 %}
-                            {% set negative_percent = (news_impact.negative / news_impact.total_articles * 100) if news_impact.total_articles > 0 else 0 %}
-
-                            <div class="progress-bar bg-success" style="width: {{ positive_percent }}%" 
-                                 title="Positive: {{ "%.1f"|format(positive_percent) }}%"></div>
-                            <div class="progress-bar bg-warning" style="width: {{ neutral_percent }}%"
-                                 title="Neutral: {{ "%.1f"|format(neutral_percent) }}%"></div>
-                            <div class="progress-bar bg-danger" style="width: {{ negative_percent }}%"
-                                 title="Negative: {{ "%.1f"|format(negative_percent) }}%"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {% if crypto.symbol == 'ETH' and on_chain_metrics %}
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Ethereum Network Metrics</h5>
-                    {% if on_chain_metrics.gas_prices %}
-                    <div class="mb-3">
-                        <h6>Current Gas Prices</h6>
-                        <div class="d-flex justify-content-between">
-                            <span>Safe Low: {{ on_chain_metrics.gas_prices.SafeGasPrice }} Gwei</span>
-                            <span>Standard: {{ on_chain_metrics.gas_prices.ProposeGasPrice }} Gwei</span>
-                            <span>Fast: {{ on_chain_metrics.gas_prices.FastGasPrice }} Gwei</span>
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    {% if on_chain_metrics.daily_transactions %}
-                    <div class="mb-3">
-                        <h6>Daily Transactions (Last 7 Days)</h6>
-                        <canvas id="transactionChart" width="400" height="200"></canvas>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        {% endif %}
-    </div>
-</div>
-
-<div class="container-fluid px-4">
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <!-- Trading Recommendation -->
-            <div class="recommendation-indicator recommendation-{{ recommendation }}">
-                Trading Signal: {{ recommendation|upper }}
-            </div>
-        </div>
-    </div>
-
-    <!-- News Section -->
-    <div class="row">
-        <div class="col-12">
-            <h3>Latest {{ crypto.symbol }} News</h3>
-            {% for article in news %}
-            <div class="card mb-3 news-card">
-                <div class="card-body">
-                    <h5 class="card-title">{{ article.title }}</h5>
-                    <h6 class="card-subtitle mb-2 text-muted">
-                        {{ article.source_name }} - {{ article.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
-                    </h6>
-                    <p class="card-text">{{ article.summary }}</p>
-                    {% if article.sentiment_label %}
-                    <div class="d-flex align-items-center">
-                        <span class="sentiment-indicator sentiment-{{ article.sentiment_label|lower }}">
-                            {{ article.sentiment_label|title }}
-                            {% if article.sentiment_score %}
-                            <span class="sentiment-score">{{ "%.2f"|format(article.sentiment_score) }}</span>
-                            {% endif %}
-                        </span>
-                        <a href="{{ article.source_url }}" class="btn btn-primary btn-sm ms-auto" target="_blank">Read More</a>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-</div>
 
 {% if crypto.symbol == 'ETH' and on_chain_metrics and on_chain_metrics.daily_transactions %}
 <script>

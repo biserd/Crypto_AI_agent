@@ -320,17 +320,12 @@ def crypto_detail(symbol):
                 'positive': 0,
                 'negative': 0,
                 'neutral': 0,
-                'total_articles': len(related_news),
-                'sentiment_timeline': []
+                'total_articles': len(related_news)
             }
 
             for article in related_news:
-                news_impact[article.sentiment_label.lower()] += 1
-                news_impact['sentiment_timeline'].append({
-                    'date': article.created_at.strftime('%Y-%m-%d'),
-                    'sentiment': article.sentiment_label,
-                    'score': article.sentiment_score
-                })
+                if article.sentiment_label:
+                    news_impact[article.sentiment_label.lower()] += 1
 
         except Exception as e:
             logger.error(f"Error fetching related news for {symbol}: {str(e)}")
@@ -341,20 +336,24 @@ def crypto_detail(symbol):
         on_chain_metrics = None
         if symbol == 'ETH':
             try:
-                etherscan = EtherscanClient()
-                on_chain_metrics = {
-                    'daily_transactions': etherscan.get_daily_transactions(7),
-                    'gas_prices': etherscan.get_gas_oracle(),
-                    'network_stats': etherscan.get_network_hash_rate()
-                }
-                logger.info("Successfully fetched on-chain metrics for ETH")
+                if not os.environ.get('ETHERSCAN_API_KEY'):
+                    logger.warning("Etherscan API key not found")
+                    on_chain_metrics = None
+                else:
+                    etherscan = EtherscanClient()
+                    on_chain_metrics = {
+                        'daily_transactions': etherscan.get_daily_transactions(7),
+                        'gas_prices': etherscan.get_gas_oracle()
+                    }
+                    logger.info("Successfully fetched on-chain metrics for ETH")
             except Exception as e:
                 logger.error(f"Error fetching on-chain metrics: {str(e)}")
                 on_chain_metrics = None
 
         # Calculate overall sentiment and trading signals
-        positive_ratio = news_impact['positive'] / news_impact['total_articles'] if news_impact['total_articles'] > 0 else 0
-        negative_ratio = news_impact['negative'] / news_impact['total_articles'] if news_impact['total_articles'] > 0 else 0
+        total_articles = news_impact['total_articles']
+        positive_ratio = news_impact['positive'] / total_articles if total_articles > 0 else 0
+        negative_ratio = news_impact['negative'] / total_articles if total_articles > 0 else 0
 
         if positive_ratio > 0.6:
             recommendation = 'buy'
@@ -371,11 +370,10 @@ def crypto_detail(symbol):
                            news_impact=news_impact,
                            on_chain_metrics=on_chain_metrics,
                            recommendation=recommendation)
+
     except Exception as e:
         logger.error(f"Error in crypto detail page for {symbol}: {str(e)}", exc_info=True)
-        flash("Error loading cryptocurrency details", "error")
-        return redirect(url_for('dashboard'))
-
+        return "Error loading cryptocurrency details", 500
 
 @app.route('/api/price-history/<symbol>')
 def price_history(symbol):
