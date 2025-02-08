@@ -298,12 +298,13 @@ function debounce(func, wait) {
 async function updateChart(timeframe = '30d') {
     try {
         // Show loading state
-        loadingOverlay.classList.add('active');
+        if (loadingOverlay) {
+            loadingOverlay.classList.add('active');
+        }
 
         const response = await fetch(`/api/price-history/{{ crypto.symbol }}?timeframe=${timeframe}`);
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
@@ -311,14 +312,18 @@ async function updateChart(timeframe = '30d') {
             throw new Error('No price data available');
         }
 
-        const ctx = document.getElementById('priceChart').getContext('2d');
+        const ctx = document.getElementById('priceChart');
+        if (!ctx) {
+            console.error('Price chart canvas element not found');
+            return;
+        }
+
+        const showSMA = document.getElementById('showSMA')?.checked ?? true;
+        const showVolume = document.getElementById('showVolume')?.checked ?? true;
 
         if (priceChart) {
             priceChart.destroy();
         }
-
-        const showSMA = document.getElementById('showSMA').checked;
-        const showVolume = document.getElementById('showVolume').checked;
 
         const datasets = [{
             label: '{{ crypto.symbol }} Price (USD)',
@@ -362,7 +367,7 @@ async function updateChart(timeframe = '30d') {
             });
         }
 
-        priceChart = new Chart(ctx, {
+        priceChart = new Chart(ctx.getContext('2d'), {
             type: 'line',
             data: { datasets },
             options: {
@@ -441,15 +446,17 @@ async function updateChart(timeframe = '30d') {
         });
     } catch (error) {
         console.error('Error updating chart:', error);
-        alert(error.message || 'Failed to load price data. Please try again later.');
     } finally {
-        loadingOverlay.classList.remove('active');
+        if (loadingOverlay) {
+            loadingOverlay.classList.remove('active');
+        }
     }
 }
 
 // Debounced version of updateChart
 const debouncedUpdateChart = debounce(updateChart, 500);
 
+// Initialize chart and set up event listeners when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     // Initial chart load
     updateChart('30d');
@@ -464,13 +471,20 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Indicator toggles with debouncing
-    document.getElementById('showSMA').addEventListener('change', () => {
-        debouncedUpdateChart(document.querySelector('.timeframe-btn.active').dataset.timeframe);
-    });
+    const smaToggle = document.getElementById('showSMA');
+    const volumeToggle = document.getElementById('showVolume');
 
-    document.getElementById('showVolume').addEventListener('change', () => {
-        debouncedUpdateChart(document.querySelector('.timeframe-btn.active').dataset.timeframe);
-    });
+    if (smaToggle) {
+        smaToggle.addEventListener('change', () => {
+            debouncedUpdateChart(document.querySelector('.timeframe-btn.active').dataset.timeframe);
+        });
+    }
+
+    if (volumeToggle) {
+        volumeToggle.addEventListener('change', () => {
+            debouncedUpdateChart(document.querySelector('.timeframe-btn.active').dataset.timeframe);
+        });
+    }
 });
 </script>
 
