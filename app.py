@@ -3,7 +3,7 @@ eventlet.monkey_patch()
 
 import os
 from functools import wraps
-from flask import Flask, render_template, request, jsonify, redirect, flash, url_for, session
+from flask import Flask, render_template, request, jsonify, redirect, flash, url_for, session, make_response
 from flask_login import LoginManager, UserMixin, current_user, login_required, login_user, logout_user
 from database import db
 from models import Article, CryptoPrice, NewsSourceMetrics, CryptoGlossary, Subscription, Users
@@ -509,6 +509,32 @@ def success():
             return redirect(url_for('profile'))
 
     return redirect(url_for('profile'))
+
+@app.route('/sitemap.xml')
+def sitemap():
+    """Generate sitemap.xml. Makes a list of URLs and date modified."""
+    pages = []
+    
+    # Static routes
+    routes = ['/', '/about', '/pricing', '/contact', '/glossary', '/login', '/register']
+    for route in routes:
+        pages.append({
+            'loc': request.url_root[:-1] + route,
+            'lastmod': datetime.utcnow().strftime('%Y-%m-%d')
+        })
+
+    # Add crypto detail pages for each tracked cryptocurrency
+    crypto_prices = CryptoPrice.query.all()
+    for crypto in crypto_prices:
+        pages.append({
+            'loc': request.url_root[:-1] + f'/crypto/{crypto.symbol}',
+            'lastmod': datetime.utcnow().strftime('%Y-%m-%d')
+        })
+    
+    sitemap_xml = render_template('sitemap.xml', pages=pages)
+    response = make_response(sitemap_xml)
+    response.headers["Content-Type"] = "application/xml"    
+    return response
 
 @app.route('/subscription/status')
 def subscription_status():
