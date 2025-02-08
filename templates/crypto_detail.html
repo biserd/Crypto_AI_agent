@@ -181,10 +181,10 @@
     </div>
 </div>
 
-<!-- News Sentiment Analysis -->
+<!-- News Sentiment Analysis and Trading Signal -->
 <div class="container-fluid px-4 mb-4">
     <div class="row">
-        <div class="col-12">
+        <div class="col-md-6">
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">News Sentiment Analysis</h5>
@@ -219,19 +219,16 @@
                 </div>
             </div>
         </div>
-    </div>
-</div>
-
-<div class="container-fluid px-4">
-    <div class="row mb-4">
-        <div class="col-md-12">
+        <div class="col-md-6">
             <!-- Trading Recommendation -->
             <div class="recommendation-indicator recommendation-{{ recommendation }}">
                 Trading Signal: {{ recommendation|upper }}
             </div>
         </div>
     </div>
+</div>
 
+<div class="container-fluid px-4">
     <!-- News Section -->
     <div class="row">
         <div class="col-12">
@@ -271,6 +268,11 @@
 let priceChart = null;
 const loadingOverlay = document.querySelector('.loading-overlay');
 
+// Debug logging helper
+function logDebug(message, data) {
+    console.log(`[Chart Debug] ${message}:`, data);
+}
+
 function formatValue(value) {
     if (value >= 1e9) {
         return (value / 1e9).toFixed(2) + 'B';
@@ -282,50 +284,50 @@ function formatValue(value) {
     return value.toFixed(2);
 }
 
-// Debounce function
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
 async function updateChart(timeframe = '30d') {
     try {
-        // Show loading state
-        if (loadingOverlay) {
-            loadingOverlay.classList.add('active');
-        }
+        logDebug('Starting chart update for timeframe', timeframe);
 
-        const response = await fetch(`/api/price-history/{{ crypto.symbol }}?timeframe=${timeframe}`);
+        const apiUrl = `/api/price-history/{{ crypto.symbol }}?timeframe=${timeframe}`;
+        logDebug('Fetching from URL', apiUrl);
+
+        const response = await fetch(apiUrl);
+        logDebug('API Response', {
+            status: response.status,
+            ok: response.ok,
+            statusText: response.statusText
+        });
+
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
         }
 
         const data = await response.json();
+        logDebug('Received data', data);
+
         if (!data || !data.prices || data.prices.length === 0) {
             throw new Error('No price data available');
         }
 
-        const ctx = document.getElementById('priceChart');
-        if (!ctx) {
-            console.error('Price chart canvas element not found');
-            return;
+        const chartCanvas = document.getElementById('priceChart');
+        if (!chartCanvas) {
+            throw new Error('Price chart canvas element not found');
+        }
+        logDebug('Found chart canvas element', chartCanvas);
+
+        if (priceChart) {
+            logDebug('Destroying existing chart instance');
+            priceChart.destroy();
         }
 
         const showSMA = document.getElementById('showSMA')?.checked ?? true;
         const showVolume = document.getElementById('showVolume')?.checked ?? true;
 
-        if (priceChart) {
-            priceChart.destroy();
-        }
+        const datasets = [];
 
-        const datasets = [{
+        // Add price dataset
+        datasets.push({
             label: '{{ crypto.symbol }} Price (USD)',
             data: data.prices.map(p => ({
                 x: p[0],
@@ -335,15 +337,16 @@ async function updateChart(timeframe = '30d') {
             backgroundColor: 'rgba(33, 150, 243, 0.1)',
             fill: true,
             yAxisID: 'y',
-            tension: 0.3
-        }];
+            tension: 0.1
+        });
 
+        // Add SMA dataset if enabled
         if (showSMA && data.sma && data.sma.length > 0) {
             datasets.push({
                 label: 'SMA (7)',
-                data: data.sma.map(d => ({
-                    x: d.timestamp,
-                    y: d.value
+                data: data.sma.map(p => ({
+                    x: p.timestamp,
+                    y: p.value
                 })),
                 borderColor: '#FF9800',
                 borderWidth: 2,
@@ -353,6 +356,7 @@ async function updateChart(timeframe = '30d') {
             });
         }
 
+        // Add volume dataset if enabled
         if (showVolume && data.volumes && data.volumes.length > 0) {
             datasets.push({
                 label: 'Volume',
@@ -367,7 +371,9 @@ async function updateChart(timeframe = '30d') {
             });
         }
 
-        priceChart = new Chart(ctx.getContext('2d'), {
+        logDebug('Creating new chart with datasets', datasets);
+
+        priceChart = new Chart(chartCanvas, {
             type: 'line',
             data: { datasets },
             options: {
@@ -377,9 +383,7 @@ async function updateChart(timeframe = '30d') {
                     intersect: false,
                     mode: 'index'
                 },
-                animation: {
-                    duration: 750
-                },
+                animation: false,
                 scales: {
                     x: {
                         type: 'time',
@@ -444,6 +448,9 @@ async function updateChart(timeframe = '30d') {
                 }
             }
         });
+
+        logDebug('Chart created successfully');
+
     } catch (error) {
         console.error('Error updating chart:', error);
     } finally {
@@ -453,36 +460,32 @@ async function updateChart(timeframe = '30d') {
     }
 }
 
-// Debounced version of updateChart
-const debouncedUpdateChart = debounce(updateChart, 500);
-
-// Initialize chart and set up event listeners when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    // Initial chart load
+    logDebug('DOM loaded, initializing chart');
     updateChart('30d');
 
-    // Timeframe selector with debouncing
+    // Set up event listeners
     document.querySelectorAll('.timeframe-btn').forEach(button => {
         button.addEventListener('click', function() {
             document.querySelectorAll('.timeframe-btn').forEach(btn => btn.classList.remove('active'));
             this.classList.add('active');
-            debouncedUpdateChart(this.dataset.timeframe);
+            updateChart(this.dataset.timeframe);
         });
     });
 
-    // Indicator toggles with debouncing
+    // Set up indicator toggles
     const smaToggle = document.getElementById('showSMA');
     const volumeToggle = document.getElementById('showVolume');
 
     if (smaToggle) {
         smaToggle.addEventListener('change', () => {
-            debouncedUpdateChart(document.querySelector('.timeframe-btn.active').dataset.timeframe);
+            updateChart(document.querySelector('.timeframe-btn.active').dataset.timeframe);
         });
     }
 
     if (volumeToggle) {
         volumeToggle.addEventListener('change', () => {
-            debouncedUpdateChart(document.querySelector('.timeframe-btn.active').dataset.timeframe);
+            updateChart(document.querySelector('.timeframe-btn.active').dataset.timeframe);
         });
     }
 });

@@ -360,7 +360,7 @@ def crypto_detail(symbol):
 def price_history(symbol):
     try:
         timeframe = request.args.get('timeframe', '30d')  # Default to 30 days
-        logger.debug(f"Fetching price history for {symbol} with timeframe {timeframe}")
+        logger.info(f"Fetching price history for {symbol} with timeframe {timeframe}")
 
         # Normalize symbol
         symbol = symbol.upper()
@@ -379,7 +379,7 @@ def price_history(symbol):
             '30d': 30
         }.get(timeframe, 30)
 
-        logger.debug(f"Using {timeframe_days} days for historical data")
+        logger.info(f"Using {timeframe_days} days for historical data")
 
         # Fetch historical data from CoinGecko
         api_url = f"{tracker.base_url}/coins/{coin_id}/market_chart"
@@ -388,58 +388,47 @@ def price_history(symbol):
             'days': timeframe_days,
             'interval': 'hourly' if timeframe == '24h' else 'daily'
         }
-        logger.debug(f"Calling CoinGecko API: {api_url} with params {params}")
+        logger.info(f"Calling CoinGecko API: {api_url} with params {params}")
 
-        # Add proper timeout and headers
         headers = {
             'Accept': 'application/json',
             'User-Agent': 'Mozilla/5.0 (Crypto Intelligence Platform)'
         }
-        response = requests.get(api_url, params=params, headers=headers, timeout=15)
-        response.raise_for_status()
 
-        data = response.json()
-        if not data.get('prices'):
+        response = requests.get(api_url, params=params, headers=headers, timeout=15)
+        response_data = response.json()
+
+        logger.info(f"API Response status: {response.status_code}")
+        if response.status_code != 200:
+            logger.error(f"API Error: {response_data.get('error', 'Unknown error')}")
+            return jsonify({'error': 'Failed to fetch price data'}), response.status_code
+
+        if not response_data.get('prices'):
             logger.error("No price data in response")
             return jsonify({'error': 'No price data available'}), 404
 
-        prices = data['prices']
-        volumes = data.get('total_volumes', [])
+        formatted_data = {
+            'prices': response_data['prices'],
+            'volumes': response_data.get('total_volumes', []),
+            'sma': []  # We'll calculate this below
+        }
 
-        logger.debug(f"Retrieved {len(prices)} price points and {len(volumes)} volume points")
-
-        # Calculate Simple Moving Average (7-period)
-        def calculate_sma(data, period=7):
-            if len(data) < period:
-                return []
-            return [
+        # Calculate SMA if we have enough price points
+        prices = response_data['prices']
+        if len(prices) >= 7:
+            formatted_data['sma'] = [
                 {
                     'timestamp': prices[i][0],
-                    'value': sum(p[1] for p in prices[i-period+1:i+1]) / period
+                    'value': sum(p[1] for p in prices[i-7+1:i+1]) / 7
                 }
-                for i in range(period-1, len(prices))
+                for i in range(6, len(prices))
             ]
 
-        try:
-            sma_values = calculate_sma(prices)
-
-            formatted_data = {
-                'prices': prices,
-                'volumes': volumes,
-                'sma': sma_values
-            }
-
-            logger.debug(f"Returning formatted data with {len(formatted_data['prices'])} prices, " +
-                      f"{len(formatted_data['volumes'])} volumes, {len(formatted_data['sma'])} SMA points")
-
-            return jsonify(formatted_data)
-
-        except Exception as e:
-            logger.error(f"Error processing price data: {str(e)}")
-            return jsonify({'error': 'Failed to process price data'}), 500
+        logger.info(f"Successfully processed data with {len(formatted_data['prices'])} price points")
+        return jsonify(formatted_data)
 
     except requests.exceptions.RequestException as e:
-        logger.error(f"CoinGecko API request failed: {str(e)}")
+        logger.error(f"Request error fetching price data: {str(e)}")
         return jsonify({'error': 'Failed to fetch price data'}), 503
     except Exception as e:
         logger.error(f"Unexpected error in price history endpoint: {str(e)}", exc_info=True)
