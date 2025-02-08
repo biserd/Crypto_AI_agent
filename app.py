@@ -410,6 +410,7 @@ def price_history(symbol):
         }
 
         timeframe_config = timeframe_mapping.get(timeframe, {'days': 30, 'interval': 'daily'})
+        logger.debug(f"Using timeframe config: {timeframe_config}")
 
         # Get historical data using the improved tracker
         tracker = CryptoPriceTracker()
@@ -421,9 +422,11 @@ def price_history(symbol):
 
         if not historical_data:
             logger.error(f"No historical data available for {symbol}")
-            response = jsonify({'error': 'Failed to fetch price data'})
-            response.headers.add('Access-Control-Allow-Origin', '*')
-            return response, 500
+            return jsonify({
+                'error': 'No price data available',
+                'symbol': symbol,
+                'timeframe': timeframe
+            }), 404
 
         # Process the data
         try:
@@ -431,6 +434,8 @@ def price_history(symbol):
             volumes = historical_data.get('total_volumes', [])
 
             logger.info(f"Retrieved {len(prices)} price points for {symbol}")
+            logger.debug(f"First price point: {prices[0] if prices else 'No prices'}")
+            logger.debug(f"First volume point: {volumes[0] if volumes else 'No volumes'}")
 
             # Calculate SMA for price data
             sma_data = []
@@ -451,20 +456,24 @@ def price_history(symbol):
             }
 
             response = jsonify(formatted_data)
+            # Add CORS headers
             response.headers.add('Access-Control-Allow-Origin', '*')
+            response.headers.add('Access-Control-Allow-Methods', 'GET')
             return response
 
         except Exception as e:
-            logger.error(f"Error processing price data for {symbol}: {str(e)}")
-            response = jsonify({'error': 'Error processing price data'})
-            response.headers.add('Access-Control-Allow-Origin', '*')
-            return response, 500
+            logger.error(f"Error processing price data for {symbol}: {str(e)}", exc_info=True)
+            return jsonify({
+                'error': 'Error processing price data',
+                'details': str(e)
+            }), 500
 
     except Exception as e:
         logger.error(f"Error in price history endpoint for {symbol}: {str(e)}", exc_info=True)
-        response = jsonify({'error': 'Internal server error'})
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        return response, 500
+        return jsonify({
+            'error': 'Internal server error',
+            'details': str(e)
+        }), 500
 
 @app.route('/success')
 @login_required
