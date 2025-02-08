@@ -445,4 +445,112 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </div>
 
+<div class="container-fluid px-4">
+    <!-- News Impact Analysis Section -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">News Sentiment Analysis</h5>
+                    <div class="sentiment-stats">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div>
+                                <h6>Positive Articles</h6>
+                                <span class="badge bg-success">{{ news_impact.positive }}</span>
+                            </div>
+                            <div>
+                                <h6>Neutral Articles</h6>
+                                <span class="badge bg-warning">{{ news_impact.neutral }}</span>
+                            </div>
+                            <div>
+                                <h6>Negative Articles</h6>
+                                <span class="badge bg-danger">{{ news_impact.negative }}</span>
+                            </div>
+                        </div>
+                        <div class="progress mb-3" style="height: 20px;">
+                            {% set positive_percent = (news_impact.positive / news_impact.total_articles * 100) if news_impact.total_articles > 0 else 0 %}
+                            {% set neutral_percent = (news_impact.neutral / news_impact.total_articles * 100) if news_impact.total_articles > 0 else 0 %}
+                            {% set negative_percent = (news_impact.negative / news_impact.total_articles * 100) if news_impact.total_articles > 0 else 0 %}
+
+                            <div class="progress-bar bg-success" style="width: {{ positive_percent }}%" 
+                                 title="Positive: {{ "%.1f"|format(positive_percent) }}%"></div>
+                            <div class="progress-bar bg-warning" style="width: {{ neutral_percent }}%"
+                                 title="Neutral: {{ "%.1f"|format(neutral_percent) }}%"></div>
+                            <div class="progress-bar bg-danger" style="width: {{ negative_percent }}%"
+                                 title="Negative: {{ "%.1f"|format(negative_percent) }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if on_chain_metrics and crypto.symbol == 'ETH' %}
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Ethereum Network Metrics</h5>
+                    {% if on_chain_metrics.gas_prices %}
+                    <div class="mb-3">
+                        <h6>Current Gas Prices</h6>
+                        <div class="d-flex justify-content-between">
+                            <span>Safe Low: {{ on_chain_metrics.gas_prices.SafeGasPrice }} Gwei</span>
+                            <span>Standard: {{ on_chain_metrics.gas_prices.ProposeGasPrice }} Gwei</span>
+                            <span>Fast: {{ on_chain_metrics.gas_prices.FastGasPrice }} Gwei</span>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if on_chain_metrics.daily_transactions %}
+                    <div class="mb-3">
+                        <h6>Daily Transactions (Last 7 Days)</h6>
+                        <canvas id="transactionChart" width="400" height="200"></canvas>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if on_chain_metrics and on_chain_metrics.daily_transactions %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const txCtx = document.getElementById('transactionChart').getContext('2d');
+    new Chart(txCtx, {
+        type: 'line',
+        data: {
+            labels: {{ on_chain_metrics.daily_transactions|map(attribute='date')|list|tojson }},
+            datasets: [{
+                label: 'Daily Transactions',
+                data: {{ on_chain_metrics.daily_transactions|map(attribute='value')|list|tojson }},
+                borderColor: '#6c5ce7',
+                backgroundColor: 'rgba(108, 92, 231, 0.1)',
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    ticks: {
+                        callback: function(value) {
+                            return formatValue(value);
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endif %}
+
 {% endblock %}

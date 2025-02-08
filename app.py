@@ -17,6 +17,9 @@ import stripe
 from datetime import datetime
 from sqlalchemy import desc
 import time
+from blockchain_metrics import EtherscanClient # Added import
+import pandas as pd # Added import
+import numpy as np # Added import
 
 # Create Flask app
 app = Flask(__name__)
@@ -314,27 +317,64 @@ def crypto_detail(symbol):
             flash(f"No data available for {symbol}", "error")
             return redirect(url_for('dashboard'))
 
-        # Get related news articles (containing the symbol)
+        # Get related news articles (from last 7 days)
         try:
+            cutoff_time = datetime.utcnow() - timedelta(days=7)
             related_news = Article.query.filter(
-                db.or_(
-                    Article.content.ilike(f'%{symbol}%'),
-                    Article.title.ilike(f'%{symbol}%')
+                db.and_(
+                    db.or_(
+                        Article.content.ilike(f'%{symbol}%'),
+                        Article.title.ilike(f'%{symbol}%')
+                    ),
+                    Article.created_at >= cutoff_time
                 )
-            ).order_by(desc(Article.created_at)).limit(10).all()
+            ).order_by(desc(Article.created_at)).all()
             logger.info(f"Found {len(related_news)} related articles for {symbol}")
+
+            # Calculate news impact
+            news_impact = {
+                'positive': 0,
+                'negative': 0,
+                'neutral': 0,
+                'total_articles': len(related_news),
+                'sentiment_timeline': []
+            }
+
+            for article in related_news:
+                news_impact[article.sentiment_label.lower()] += 1
+                news_impact['sentiment_timeline'].append({
+                    'date': article.created_at.strftime('%Y-%m-%d'),
+                    'sentiment': article.sentiment_label,
+                    'score': article.sentiment_score
+                })
+
         except Exception as e:
             logger.error(f"Error fetching related news for {symbol}: {str(e)}")
             related_news = []
+            news_impact = {'positive': 0, 'negative': 0, 'neutral': 0, 'total_articles': 0}
 
-        # Calculate overall sentiment
-        positive_count = sum(1 for article in related_news if article.sentiment_label == 'positive')
-        negative_count = sum(1 for article in related_news if article.sentiment_label == 'negative')
+        # Get on-chain metrics for ETH
+        on_chain_metrics = None
+        if symbol == 'ETH':
+            try:
+                etherscan = EtherscanClient()
+                on_chain_metrics = {
+                    'daily_transactions': etherscan.get_daily_transactions(7),
+                    'gas_prices': etherscan.get_gas_oracle(),
+                    'network_stats': etherscan.get_network_hash_rate()
+                }
+                logger.info("Successfully fetched on-chain metrics for ETH")
+            except Exception as e:
+                logger.error(f"Error fetching on-chain metrics: {str(e)}")
+                on_chain_metrics = None
 
-        # Determine buy/hold/sell recommendation
-        if positive_count > negative_count * 2:
+        # Calculate overall sentiment and trading signals
+        positive_ratio = news_impact['positive'] / news_impact['total_articles'] if news_impact['total_articles'] > 0 else 0
+        negative_ratio = news_impact['negative'] / news_impact['total_articles'] if news_impact['total_articles'] > 0 else 0
+
+        if positive_ratio > 0.6:
             recommendation = 'buy'
-        elif negative_count > positive_count * 2:
+        elif negative_ratio > 0.6:
             recommendation = 'sell'
         else:
             recommendation = 'hold'
@@ -342,14 +382,15 @@ def crypto_detail(symbol):
         logger.info(f"Generated {recommendation} recommendation for {symbol}")
 
         return render_template('crypto_detail.html',
-                            crypto=crypto_price,
-                            news=related_news,
-                            recommendation=recommendation)
+                           crypto=crypto_price,
+                           news=related_news,
+                           news_impact=news_impact,
+                           on_chain_metrics=on_chain_metrics,
+                           recommendation=recommendation)
     except Exception as e:
         logger.error(f"Error in crypto detail page for {symbol}: {str(e)}", exc_info=True)
         flash("Error loading cryptocurrency details", "error")
         return redirect(url_for('dashboard'))
-
 
 
 @app.route('/api/price-history/<symbol>')
