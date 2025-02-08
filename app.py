@@ -391,37 +391,50 @@ def price_history(symbol):
 
         if not historical_data:
             logger.error(f"No historical data available for {symbol}")
-            return jsonify({'error': 'Failed to fetch price data'}), 500
+            response = jsonify({'error': 'Failed to fetch price data'})
+            response.headers.add('Access-Control-Allow-Origin', '*')
+            return response, 500
 
         # Process the data
-        prices = historical_data.get('prices', [])
-        volumes = historical_data.get('total_volumes', [])
+        try:
+            prices = historical_data.get('prices', [])
+            volumes = historical_data.get('total_volumes', [])
 
-        logger.info(f"Retrieved {len(prices)} price points for {symbol}")
+            logger.info(f"Retrieved {len(prices)} price points for {symbol}")
 
-        # Calculate SMA for price data
-        sma_data = []
-        if len(prices) >= 7:
-            for i in range(6, len(prices)):
-                window = prices[i-7+1:i+1]
-                if window:
-                    avg_price = sum(p[1] for p in window) / len(window)
-                    sma_data.append({
-                        'timestamp': prices[i][0],
-                        'value': avg_price
-                    })
+            # Calculate SMA for price data
+            sma_data = []
+            if len(prices) >= 7:
+                for i in range(6, len(prices)):
+                    window = prices[i-7+1:i+1]
+                    if window:
+                        avg_price = sum(p[1] for p in window) / len(window)
+                        sma_data.append({
+                            'timestamp': prices[i][0],
+                            'value': avg_price
+                        })
 
-        formatted_data = {
-            'prices': prices,
-            'volumes': volumes,
-            'sma': sma_data
-        }
+            formatted_data = {
+                'prices': prices,
+                'volumes': volumes,
+                'sma': sma_data
+            }
 
-        return jsonify(formatted_data)
+            response = jsonify(formatted_data)
+            response.headers.add('Access-Control-Allow-Origin', '*')
+            return response
+
+        except Exception as e:
+            logger.error(f"Error processing price data for {symbol}: {str(e)}")
+            response = jsonify({'error': 'Error processing price data'})
+            response.headers.add('Access-Control-Allow-Origin', '*')
+            return response, 500
 
     except Exception as e:
         logger.error(f"Error in price history endpoint for {symbol}: {str(e)}", exc_info=True)
-        return jsonify({'error': 'Internal server error'}), 500
+        response = jsonify({'error': 'Internal server error'})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response, 500
 
 @app.route('/success')
 @login_required

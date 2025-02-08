@@ -1,5 +1,32 @@
 {% extends "base.html" %}
 
+{% block title %}{{ crypto_names[crypto.symbol] }} ({{ crypto.symbol }}) Price, Charts & Analysis | Exploding Crypto{% endblock %}
+
+{% block meta_description %}Get real-time {{ crypto_names[crypto.symbol] }} ({{ crypto.symbol }}) price updates, trading signals, and market analysis. View historical price charts and news sentiment analysis.{% endblock %}
+
+{% block meta_keywords %}{{ crypto.symbol }}, {{ crypto_names[crypto.symbol] }}, cryptocurrency price, crypto analysis, trading signals, market sentiment, crypto news{% endblock %}
+
+{% block og_title %}{{ crypto_names[crypto.symbol] }} ({{ crypto.symbol }}) - Live Price & Analysis{% endblock %}
+
+{% block og_description %}Current {{ crypto.symbol }} price: ${{ "%.2f"|format(crypto.price_usd) }} | 24h change: {{ "%.1f"|format(crypto.percent_change_24h) }}%. Get detailed price analysis and news sentiment insights.{% endblock %}
+
+{% block og_type %}article{% endblock %}
+
+{% block extra_head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "FinancialProduct",
+  "name": "{{ crypto_names[crypto.symbol] }}",
+  "alternateName": "{{ crypto.symbol }}",
+  "price": "{{ "%.2f"|format(crypto.price_usd) }}",
+  "priceCurrency": "USD",
+  "description": "{{ crypto_names[crypto.symbol] }} ({{ crypto.symbol }}) cryptocurrency real-time price information and market analysis.",
+  "url": "{{ request.url }}"
+}
+</script>
+{% endblock %}
+
 {% block content %}
 <style>
 .crypto-header {
@@ -265,24 +292,34 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js"></script>
 
 <script>
-let priceChart = null;
-const loadingOverlay = document.querySelector('.loading-overlay');
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 2000; // 2 seconds
 
 // Debug logging helper
 function logDebug(message, data) {
     console.log(`[Chart Debug] ${message}:`, data);
 }
 
-function formatValue(value) {
-    if (value >= 1e9) {
-        return (value / 1e9).toFixed(2) + 'B';
-    } else if (value >= 1e6) {
-        return (value / 1e6).toFixed(2) + 'M';
-    } else if (value >= 1e3) {
-        return (value / 1e3).toFixed(2) + 'K';
+async function fetchWithRetry(url, retries = MAX_RETRIES) {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+        }
+        return await response.json();
+    } catch (error) {
+        if (retries > 0) {
+            logDebug('Retrying request due to error', error);
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+            return fetchWithRetry(url, retries - 1);
+        }
+        throw error;
     }
-    return value.toFixed(2);
 }
+
+let priceChart = null;
+const loadingOverlay = document.querySelector('.loading-overlay');
 
 async function updateChart(timeframe = '30d') {
     try {
@@ -291,23 +328,10 @@ async function updateChart(timeframe = '30d') {
         }
 
         logDebug('Starting chart update for timeframe', timeframe);
-
         const apiUrl = `/api/price-history/{{ crypto.symbol }}?timeframe=${timeframe}`;
         logDebug('Fetching from URL', apiUrl);
 
-        const response = await fetch(apiUrl);
-        logDebug('API Response', {
-            status: response.status,
-            ok: response.ok,
-            statusText: response.statusText
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-        }
-
-        const data = await response.json();
+        const data = await fetchWithRetry(apiUrl);
         logDebug('Received data', data);
 
         if (!data || !data.prices || data.prices.length === 0) {
@@ -451,12 +475,29 @@ async function updateChart(timeframe = '30d') {
 
     } catch (error) {
         console.error('Error updating chart:', error);
-        alert('Error loading chart data. Please try again later.');
+        const errorMessage = error.response?.data?.error || error.message || 'Error loading chart data';
+        alert(`${errorMessage}. Retrying...`);
+
+        // Retry after a delay
+        setTimeout(() => {
+            updateChart(timeframe);
+        }, RETRY_DELAY);
     } finally {
         if (loadingOverlay) {
             loadingOverlay.classList.remove('active');
         }
     }
+}
+
+function formatValue(value) {
+    if (value >= 1e9) {
+        return (value / 1e9).toFixed(2) + 'B';
+    } else if (value >= 1e6) {
+        return (value / 1e6).toFixed(2) + 'M';
+    } else if (value >= 1e3) {
+        return (value / 1e3).toFixed(2) + 'K';
+    }
+    return value.toFixed(2);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -492,6 +533,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-</script>
 
+{{ super() }}
 {% endblock %}

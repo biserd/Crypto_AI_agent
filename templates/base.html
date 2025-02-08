@@ -3,18 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Real-time cryptocurrency news and market analysis">
-    <meta name="keywords" content="crypto, cryptocurrency, blockchain, bitcoin, ethereum, trading">
-    <title>Exploding Crypto</title>
+    <meta name="description" content="{% block meta_description %}Real-time cryptocurrency news and market analysis{% endblock %}">
+    <meta name="keywords" content="{% block meta_keywords %}crypto, cryptocurrency, blockchain, bitcoin, ethereum, trading{% endblock %}">
+    <title>{% block title %}Exploding Crypto{% endblock %}</title>
+    <meta property="og:title" content="{% block og_title %}Exploding Crypto{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Real-time cryptocurrency news and market analysis{% endblock %}">
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta name="twitter:card" content="summary_large_image">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/styles.css">
     <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga_tracking_id }}"></script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-TQRHFZPBR9"></script>
     <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', '{{ ga_tracking_id }}');
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-TQRHFZPBR9');
     </script>
     <!-- End Google Analytics -->
     <style>
@@ -88,6 +94,7 @@
         color: #10b981;
     }
     </style>
+    {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-light">
     <nav class="navbar navbar-expand-lg bg-white border-bottom">
