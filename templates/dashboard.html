@@ -5,13 +5,15 @@
     <div class="ticker-wrap">
         <div class="ticker">
             {% for price in crypto_prices %}
-                <div class="ticker-item">
-                    <span class="ticker-symbol">{{ price.symbol }}</span>
-                    <span class="ticker-price">${{ "%.2f"|format(price.price_usd) }}</span>
-                    <span class="ticker-change {{ 'change-up' if price.percent_change_24h|float > 0 else 'change-down' }}">
-                        {{ "%.1f"|format(price.percent_change_24h) }}%
-                    </span>
-                </div>
+                <a href="{{ url_for('crypto_detail', symbol=price.symbol) }}" class="text-decoration-none">
+                    <div class="ticker-item">
+                        <span class="ticker-symbol">{{ price.symbol }}</span>
+                        <span class="ticker-price">${{ "%.2f"|format(price.price_usd) }}</span>
+                        <span class="ticker-change {{ 'change-up' if price.percent_change_24h|float > 0 else 'change-down' }}">
+                            {{ "%.1f"|format(price.percent_change_24h) }}%
+                        </span>
+                    </div>
+                </a>
             {% endfor %}
         </div>
     </div>
@@ -32,7 +34,7 @@
                         {% with sorted_gainers = crypto_prices|filter_by_positive|sort(attribute='percent_change_24h', reverse=True) %}
                         {% for price in sorted_gainers[:5] %}
                             <div class="crypto-item">
-                                <a href="/crypto/{{ price.symbol }}" class="text-decoration-none">
+                                <a href="{{ url_for('crypto_detail', symbol=price.symbol) }}" class="text-decoration-none">
                                     <div class="crypto-tooltip crypto-price {{ 'price-up' if price.percent_change_24h|float > 0 else 'price-down' }}">
                                         {{ price.symbol }}: ${{ "%.2f"|format(price.price_usd) }}
                                         <small>({{ "%.1f"|format(price.percent_change_24h) }}%)</small>
@@ -47,7 +49,7 @@
                         {% with sorted_losers = crypto_prices|filter_by_negative|sort(attribute='percent_change_24h') %}
                         {% for price in sorted_losers[:5] %}
                             <div class="crypto-item">
-                                <a href="/crypto/{{ price.symbol }}" class="text-decoration-none">
+                                <a href="{{ url_for('crypto_detail', symbol=price.symbol) }}" class="text-decoration-none">
                                     <div class="crypto-tooltip crypto-price {{ 'price-up' if price.percent_change_24h|float > 0 else 'price-down' }}">
                                         {{ price.symbol }}: ${{ "%.2f"|format(price.price_usd) }}
                                         <small>({{ "%.1f"|format(price.percent_change_24h) }}%)</small>
@@ -115,13 +117,13 @@
                             {% if article.sentiment_label == 'positive' %}
                                 {% for crypto in ['BTC', 'ETH', 'BNB', 'ADA', 'SOL', 'XRP', 'DOGE', 'MATIC', 'AVAX'] %}
                                     {% if crypto.lower() in article.content.lower() or crypto in article.content %}
-                                        <button class="btn btn-sm btn-buy">Buy {{ crypto }}</button>
+                                        <a href="{{ url_for('crypto_detail', symbol=crypto) }}" class="btn btn-sm btn-success">View {{ crypto }}</a>
                                     {% endif %}
                                 {% endfor %}
                             {% elif article.sentiment_label == 'negative' %}
                                 {% for crypto in ['BTC', 'ETH', 'BNB', 'ADA', 'SOL', 'XRP', 'DOGE', 'MATIC', 'AVAX'] %}
                                     {% if crypto.lower() in article.content.lower() or crypto in article.content %}
-                                        <button class="btn btn-sm btn-sell">Sell {{ crypto }}</button>
+                                        <a href="{{ url_for('crypto_detail', symbol=crypto) }}" class="btn btn-sm btn-danger">View {{ crypto }}</a>
                                     {% endif %}
                                 {% endfor %}
                             {% endif %}

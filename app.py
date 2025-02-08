@@ -292,6 +292,35 @@ def get_term_details(term_name):
         logger.error(f"Error getting term details: {str(e)}")
         return "Error loading term details", 500
 
+# Add crypto_names dictionary at the top level
+crypto_names = {
+    'BTC': 'Bitcoin',
+    'ETH': 'Ethereum',
+    'USDT': 'Tether',
+    'BNB': 'Binance Coin',
+    'SOL': 'Solana',
+    'XRP': 'Ripple',
+    'USDC': 'USD Coin',
+    'ADA': 'Cardano',
+    'DOGE': 'Dogecoin',
+    'TON': 'Toncoin',
+    'TRX': 'TRON',
+    'DAI': 'Dai',
+    'MATIC': 'Polygon',
+    'DOT': 'Polkadot',
+    'WBTC': 'Wrapped Bitcoin',
+    'AVAX': 'Avalanche',
+    'SHIB': 'Shiba Inu',
+    'LEO': 'LEO Token',
+    'LTC': 'Litecoin',
+    'UNI': 'Uniswap',
+    'CAKE': 'PancakeSwap',
+    'LINK': 'Chainlink',
+    'ATOM': 'Cosmos',
+    'APE': 'ApeCoin',
+    'AAVE': 'Aave'
+}
+
 @app.route('/crypto/<symbol>')
 @check_subscription('basic')
 def crypto_detail(symbol):
