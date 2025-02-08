@@ -15,7 +15,7 @@ from sqlalchemy import desc
 import pandas as pd
 import numpy as np
 import eventlet
-from blockchain_metrics import EtherscanClient
+#from blockchain_metrics import EtherscanClient # Removed import as Etherscan is no longer used
 
 eventlet.monkey_patch()
 
@@ -332,24 +332,6 @@ def crypto_detail(symbol):
             related_news = []
             news_impact = {'positive': 0, 'negative': 0, 'neutral': 0, 'total_articles': 0}
 
-        # Get on-chain metrics for ETH
-        on_chain_metrics = None
-        if symbol == 'ETH':
-            try:
-                if not os.environ.get('ETHERSCAN_API_KEY'):
-                    logger.warning("Etherscan API key not found")
-                    on_chain_metrics = None
-                else:
-                    etherscan = EtherscanClient()
-                    on_chain_metrics = {
-                        'daily_transactions': etherscan.get_daily_transactions(7),
-                        'gas_prices': etherscan.get_gas_oracle()
-                    }
-                    logger.info("Successfully fetched on-chain metrics for ETH")
-            except Exception as e:
-                logger.error(f"Error fetching on-chain metrics: {str(e)}")
-                on_chain_metrics = None
-
         # Calculate overall sentiment and trading signals
         total_articles = news_impact['total_articles']
         positive_ratio = news_impact['positive'] / total_articles if total_articles > 0 else 0
@@ -368,7 +350,6 @@ def crypto_detail(symbol):
                            crypto=crypto_price,
                            news=related_news,
                            news_impact=news_impact,
-                           on_chain_metrics=on_chain_metrics,
                            recommendation=recommendation)
 
     except Exception as e:

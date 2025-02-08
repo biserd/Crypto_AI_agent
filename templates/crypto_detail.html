@@ -181,10 +181,10 @@
     </div>
 </div>
 
-<!-- Moved News Sentiment Analysis here, right after the chart -->
+<!-- News Sentiment Analysis -->
 <div class="container-fluid px-4 mb-4">
     <div class="row">
-        <div class="col-md-6">
+        <div class="col-12">
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">News Sentiment Analysis</h5>
@@ -219,33 +219,6 @@
                 </div>
             </div>
         </div>
-
-        {% if crypto.symbol == 'ETH' and on_chain_metrics %}
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Ethereum Network Metrics</h5>
-                    {% if on_chain_metrics.gas_prices %}
-                    <div class="mb-3">
-                        <h6>Current Gas Prices</h6>
-                        <div class="d-flex justify-content-between">
-                            <span>Safe Low: {{ on_chain_metrics.gas_prices.SafeGasPrice }} Gwei</span>
-                            <span>Standard: {{ on_chain_metrics.gas_prices.ProposeGasPrice }} Gwei</span>
-                            <span>Fast: {{ on_chain_metrics.gas_prices.FastGasPrice }} Gwei</span>
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    {% if on_chain_metrics.daily_transactions %}
-                    <div class="mb-3">
-                        <h6>Daily Transactions (Last 7 Days)</h6>
-                        <canvas id="transactionChart" width="400" height="200"></canvas>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        {% endif %}
     </div>
 </div>
 
@@ -289,6 +262,7 @@
     </div>
 </div>
 
+<!-- Load Chart.js and related libraries -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js"></script>
@@ -498,45 +472,6 @@ document.addEventListener('DOMContentLoaded', function() {
         debouncedUpdateChart(document.querySelector('.timeframe-btn.active').dataset.timeframe);
     });
 });
-
-{% if crypto.symbol == 'ETH' and on_chain_metrics and on_chain_metrics.daily_transactions %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const txCtx = document.getElementById('transactionChart').getContext('2d');
-    new Chart(txCtx, {
-        type: 'line',
-        data: {
-            labels: {{ on_chain_metrics.daily_transactions|map(attribute='date')|list|tojson }},
-            datasets: [{
-                label: 'Daily Transactions',
-                data: {{ on_chain_metrics.daily_transactions|map(attribute='value')|list|tojson }},
-                borderColor: '#6c5ce7',
-                backgroundColor: 'rgba(108, 92, 231, 0.1)',
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: false,
-                    ticks: {
-                        callback: function(value) {
-                            return formatValue(value);
-                        }
-                    }
-                }
-            }
-        }
-    });
-});
 </script>
-{% endif %}
 
 {% endblock %}
