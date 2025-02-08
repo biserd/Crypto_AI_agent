@@ -303,14 +303,28 @@ def get_term_details(term_name):
 @check_subscription('basic')
 def crypto_detail(symbol):
     try:
+        logger.info(f"Accessing crypto detail page for symbol: {symbol}")
+        symbol = symbol.upper()  # Normalize symbol to uppercase
+
         # Get current price data
-        crypto_price = CryptoPrice.query.filter_by(symbol=symbol).first_or_404()
+        crypto_price = CryptoPrice.query.filter(CryptoPrice.symbol == symbol).first()
+        if not crypto_price:
+            logger.error(f"No price data found for symbol: {symbol}")
+            flash(f"No data available for {symbol}", "error")
+            return redirect(url_for('dashboard'))
 
         # Get related news articles (containing the symbol)
-        related_news = Article.query.filter(
-            (Article.content.ilike(f'%{symbol}%')) |
-            (Article.title.ilike(f'%{symbol}%'))
-        ).order_by(desc(Article.created_at)).limit(10).all()
+        try:
+            related_news = Article.query.filter(
+                db.or_(
+                    Article.content.ilike(f'%{symbol}%'),
+                    Article.title.ilike(f'%{symbol}%')
+                )
+            ).order_by(desc(Article.created_at)).limit(10).all()
+            logger.info(f"Found {len(related_news)} related articles for {symbol}")
+        except Exception as e:
+            logger.error(f"Error fetching related news for {symbol}: {str(e)}")
+            related_news = []
 
         # Calculate overall sentiment
         positive_count = sum(1 for article in related_news if article.sentiment_label == 'positive')
@@ -324,111 +338,17 @@ def crypto_detail(symbol):
         else:
             recommendation = 'hold'
 
+        logger.info(f"Generated {recommendation} recommendation for {symbol}")
+
         return render_template('crypto_detail.html',
                             crypto=crypto_price,
                             news=related_news,
                             recommendation=recommendation)
     except Exception as e:
-        logger.error(f"Error in crypto detail page: {str(e)}")
-        return "Error loading cryptocurrency details", 500
+        logger.error(f"Error in crypto detail page for {symbol}: {str(e)}", exc_info=True)
+        flash("Error loading cryptocurrency details", "error")
+        return redirect(url_for('dashboard'))
 
-
-@socketio.on('connect')
-def handle_connect():
-    logger.info("Client connected to WebSocket")
-
-@socketio.on('disconnect')
-def handle_disconnect():
-    logger.info("Client disconnected from WebSocket")
-
-@login_manager.user_loader
-def load_user(user_id):
-    return Users.query.get(int(user_id))
-
-def sync_article_counts():
-    """Synchronize article counts with actual numbers in database"""
-    try:
-        with app.app_context():
-            sources = NewsSourceMetrics.query.all()
-            for source in sources:
-                count = Article.query.filter_by(source_name=source.source_name).count()
-                source.article_count = count
-                logger.info(f"Syncing article count for {source.source_name}: {count}")
-            db.session.commit()
-            logger.info("Successfully synchronized all article counts")
-    except Exception as e:
-        logger.error(f"Error syncing article counts: {str(e)}")
-        db.session.rollback()
-
-# Add routes for subscription management
-@app.route('/create-checkout-session', methods=['POST'])
-@login_required
-def create_checkout_session():
-    try:
-        domain_url = request.host_url.rstrip('/')
-        checkout_session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=[{
-                'price_data': {
-                    'currency': 'usd',
-                    'product_data': {
-                        'name': 'Pro Subscription',
-                        'description': 'Access to premium features'
-                    },
-                    'unit_amount': 4900,
-                    'recurring': {
-                        'interval': 'month'
-                    }
-                },
-                'quantity': 1,
-            }],
-            mode='subscription',
-            success_url=domain_url + '/success?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url=domain_url + '/cancelled',
-        )
-        return jsonify({'id': checkout_session.id, 'url': checkout_session.url})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 403
-
-@app.route('/about')
-def about():
-    return render_template('about.html')
-
-@app.route('/pricing')
-def pricing():
-    return render_template('pricing.html')
-
-@app.route('/contact')
-def contact():
-    return render_template('contact.html')
-
-@app.route('/search')
-def search():
-    query = request.args.get('q', '').lower()
-    if not query:
-        return redirect('/')
-
-    # Map common names to symbols
-    name_to_symbol = {
-        'bitcoin': 'BTC',
-        'ethereum': 'ETH',
-        'binance': 'BNB',
-        'cardano': 'ADA',
-        'solana': 'SOL',
-        'ripple': 'XRP',
-        'dogecoin': 'DOGE',
-        'polygon': 'MATIC',
-        'avalanche': 'AVAX',
-        'ondo': 'ONDO'  # Added Ondo token
-    }
-
-    # Try to find the symbol
-    symbol = name_to_symbol.get(query, query.upper())
-
-    return redirect(f'/crypto/{symbol}')
-
-import requests
-from crypto_price_tracker import CryptoPriceTracker
 
 @app.route('/api/price-history/<symbol>')
 def price_history(symbol):
@@ -590,6 +510,102 @@ def subscription_status():
         return jsonify({'tier': 'basic', 'active': True, 'expires_at': None, 'rate_limit': 100})
 
 
+@socketio.on('connect')
+def handle_connect():
+    logger.info("Client connected to WebSocket")
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    logger.info("Client disconnected from WebSocket")
+
+@login_manager.user_loader
+def load_user(user_id):
+    return Users.query.get(int(user_id))
+
+def sync_article_counts():
+    """Synchronize article counts with actual numbers in database"""
+    try:
+        with app.app_context():
+            sources = NewsSourceMetrics.query.all()
+            for source in sources:
+                count = Article.query.filter_by(source_name=source.source_name).count()
+                source.article_count = count
+                logger.info(f"Syncing article count for {source.source_name}: {count}")
+            db.session.commit()
+            logger.info("Successfully synchronized all article counts")
+    except Exception as e:
+        logger.error(f"Error syncing article counts: {str(e)}")
+        db.session.rollback()
+
+# Add routes for subscription management
+@app.route('/create-checkout-session', methods=['POST'])
+@login_required
+def create_checkout_session():
+    try:
+        domain_url = request.host_url.rstrip('/')
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'usd',
+                    'product_data': {
+                        'name': 'Pro Subscription',
+                        'description': 'Access to premium features'
+                    },
+                    'unit_amount': 4900,
+                    'recurring': {
+                        'interval': 'month'
+                    }
+                },
+                'quantity': 1,
+            }],
+            mode='subscription',
+            success_url=domain_url + '/success?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url=domain_url + '/cancelled',
+        )
+        return jsonify({'id': checkout_session.id, 'url': checkout_session.url})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 403
+
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
+@app.route('/pricing')
+def pricing():
+    return render_template('pricing.html')
+
+@app.route('/contact')
+def contact():
+    return render_template('contact.html')
+
+@app.route('/search')
+def search():
+    query = request.args.get('q', '').lower()
+    if not query:
+        return redirect('/')
+
+    # Map common names to symbols
+    name_to_symbol = {
+        'bitcoin': 'BTC',
+        'ethereum': 'ETH',
+        'binance': 'BNB',
+        'cardano': 'ADA',
+        'solana': 'SOL',
+        'ripple': 'XRP',
+        'dogecoin': 'DOGE',
+        'polygon': 'MATIC',
+        'avalanche': 'AVAX',
+        'ondo': 'ONDO'  # Added Ondo token
+    }
+
+    # Try to find the symbol
+    symbol = name_to_symbol.get(query, query.upper())
+
+    return redirect(f'/crypto/{symbol}')
+
+import requests
+from crypto_price_tracker import CryptoPriceTracker
 
 with app.app_context():
     try:
