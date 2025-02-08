@@ -200,6 +200,19 @@ function formatValue(value) {
     return value.toFixed(2);
 }
 
+// Debounce function
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
 async function updateChart(timeframe = '30d') {
     try {
         // Show loading state
@@ -352,26 +365,29 @@ async function updateChart(timeframe = '30d') {
     }
 }
 
+// Debounced version of updateChart
+const debouncedUpdateChart = debounce(updateChart, 500);
+
 document.addEventListener('DOMContentLoaded', function() {
     // Initial chart load
     updateChart('30d');
 
-    // Timeframe selector
+    // Timeframe selector with debouncing
     document.querySelectorAll('.timeframe-btn').forEach(button => {
         button.addEventListener('click', function() {
             document.querySelectorAll('.timeframe-btn').forEach(btn => btn.classList.remove('active'));
             this.classList.add('active');
-            updateChart(this.dataset.timeframe);
+            debouncedUpdateChart(this.dataset.timeframe);
         });
     });
 
-    // Indicator toggles
+    // Indicator toggles with debouncing
     document.getElementById('showSMA').addEventListener('change', () => {
-        updateChart(document.querySelector('.timeframe-btn.active').dataset.timeframe);
+        debouncedUpdateChart(document.querySelector('.timeframe-btn.active').dataset.timeframe);
     });
 
     document.getElementById('showVolume').addEventListener('change', () => {
-        updateChart(document.querySelector('.timeframe-btn.active').dataset.timeframe);
+        debouncedUpdateChart(document.querySelector('.timeframe-btn.active').dataset.timeframe);
     });
 });
 </script>
