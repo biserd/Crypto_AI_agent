@@ -463,15 +463,6 @@ def price_history(symbol):
 
         return jsonify(formatted_data)
 
-        data = [{
-            'time': int(price.last_updated.timestamp()),
-            'value': float(price.price_usd)
-        } for price in prices]
-
-        return jsonify(data)
-    except Exception as e:
-        logger.error(f"Error fetching price history: {str(e)}")
-        return jsonify([])
     except Exception as e:
         logger.error(f"Error fetching price history: {str(e)}")
         return jsonify([])
@@ -531,9 +522,10 @@ def sitemap():
             'lastmod': datetime.utcnow().strftime('%Y-%m-%d')
         })
 
-    sitemap_xml = render_template('sitemap.xml', pages=pages)
+    # Render template and ensure no whitespace before XML declaration
+    sitemap_xml = render_template('sitemap.xml', pages=pages).strip()
     response = make_response(sitemap_xml)
-    response.headers["Content-Type"] = "application/xml"    
+    response.headers["Content-Type"] = "application/xml;charset=utf-8"    
     return response
 
 @app.route('/subscription/status')
@@ -551,6 +543,7 @@ def subscription_status():
         return jsonify({'tier': 'basic', 'active': True, 'expires_at': None, 'rate_limit': 100})
     except Exception as e:
         return jsonify({'tier': 'basic', 'active': True, 'expires_at': None, 'rate_limit': 100})
+
 
 
 with app.app_context():
