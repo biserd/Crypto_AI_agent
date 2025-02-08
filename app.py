@@ -350,6 +350,7 @@ def crypto_detail(symbol):
         return redirect(url_for('dashboard'))
 
 
+
 @app.route('/api/price-history/<symbol>')
 def price_history(symbol):
     try:
@@ -431,16 +432,10 @@ def price_history(symbol):
             sma_values = calculate_sma(price_values)
 
             formatted_data = {
-                'prices': [{
-                    'time': int(timestamp),  # Already in milliseconds
-                    'value': float(price)
-                } for timestamp, price in prices],
-                'volumes': [{
-                    'time': int(timestamp),  # Already in milliseconds
-                    'value': float(volume)
-                } for timestamp, volume in volumes],
+                'prices': prices,  # Keep original timestamp in milliseconds
+                'volumes': volumes,  # Keep original timestamp in milliseconds
                 'sma': [{
-                    'time': int(prices[i][0]),  # Already in milliseconds
+                    'timestamp': prices[i][0],
                     'value': sma_values[i]
                 } for i in range(len(prices)) if sma_values[i] is not None]
             }

@@ -227,46 +227,43 @@ async function updateChart(timeframe = '30d') {
 
         const datasets = [{
             label: '{{ crypto.symbol }} Price (USD)',
-            data: data.prices,
+            data: data.prices.map(p => ({
+                x: p[0],
+                y: p[1]
+            })),
             borderColor: '#2196F3',
             backgroundColor: 'rgba(33, 150, 243, 0.1)',
             fill: true,
             yAxisID: 'y',
-            tension: 0.3,
-            parsing: {
-                xAxisKey: 'time',
-                yAxisKey: 'value'
-            }
+            tension: 0.3
         }];
 
         if (showSMA && data.sma && data.sma.length > 0) {
             datasets.push({
                 label: 'SMA (7)',
-                data: data.sma,
+                data: data.sma.map(d => ({
+                    x: d.timestamp,
+                    y: d.value
+                })),
                 borderColor: '#FF9800',
                 borderWidth: 2,
                 pointRadius: 0,
                 fill: false,
-                yAxisID: 'y',
-                parsing: {
-                    xAxisKey: 'time',
-                    yAxisKey: 'value'
-                }
+                yAxisID: 'y'
             });
         }
 
         if (showVolume && data.volumes && data.volumes.length > 0) {
             datasets.push({
                 label: 'Volume',
-                data: data.volumes,
+                data: data.volumes.map(v => ({
+                    x: v[0],
+                    y: v[1]
+                })),
                 type: 'bar',
                 backgroundColor: 'rgba(156, 39, 176, 0.2)',
                 borderColor: 'rgba(156, 39, 176, 0.8)',
-                yAxisID: 'y1',
-                parsing: {
-                    xAxisKey: 'time',
-                    yAxisKey: 'value'
-                }
+                yAxisID: 'y1'
             });
         }
 
