@@ -49,6 +49,9 @@ logger = logging.getLogger(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", os.urandom(24))
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/postgres")
 
+# Add GA_TRACKING_ID to app config
+app.config['GA_TRACKING_ID'] = os.environ.get('GA_TRACKING_ID', '')  # Default to empty string if not set
+
 # Initialize database
 init_app(app)
 
@@ -243,7 +246,8 @@ def dashboard():
                             articles=recent_articles,
                             crypto_prices=crypto_prices,
                             news_sources=news_sources,
-                            last_scraper_run=app.config['LAST_SCRAPER_RUN'])
+                            last_scraper_run=app.config['LAST_SCRAPER_RUN'],
+                            ga_tracking_id=app.config['GA_TRACKING_ID'])
     except Exception as e:
         logger.error(f"Error generating dashboard: {str(e)}")
         return "Error loading dashboard", 500
@@ -258,7 +262,8 @@ def glossary():
 
         return render_template('glossary.html', 
                              terms=terms,
-                             categories=categories)
+                             categories=categories,
+                             ga_tracking_id=app.config['GA_TRACKING_ID'])
     except Exception as e:
         logger.error(f"Error accessing glossary: {str(e)}")
         return "Error loading glossary", 500
@@ -282,7 +287,8 @@ def get_term_details(term_name):
 
         return render_template('term_details.html', 
                              term=term,
-                             related_terms=related_terms)
+                             related_terms=related_terms,
+                             ga_tracking_id=app.config['GA_TRACKING_ID'])
     except Exception as e:
         logger.error(f"Error getting term details: {str(e)}")
         return "Error loading term details", 500
@@ -350,7 +356,8 @@ def crypto_detail(symbol):
                            crypto=crypto_price,
                            news=related_news,
                            news_impact=news_impact,
-                           recommendation=recommendation)
+                           recommendation=recommendation,
+                           ga_tracking_id=app.config['GA_TRACKING_ID'])
 
     except Exception as e:
         logger.error(f"Error in crypto detail page for {symbol}: {str(e)}", exc_info=True)
@@ -571,15 +578,15 @@ def create_checkout_session():
 
 @app.route('/about')
 def about():
-    return render_template('about.html')
+    return render_template('about.html', ga_tracking_id=app.config['GA_TRACKING_ID'])
 
 @app.route('/pricing')
 def pricing():
-    return render_template('pricing.html')
+    return render_template('pricing.html', ga_tracking_id=app.config['GA_TRACKING_ID'])
 
 @app.route('/contact')
 def contact():
-    return render_template('contact.html')
+    return render_template('contact.html', ga_tracking_id=app.config['GA_TRACKING_ID'])
 
 @app.route('/search')
 def search():
@@ -610,6 +617,11 @@ import requests
 from crypto_price_tracker import CryptoPriceTracker
 
 import time
+
+# Add GA_TRACKING_ID to template context
+@app.context_processor
+def inject_ga_tracking_id():
+    return dict(ga_tracking_id=app.config['GA_TRACKING_ID'])
 
 with app.app_context():
     try:
