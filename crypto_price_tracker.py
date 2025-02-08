@@ -20,7 +20,8 @@ class CryptoPriceTracker:
             'DOGE': 'dogecoin', 'TON': 'the-open-network', 'TRX': 'tron', 'DAI': 'dai',
             'MATIC': 'matic-network', 'DOT': 'polkadot', 'WBTC': 'wrapped-bitcoin',
             'AVAX': 'avalanche-2', 'SHIB': 'shiba-inu', 'LEO': 'leo-token', 'LTC': 'litecoin',
-            'UNI': 'uniswap'
+            'UNI': 'uniswap', 'CAKE': 'pancakeswap-token', 'LINK': 'chainlink',
+            'ATOM': 'cosmos', 'APE': 'apecoin', 'AAVE': 'aave'
         }
 
     def _rate_limit_wait(self):
@@ -43,7 +44,7 @@ class CryptoPriceTracker:
             # Convert symbol to CoinGecko ID
             coin_id = self.crypto_ids.get(symbol.upper())
             if not coin_id:
-                logger.error(f"Symbol not found in mapping: {symbol}")
+                logger.error(f"Symbol {symbol} not found in mapping. Available symbols: {', '.join(sorted(self.crypto_ids.keys()))}")
                 return None
 
             self._rate_limit_wait()
@@ -70,14 +71,14 @@ class CryptoPriceTracker:
                     logger.debug(f"Making request to {api_url} with params {params}")
                     response = requests.get(api_url, params=params, headers=headers, timeout=10)
 
-                    # Check for rate limiting
+                    # Handle rate limiting
                     if response.status_code == 429:
                         wait_time = float(response.headers.get('Retry-After', retry_delay))
                         logger.warning(f"Rate limited. Waiting {wait_time} seconds before retry")
                         time.sleep(wait_time)
                         continue
 
-                    # Check for successful response
+                    # Handle successful response
                     if response.status_code == 200:
                         data = response.json()
                         if not data or 'prices' not in data:
@@ -90,9 +91,12 @@ class CryptoPriceTracker:
                             'market_caps': data.get('market_caps', []),
                             'total_volumes': data.get('total_volumes', [])
                         }
-                    else:
-                        logger.error(f"API Error {response.status_code}: {response.text}")
-                        return None
+
+                    # Handle other error responses
+                    logger.error(f"API Error {response.status_code}: {response.text}")
+                    if response.status_code == 404:
+                        logger.error(f"Cryptocurrency {symbol} ({coin_id}) not found on CoinGecko")
+                    return None
 
                 except requests.exceptions.Timeout:
                     logger.warning(f"Request timeout on attempt {attempt + 1}/{max_retries}")

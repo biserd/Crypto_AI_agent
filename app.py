@@ -306,35 +306,6 @@ def crypto_detail(symbol):
             flash(f"No data available for {symbol}", "error")
             return redirect(url_for('dashboard'))
 
-        # Define crypto names mapping
-        crypto_names = {
-            'BTC': 'Bitcoin',
-            'ETH': 'Ethereum',
-            'USDT': 'Tether',
-            'BNB': 'Binance Coin',
-            'SOL': 'Solana',
-            'XRP': 'Ripple',
-            'USDC': 'USD Coin',
-            'ADA': 'Cardano',
-            'DOGE': 'Dogecoin',
-            'TON': 'Toncoin',
-            'TRX': 'TRON',
-            'DAI': 'Dai',
-            'MATIC': 'Polygon',
-            'DOT': 'Polkadot',
-            'WBTC': 'Wrapped Bitcoin',
-            'AVAX': 'Avalanche',
-            'SHIB': 'Shiba Inu',
-            'LEO': 'LEO Token',
-            'LTC': 'Litecoin',
-            'UNI': 'Uniswap'
-        }
-
-        # If symbol not in crypto_names, use symbol as the name
-        if symbol not in crypto_names:
-            logger.info(f"Symbol {symbol} not found in crypto_names dictionary, using symbol as name")
-            crypto_names[symbol] = symbol
-
         # Get related news articles (from last 7 days)
         try:
             cutoff_time = datetime.utcnow() - timedelta(days=7)
@@ -402,6 +373,15 @@ def price_history(symbol):
         # Normalize symbol
         symbol = symbol.upper()
 
+        # Check if symbol exists in our tracked cryptocurrencies
+        tracker = CryptoPriceTracker()
+        if symbol not in tracker.crypto_ids:
+            logger.error(f"Symbol {symbol} not found in supported cryptocurrencies")
+            return jsonify({
+                'error': f'Cryptocurrency {symbol} is not supported. Available symbols: {", ".join(sorted(tracker.crypto_ids.keys()))}',
+                'symbol': symbol
+            }), 404
+
         # Map timeframe to days and interval
         timeframe_mapping = {
             '24h': {'days': 1, 'interval': 'hourly'},
@@ -413,7 +393,6 @@ def price_history(symbol):
         logger.debug(f"Using timeframe config: {timeframe_config}")
 
         # Get historical data using the tracker
-        tracker = CryptoPriceTracker()
         historical_data = tracker.get_historical_prices(
             symbol, 
             days=timeframe_config['days'],
@@ -421,12 +400,12 @@ def price_history(symbol):
         )
 
         if not historical_data:
-            logger.error(f"No historical data available for {symbol}")
+            logger.error(f"Failed to fetch historical data for {symbol}")
             return jsonify({
-                'error': 'No price data available',
+                'error': f'Unable to fetch price history for {symbol}. The service might be temporarily unavailable.',
                 'symbol': symbol,
                 'timeframe': timeframe
-            }), 404
+            }), 503
 
         # Process the data
         try:
@@ -436,7 +415,7 @@ def price_history(symbol):
             if not prices:
                 logger.error(f"No price data points available for {symbol}")
                 return jsonify({
-                    'error': 'No price data points available',
+                    'error': f'No price history available for {symbol}',
                     'symbol': symbol
                 }), 404
 

@@ -151,7 +151,7 @@
     right: 0;
     bottom: 0;
     background: rgba(255, 255, 255, 0.8);
-    display: none;
+    display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
@@ -160,6 +160,20 @@
 .loading-overlay.active {
     display: flex;
 }
+
+.loading-overlay .spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+#error-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1001;
+}
+
 </style>
 
 <div class="crypto-header">
@@ -191,8 +205,12 @@
     <div class="chart-wrapper">
         <canvas id="priceChart"></canvas>
         <div class="loading-overlay">
-            <div>Loading chart data...</div>
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <div class="mt-2">Loading chart data...</div>
         </div>
+        <div id="error-message" class="alert alert-danger d-none"></div>
     </div>
 </div>
 
@@ -281,61 +299,80 @@
 
 <script>
 const MAX_RETRIES = 3;
-const RETRY_DELAY = 2000; // 2 seconds
+const RETRY_DELAY = 2000;
+let retryCount = 0;
+let priceChart = null;
+const loadingOverlay = document.querySelector('.loading-overlay');
+const errorMessage = document.getElementById('error-message');
 
-// Debug logging helper
-function logDebug(message, data) {
-    console.log(`[Chart Debug] ${message}:`, data);
+function showError(message) {
+    if (errorMessage) {
+        errorMessage.textContent = message;
+        errorMessage.classList.remove('d-none');
+    }
+    if (loadingOverlay) {
+        loadingOverlay.classList.remove('active');
+    }
+}
+
+function hideError() {
+    if (errorMessage) {
+        errorMessage.classList.add('d-none');
+    }
+}
+
+function showLoading() {
+    if (loadingOverlay) {
+        loadingOverlay.classList.add('active');
+    }
+    hideError();
+}
+
+function hideLoading() {
+    if (loadingOverlay) {
+        loadingOverlay.classList.remove('active');
+    }
 }
 
 async function fetchWithRetry(url, retries = MAX_RETRIES) {
+    showLoading();
     try {
         const response = await fetch(url);
+        const data = await response.json();
+
         if (!response.ok) {
-            const errorText = await response.text();
-            const errorMessage = `HTTP error! status: ${response.status}, message: ${errorText}`;
-            logDebug('Request failed', { url, status: response.status, errorText}); //Improved logging
-            throw new Error(errorMessage);
+            throw new Error(data.error || `HTTP error! status: ${response.status}`);
         }
-        return await response.json();
+
+        hideLoading();
+        return data;
     } catch (error) {
+        console.error('Error fetching data:', error);
         if (retries > 0) {
-            logDebug('Retrying request due to error', error);
+            console.log(`Retrying... (${MAX_RETRIES - retries + 1}/${MAX_RETRIES})`);
             await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
             return fetchWithRetry(url, retries - 1);
         }
-        logDebug('Request failed permanently', error); //Improved logging
+        hideLoading();
+        showError(`Failed to load chart data: ${error.message}`);
         throw error;
     }
 }
 
-let priceChart = null;
-const loadingOverlay = document.querySelector('.loading-overlay');
-
 async function updateChart(timeframe = '30d') {
     try {
-        if (loadingOverlay) {
-            loadingOverlay.classList.add('active');
-        }
-
-        logDebug('Starting chart update for timeframe', timeframe);
-        const apiUrl = `/api/price-history/{{ crypto.symbol }}?timeframe=${timeframe}`;
-        logDebug('Fetching from URL', apiUrl);
-
-        const data = await fetchWithRetry(apiUrl);
-        logDebug('Received data', data);
-
-        if (!data || !data.prices || data.prices.length === 0) {
-            throw new Error('No price data available');
-        }
-
-        const chartCanvas = document.getElementById('priceChart');
-        if (!chartCanvas) {
-            throw new Error('Price chart canvas element not found');
-        }
+        showLoading();
+        hideError();
 
         if (priceChart) {
             priceChart.destroy();
+        }
+
+        const apiUrl = `/api/price-history/{{ crypto.symbol }}?timeframe=${timeframe}`;
+        const data = await fetchWithRetry(apiUrl);
+
+        if (!data || !data.prices || data.prices.length === 0) {
+            throw new Error('No price data available');
         }
 
         const showSMA = document.getElementById('showSMA')?.checked ?? true;
@@ -344,7 +381,7 @@ async function updateChart(timeframe = '30d') {
         const datasets = [{
             label: '{{ crypto.symbol }} Price (USD)',
             data: data.prices.map(p => ({
-                x: moment(p[0]).toDate(), // Format timestamp
+                x: moment(p[0]).toDate(),
                 y: p[1]
             })),
             borderColor: '#2196F3',
@@ -358,7 +395,7 @@ async function updateChart(timeframe = '30d') {
             datasets.push({
                 label: 'SMA (7)',
                 data: data.sma.map(p => ({
-                    x: moment(p.timestamp).toDate(), // Format timestamp
+                    x: moment(p.timestamp).toDate(),
                     y: p.value
                 })),
                 borderColor: '#FF9800',
@@ -373,7 +410,7 @@ async function updateChart(timeframe = '30d') {
             datasets.push({
                 label: 'Volume',
                 data: data.volumes.map(v => ({
-                    x: moment(v[0]).toDate(), // Format timestamp
+                    x: moment(v[0]).toDate(),
                     y: v[1]
                 })),
                 type: 'bar',
@@ -383,9 +420,8 @@ async function updateChart(timeframe = '30d') {
             });
         }
 
-        logDebug('Creating new chart with datasets', datasets);
-
-        priceChart = new Chart(chartCanvas, {
+        const ctx = document.getElementById('priceChart').getContext('2d');
+        priceChart = new Chart(ctx, {
             type: 'line',
             data: { datasets },
             options: {
@@ -462,21 +498,13 @@ async function updateChart(timeframe = '30d') {
             }
         });
 
-        logDebug('Chart created successfully');
+        hideLoading();
+        hideError();
 
     } catch (error) {
         console.error('Error updating chart:', error);
-        const errorMessage = error.response?.data?.error || error.message || 'Error loading chart data';
-        alert(`${errorMessage}. Retrying...`);
-
-        // Retry after a delay
-        setTimeout(() => {
-            updateChart(timeframe);
-        }, RETRY_DELAY);
-    } finally {
-        if (loadingOverlay) {
-            loadingOverlay.classList.remove('active');
-        }
+        hideLoading();
+        showError(`Error loading chart data: ${error.message}`);
     }
 }
 
@@ -492,9 +520,7 @@ function formatValue(value) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    logDebug('DOM loaded, initializing chart');
-
-    // Add slight delay to ensure DOM is fully ready
+    // Initialize chart with slight delay to ensure DOM is ready
     setTimeout(() => {
         updateChart('30d');
     }, 100);
@@ -508,7 +534,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Set up indicator toggles
     const smaToggle = document.getElementById('showSMA');
     const volumeToggle = document.getElementById('showVolume');
 
@@ -524,7 +549,5 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-
-{{ super() }}
 </script>
 {% endblock %}
