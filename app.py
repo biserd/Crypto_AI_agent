@@ -514,7 +514,7 @@ def success():
 def sitemap():
     """Generate sitemap.xml. Makes a list of URLs and date modified."""
     pages = []
-    
+
     # Static routes
     routes = ['/', '/about', '/pricing', '/contact', '/glossary', '/login', '/register']
     for route in routes:
@@ -530,7 +530,7 @@ def sitemap():
             'loc': request.url_root[:-1] + f'/crypto/{crypto.symbol}',
             'lastmod': datetime.utcnow().strftime('%Y-%m-%d')
         })
-    
+
     sitemap_xml = render_template('sitemap.xml', pages=pages)
     response = make_response(sitemap_xml)
     response.headers["Content-Type"] = "application/xml"    
