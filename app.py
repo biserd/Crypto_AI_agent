@@ -15,7 +15,6 @@ from sqlalchemy import desc
 import pandas as pd
 import numpy as np
 import eventlet
-#from blockchain_metrics import EtherscanClient # Removed import as Etherscan is no longer used
 
 eventlet.monkey_patch()
 
@@ -307,6 +306,35 @@ def crypto_detail(symbol):
             flash(f"No data available for {symbol}", "error")
             return redirect(url_for('dashboard'))
 
+        # Define crypto names mapping
+        crypto_names = {
+            'BTC': 'Bitcoin',
+            'ETH': 'Ethereum',
+            'USDT': 'Tether',
+            'BNB': 'Binance Coin',
+            'SOL': 'Solana',
+            'XRP': 'Ripple',
+            'USDC': 'USD Coin',
+            'ADA': 'Cardano',
+            'DOGE': 'Dogecoin',
+            'TON': 'Toncoin',
+            'TRX': 'TRON',
+            'DAI': 'Dai',
+            'MATIC': 'Polygon',
+            'DOT': 'Polkadot',
+            'WBTC': 'Wrapped Bitcoin',
+            'AVAX': 'Avalanche',
+            'SHIB': 'Shiba Inu',
+            'LEO': 'LEO Token',
+            'LTC': 'Litecoin',
+            'UNI': 'Uniswap'
+        }
+
+        # If symbol not in crypto_names, use symbol as the name
+        if symbol not in crypto_names:
+            logger.info(f"Symbol {symbol} not found in crypto_names dictionary, using symbol as name")
+            crypto_names[symbol] = symbol
+
         # Get related news articles (from last 7 days)
         try:
             cutoff_time = datetime.utcnow() - timedelta(days=7)
@@ -357,11 +385,13 @@ def crypto_detail(symbol):
                            news=related_news,
                            news_impact=news_impact,
                            recommendation=recommendation,
+                           crypto_names=crypto_names,
                            ga_tracking_id=app.config['GA_TRACKING_ID'])
 
     except Exception as e:
         logger.error(f"Error in crypto detail page for {symbol}: {str(e)}", exc_info=True)
-        return "Error loading cryptocurrency details", 500
+        flash("Error loading cryptocurrency details. Please try again later.", "error")
+        return redirect(url_for('dashboard'))
 
 @app.route('/api/price-history/<symbol>')
 def price_history(symbol):

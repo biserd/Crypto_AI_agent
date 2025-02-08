@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}{{ crypto_names[crypto.symbol] }} ({{ crypto.symbol }}) Price, Charts & Analysis | Exploding Crypto{% endblock %}
+{% block title %}{{ crypto_names.get(crypto.symbol, crypto.symbol) }} ({{ crypto.symbol }}) Price, Charts & Analysis | Exploding Crypto{% endblock %}
 
-{% block meta_description %}Get real-time {{ crypto_names[crypto.symbol] }} ({{ crypto.symbol }}) price updates, trading signals, and market analysis. View historical price charts and news sentiment analysis.{% endblock %}
+{% block meta_description %}Get real-time {{ crypto_names.get(crypto.symbol, crypto.symbol) }} ({{ crypto.symbol }}) price updates, trading signals, and market analysis. View historical price charts and news sentiment analysis.{% endblock %}
 
-{% block meta_keywords %}{{ crypto.symbol }}, {{ crypto_names[crypto.symbol] }}, cryptocurrency price, crypto analysis, trading signals, market sentiment, crypto news{% endblock %}
+{% block meta_keywords %}{{ crypto.symbol }}, {{ crypto_names.get(crypto.symbol, crypto.symbol) }}, cryptocurrency price, crypto analysis, trading signals, market sentiment, crypto news{% endblock %}
 
-{% block og_title %}{{ crypto_names[crypto.symbol] }} ({{ crypto.symbol }}) - Live Price & Analysis{% endblock %}
+{% block og_title %}{{ crypto_names.get(crypto.symbol, crypto.symbol) }} ({{ crypto.symbol }}) - Live Price & Analysis{% endblock %}
 
 {% block og_description %}Current {{ crypto.symbol }} price: ${{ "%.2f"|format(crypto.price_usd) }} | 24h change: {{ "%.1f"|format(crypto.percent_change_24h) }}%. Get detailed price analysis and news sentiment insights.{% endblock %}
 
@@ -17,11 +17,11 @@
 {
   "@context": "https://schema.org/",
   "@type": "FinancialProduct",
-  "name": "{{ crypto_names[crypto.symbol] }}",
+  "name": "{{ crypto_names.get(crypto.symbol, crypto.symbol) }}",
   "alternateName": "{{ crypto.symbol }}",
   "price": "{{ "%.2f"|format(crypto.price_usd) }}",
   "priceCurrency": "USD",
-  "description": "{{ crypto_names[crypto.symbol] }} ({{ crypto.symbol }}) cryptocurrency real-time price information and market analysis.",
+  "description": "{{ crypto_names.get(crypto.symbol, crypto.symbol) }} ({{ crypto.symbol }}) cryptocurrency real-time price information and market analysis.",
   "url": "{{ request.url }}"
 }
 </script>
@@ -162,20 +162,8 @@
 }
 </style>
 
-{% set crypto_names = {
-    'BTC': 'Bitcoin',
-    'ETH': 'Ethereum', 
-    'BNB': 'Binance Coin',
-    'ADA': 'Cardano',
-    'SOL': 'Solana',
-    'XRP': 'Ripple',
-    'DOGE': 'Dogecoin',
-    'MATIC': 'Polygon',
-    'AVAX': 'Avalanche'
-} %}
-
 <div class="crypto-header">
-    <h1>{{ crypto_names[crypto.symbol] }} ({{ crypto.symbol }})</h1>
+    <h1>{{ crypto_names.get(crypto.symbol, crypto.symbol) }} ({{ crypto.symbol }})</h1>
     <div class="price-display">${{ "%.2f"|format(crypto.price_usd) }}</div>
     <div class="price-change {% if crypto.percent_change_24h > 0 %}price-up{% else %}price-down{% endif %}">
         {{ "%.1f"|format(crypto.percent_change_24h) }}% (24h)
@@ -305,7 +293,9 @@ async function fetchWithRetry(url, retries = MAX_RETRIES) {
         const response = await fetch(url);
         if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+            const errorMessage = `HTTP error! status: ${response.status}, message: ${errorText}`;
+            logDebug('Request failed', { url, status: response.status, errorText}); //Improved logging
+            throw new Error(errorMessage);
         }
         return await response.json();
     } catch (error) {
@@ -314,6 +304,7 @@ async function fetchWithRetry(url, retries = MAX_RETRIES) {
             await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
             return fetchWithRetry(url, retries - 1);
         }
+        logDebug('Request failed permanently', error); //Improved logging
         throw error;
     }
 }
