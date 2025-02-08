@@ -1,11 +1,8 @@
-import eventlet
-eventlet.monkey_patch()
-
 import os
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, redirect, flash, url_for, session, make_response
 from flask_login import LoginManager, UserMixin, current_user, login_required, login_user, logout_user
-from database import db
+from database import db, init_app, sync_article_counts
 from models import Article, CryptoPrice, NewsSourceMetrics, CryptoGlossary, Subscription, Users
 import logging
 import re
@@ -14,12 +11,13 @@ from flask_socketio import SocketIO, emit
 import json
 from datetime import datetime, timedelta
 import stripe
-from datetime import datetime
 from sqlalchemy import desc
-import time
-from blockchain_metrics import EtherscanClient # Added import
-import pandas as pd # Added import
-import numpy as np # Added import
+import pandas as pd
+import numpy as np
+import eventlet
+from blockchain_metrics import EtherscanClient
+
+eventlet.monkey_patch()
 
 # Create Flask app
 app = Flask(__name__)
@@ -47,34 +45,20 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-
-# Stripe configuration
-stripe.api_key = os.environ.get('STRIPE_TEST_SECRET_KEY')
-
-@app.route('/stripe-config')
-def stripe_config():
-    try:
-        if not os.environ.get('STRIPE_PUBLISHABLE_KEY'):
-            return jsonify({'error': 'Stripe key not configured'}), 400
-        return jsonify({
-            'publishableKey': os.environ.get('STRIPE_PUBLISHABLE_KEY')
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
 # Configuration
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", os.urandom(24))
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/postgres")
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,
-    "pool_pre_ping": True,
-}
 
-db.init_app(app)
+# Initialize database
+init_app(app)
 
+# Initialize login manager
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+
+# Import CryptoPriceTracker after database initialization
+from crypto_price_tracker import CryptoPriceTracker
 
 def broadcast_new_article(article):
     """Broadcast new article to all connected clients"""
@@ -689,6 +673,8 @@ def search():
 
 import requests
 from crypto_price_tracker import CryptoPriceTracker
+
+import time
 
 with app.app_context():
     try:

@@ -2,7 +2,7 @@ import os
 import logging
 import requests
 from datetime import datetime
-from app import db
+from database import db
 from models import CryptoPrice
 
 logging.basicConfig(level=logging.DEBUG)
