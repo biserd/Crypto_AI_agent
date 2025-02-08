@@ -286,6 +286,10 @@ function formatValue(value) {
 
 async function updateChart(timeframe = '30d') {
     try {
+        if (loadingOverlay) {
+            loadingOverlay.classList.add('active');
+        }
+
         logDebug('Starting chart update for timeframe', timeframe);
 
         const apiUrl = `/api/price-history/{{ crypto.symbol }}?timeframe=${timeframe}`;
@@ -314,20 +318,15 @@ async function updateChart(timeframe = '30d') {
         if (!chartCanvas) {
             throw new Error('Price chart canvas element not found');
         }
-        logDebug('Found chart canvas element', chartCanvas);
 
         if (priceChart) {
-            logDebug('Destroying existing chart instance');
             priceChart.destroy();
         }
 
         const showSMA = document.getElementById('showSMA')?.checked ?? true;
         const showVolume = document.getElementById('showVolume')?.checked ?? true;
 
-        const datasets = [];
-
-        // Add price dataset
-        datasets.push({
+        const datasets = [{
             label: '{{ crypto.symbol }} Price (USD)',
             data: data.prices.map(p => ({
                 x: p[0],
@@ -338,9 +337,8 @@ async function updateChart(timeframe = '30d') {
             fill: true,
             yAxisID: 'y',
             tension: 0.1
-        });
+        }];
 
-        // Add SMA dataset if enabled
         if (showSMA && data.sma && data.sma.length > 0) {
             datasets.push({
                 label: 'SMA (7)',
@@ -356,7 +354,6 @@ async function updateChart(timeframe = '30d') {
             });
         }
 
-        // Add volume dataset if enabled
         if (showVolume && data.volumes && data.volumes.length > 0) {
             datasets.push({
                 label: 'Volume',
@@ -389,6 +386,7 @@ async function updateChart(timeframe = '30d') {
                         type: 'time',
                         time: {
                             unit: timeframe === '24h' ? 'hour' : 'day',
+                            tooltipFormat: 'MMM D, YYYY HH:mm',
                             displayFormats: {
                                 hour: 'MMM D, HH:mm',
                                 day: 'MMM D'
@@ -453,6 +451,7 @@ async function updateChart(timeframe = '30d') {
 
     } catch (error) {
         console.error('Error updating chart:', error);
+        alert('Error loading chart data. Please try again later.');
     } finally {
         if (loadingOverlay) {
             loadingOverlay.classList.remove('active');
@@ -462,7 +461,11 @@ async function updateChart(timeframe = '30d') {
 
 document.addEventListener('DOMContentLoaded', function() {
     logDebug('DOM loaded, initializing chart');
-    updateChart('30d');
+
+    // Add slight delay to ensure DOM is fully ready
+    setTimeout(() => {
+        updateChart('30d');
+    }, 100);
 
     // Set up event listeners
     document.querySelectorAll('.timeframe-btn').forEach(button => {
