@@ -66,10 +66,16 @@
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     margin-bottom: 2rem;
-    height: 400px; /* Set fixed height */
-    width: 100%;
+    height: 400px;
     position: relative;
 }
+
+.chart-wrapper {
+    position: relative;
+    height: 100%;
+    width: 100%;
+}
+
 .timeframe-selector {
     margin-bottom: 1rem;
     display: flex;
@@ -110,6 +116,23 @@
     gap: 0.5rem;
     cursor: pointer;
 }
+
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.loading-overlay.active {
+    display: flex;
+}
 </style>
 
 {% set crypto_names = {
@@ -135,9 +158,9 @@
 <div class="chart-container">
     <div class="chart-header">
         <div class="timeframe-selector">
-            <button class="timeframe-btn active" data-timeframe="24h">24H</button>
+            <button class="timeframe-btn" data-timeframe="24h">24H</button>
             <button class="timeframe-btn" data-timeframe="7d">7D</button>
-            <button class="timeframe-btn" data-timeframe="30d">30D</button>
+            <button class="timeframe-btn active" data-timeframe="30d">30D</button>
         </div>
         <div class="indicator-toggle">
             <label>
@@ -150,15 +173,21 @@
             </label>
         </div>
     </div>
-    <canvas id="priceChart"></canvas>
+    <div class="chart-wrapper">
+        <canvas id="priceChart"></canvas>
+        <div class="loading-overlay">
+            <div>Loading chart data...</div>
+        </div>
+    </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/moment"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js"></script>
 
 <script>
-let priceChart;
+let priceChart = null;
+const loadingOverlay = document.querySelector('.loading-overlay');
 
 function formatValue(value) {
     if (value >= 1e9) {
@@ -171,133 +200,139 @@ function formatValue(value) {
     return value.toFixed(2);
 }
 
-function updateChart(timeframe = '30d') {
-    fetch(`/api/price-history/{{ crypto.symbol }}?timeframe=${timeframe}`)
-        .then(response => response.json())
-        .then(data => {
-            console.log('Received data:', data); // Debug log
-            if (!data || !data.prices || data.prices.length === 0) {
-                console.error('No price data available');
-                return;
-            }
+async function updateChart(timeframe = '30d') {
+    try {
+        loadingOverlay.classList.add('active');
 
-            const ctx = document.getElementById('priceChart').getContext('2d');
+        const response = await fetch(`/api/price-history/{{ crypto.symbol }}?timeframe=${timeframe}`);
+        const data = await response.json();
 
-            if (priceChart) {
-                priceChart.destroy();
-            }
+        if (!data || !data.prices || data.prices.length === 0) {
+            console.error('No price data available');
+            return;
+        }
 
-            const showSMA = document.getElementById('showSMA').checked;
-            const showVolume = document.getElementById('showVolume').checked;
+        const ctx = document.getElementById('priceChart').getContext('2d');
 
-            const datasets = [{
-                label: '{{ crypto.symbol }} Price (USD)',
-                data: data.prices.map(d => ({ x: d.time * 1000, y: d.value })),
-                borderColor: '#2196F3',
-                backgroundColor: 'rgba(33, 150, 243, 0.1)',
-                fill: true,
-                yAxisID: 'y',
-                tension: 0.3
-            }];
+        if (priceChart) {
+            priceChart.destroy();
+        }
 
-            if (showSMA && data.sma && data.sma.length > 0) {
-                datasets.push({
-                    label: 'SMA (7)',
-                    data: data.sma.map(d => ({ x: d.time * 1000, y: d.value })),
-                    borderColor: '#FF9800',
-                    borderWidth: 2,
-                    pointRadius: 0,
-                    fill: false,
-                    yAxisID: 'y'
-                });
-            }
+        const showSMA = document.getElementById('showSMA').checked;
+        const showVolume = document.getElementById('showVolume').checked;
 
-            if (showVolume && data.volumes && data.volumes.length > 0) {
-                datasets.push({
-                    label: 'Volume',
-                    data: data.volumes.map(d => ({ x: d.time * 1000, y: d.value })),
-                    type: 'bar',
-                    backgroundColor: 'rgba(156, 39, 176, 0.2)',
-                    borderColor: 'rgba(156, 39, 176, 0.8)',
-                    yAxisID: 'y1',
-                });
-            }
+        const datasets = [{
+            label: '{{ crypto.symbol }} Price (USD)',
+            data: data.prices.map(d => ({ x: d.time * 1000, y: d.value })),
+            borderColor: '#2196F3',
+            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+            fill: true,
+            yAxisID: 'y',
+            tension: 0.3
+        }];
 
-            priceChart = new Chart(ctx, {
-                type: 'line',
-                data: { datasets },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
-                    },
-                    scales: {
-                        x: {
-                            type: 'time',
-                            time: {
-                                unit: timeframe === '24h' ? 'hour' : 'day',
-                                displayFormats: {
-                                    hour: 'MMM D, HH:mm',
-                                    day: 'MMM D'
-                                }
-                            },
-                            ticks: {
-                                maxRotation: 0
+        if (showSMA && data.sma && data.sma.length > 0) {
+            datasets.push({
+                label: 'SMA (7)',
+                data: data.sma.map(d => ({ x: d.time * 1000, y: d.value })),
+                borderColor: '#FF9800',
+                borderWidth: 2,
+                pointRadius: 0,
+                fill: false,
+                yAxisID: 'y'
+            });
+        }
+
+        if (showVolume && data.volumes && data.volumes.length > 0) {
+            datasets.push({
+                label: 'Volume',
+                data: data.volumes.map(d => ({ x: d.time * 1000, y: d.value })),
+                type: 'bar',
+                backgroundColor: 'rgba(156, 39, 176, 0.2)',
+                borderColor: 'rgba(156, 39, 176, 0.8)',
+                yAxisID: 'y1'
+            });
+        }
+
+        priceChart = new Chart(ctx, {
+            type: 'line',
+            data: { datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: timeframe === '24h' ? 'hour' : 'day',
+                            displayFormats: {
+                                hour: 'MMM D, HH:mm',
+                                day: 'MMM D'
                             }
                         },
-                        y: {
-                            type: 'linear',
-                            display: true,
-                            position: 'left',
-                            title: {
-                                display: true,
-                                text: 'Price (USD)'
-                            }
-                        },
-                        y1: {
-                            type: 'linear',
-                            display: showVolume,
-                            position: 'right',
-                            grid: {
-                                drawOnChartArea: false
-                            },
-                            title: {
-                                display: true,
-                                text: 'Volume (USD)'
-                            },
-                            ticks: {
-                                callback: function(value) {
-                                    return formatValue(value);
-                                }
-                            }
+                        grid: {
+                            display: false
                         }
                     },
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
-                                    if (context.datasetIndex === 2) { // Volume dataset
-                                        label += '$' + formatValue(context.parsed.y);
-                                    } else {
-                                        label += '$' + context.parsed.y.toFixed(2);
-                                    }
-                                    return label;
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Price (USD)'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: showVolume,
+                        position: 'right',
+                        grid: {
+                            drawOnChartArea: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Volume (USD)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return formatValue(value);
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
                                 }
+                                if (context.datasetIndex === 2) { // Volume dataset
+                                    label += '$' + formatValue(context.parsed.y);
+                                } else {
+                                    label += '$' + context.parsed.y.toFixed(2);
+                                }
+                                return label;
                             }
                         }
                     }
                 }
-            });
-        })
-        .catch(error => {
-            console.error('Error loading chart data:', error);
+            }
         });
+    } catch (error) {
+        console.error('Error updating chart:', error);
+    } finally {
+        loadingOverlay.classList.remove('active');
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -314,12 +349,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Indicator toggles
-    document.getElementById('showSMA').addEventListener('change', () => updateChart(
-        document.querySelector('.timeframe-btn.active').dataset.timeframe
-    ));
-    document.getElementById('showVolume').addEventListener('change', () => updateChart(
-        document.querySelector('.timeframe-btn.active').dataset.timeframe
-    ));
+    document.getElementById('showSMA').addEventListener('change', () => {
+        updateChart(document.querySelector('.timeframe-btn.active').dataset.timeframe);
+    });
+
+    document.getElementById('showVolume').addEventListener('change', () => {
+        updateChart(document.querySelector('.timeframe-btn.active').dataset.timeframe);
+    });
 });
 </script>
 
@@ -376,4 +412,5 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </div>
 
+{% include "crypto_detail_content.html" %}
 {% endblock %}
