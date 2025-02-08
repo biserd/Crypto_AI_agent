@@ -207,14 +207,11 @@ async function updateChart(timeframe = '30d') {
 
         const response = await fetch(`/api/price-history/{{ crypto.symbol }}?timeframe=${timeframe}`);
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
+
         const data = await response.json();
-
-        if (data.error) {
-            throw new Error(data.error);
-        }
-
         if (!data || !data.prices || data.prices.length === 0) {
             throw new Error('No price data available');
         }
@@ -230,34 +227,46 @@ async function updateChart(timeframe = '30d') {
 
         const datasets = [{
             label: '{{ crypto.symbol }} Price (USD)',
-            data: data.prices.map(d => ({ x: d.time * 1000, y: d.value })),
+            data: data.prices,
             borderColor: '#2196F3',
             backgroundColor: 'rgba(33, 150, 243, 0.1)',
             fill: true,
             yAxisID: 'y',
-            tension: 0.3
+            tension: 0.3,
+            parsing: {
+                xAxisKey: 'time',
+                yAxisKey: 'value'
+            }
         }];
 
         if (showSMA && data.sma && data.sma.length > 0) {
             datasets.push({
                 label: 'SMA (7)',
-                data: data.sma.map(d => ({ x: d.time * 1000, y: d.value })),
+                data: data.sma,
                 borderColor: '#FF9800',
                 borderWidth: 2,
                 pointRadius: 0,
                 fill: false,
-                yAxisID: 'y'
+                yAxisID: 'y',
+                parsing: {
+                    xAxisKey: 'time',
+                    yAxisKey: 'value'
+                }
             });
         }
 
         if (showVolume && data.volumes && data.volumes.length > 0) {
             datasets.push({
                 label: 'Volume',
-                data: data.volumes.map(d => ({ x: d.time * 1000, y: d.value })),
+                data: data.volumes,
                 type: 'bar',
                 backgroundColor: 'rgba(156, 39, 176, 0.2)',
                 borderColor: 'rgba(156, 39, 176, 0.8)',
-                yAxisID: 'y1'
+                yAxisID: 'y1',
+                parsing: {
+                    xAxisKey: 'time',
+                    yAxisKey: 'value'
+                }
             });
         }
 
@@ -340,7 +349,7 @@ async function updateChart(timeframe = '30d') {
         });
     } catch (error) {
         console.error('Error updating chart:', error);
-        alert('Failed to load price data. Please try again later.');
+        alert(error.message || 'Failed to load price data. Please try again later.');
     } finally {
         loadingOverlay.classList.remove('active');
     }

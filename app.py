@@ -385,9 +385,17 @@ def price_history(symbol):
         logger.debug(f"Calling CoinGecko API: {api_url} with params {params}")
 
         try:
-            response = requests.get(api_url, params=params, timeout=10)
-            response.raise_for_status()  # Raise an exception for bad status codes
-        except requests.RequestException as e:
+            # Add proper timeout and headers
+            headers = {'Accept': 'application/json'}
+            response = requests.get(api_url, params=params, headers=headers, timeout=15)
+            response.raise_for_status()
+        except requests.exceptions.Timeout:
+            logger.error("Request timed out when fetching price data")
+            return jsonify({'error': 'Request timed out, please try again'}), 504
+        except requests.exceptions.TooManyRedirects:
+            logger.error("Too many redirects when fetching price data")
+            return jsonify({'error': 'API service error'}), 502
+        except requests.exceptions.RequestException as e:
             logger.error(f"CoinGecko API request failed: {str(e)}")
             return jsonify({'error': 'Failed to fetch price data'}), 503
 
@@ -424,15 +432,15 @@ def price_history(symbol):
 
             formatted_data = {
                 'prices': [{
-                    'time': int(timestamp/1000),
+                    'time': int(timestamp),  # Already in milliseconds
                     'value': float(price)
                 } for timestamp, price in prices],
                 'volumes': [{
-                    'time': int(timestamp/1000),
+                    'time': int(timestamp),  # Already in milliseconds
                     'value': float(volume)
                 } for timestamp, volume in volumes],
                 'sma': [{
-                    'time': int(prices[i][0]/1000),
+                    'time': int(prices[i][0]),  # Already in milliseconds
                     'value': sma_values[i]
                 } for i in range(len(prices)) if sma_values[i] is not None]
             }
