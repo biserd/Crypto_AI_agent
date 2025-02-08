@@ -151,6 +151,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
 
 <script>
 let priceChart;
@@ -170,6 +172,7 @@ function updateChart(timeframe = '30d') {
     fetch(`/api/price-history/{{ crypto.symbol }}?timeframe=${timeframe}`)
         .then(response => response.json())
         .then(data => {
+            console.log('Received data:', data); // Debug log
             if (!data || !data.prices || data.prices.length === 0) {
                 console.error('No price data available');
                 return;
@@ -194,7 +197,7 @@ function updateChart(timeframe = '30d') {
                 tension: 0.3
             }];
 
-            if (showSMA && data.sma) {
+            if (showSMA && data.sma && data.sma.length > 0) {
                 datasets.push({
                     label: 'SMA (7)',
                     data: data.sma.map(d => ({ x: d.time * 1000, y: d.value })),
@@ -206,7 +209,7 @@ function updateChart(timeframe = '30d') {
                 });
             }
 
-            if (showVolume && data.volumes) {
+            if (showVolume && data.volumes && data.volumes.length > 0) {
                 datasets.push({
                     label: 'Volume',
                     data: data.volumes.map(d => ({ x: d.time * 1000, y: d.value })),
@@ -222,6 +225,7 @@ function updateChart(timeframe = '30d') {
                 data: { datasets },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
                     interaction: {
                         intersect: false,
                         mode: 'index'
@@ -230,7 +234,11 @@ function updateChart(timeframe = '30d') {
                         x: {
                             type: 'time',
                             time: {
-                                unit: timeframe === '24h' ? 'hour' : 'day'
+                                unit: timeframe === '24h' ? 'hour' : 'day',
+                                displayFormats: {
+                                    hour: 'MMM D, HH:mm',
+                                    day: 'MMM D'
+                                }
                             },
                             ticks: {
                                 maxRotation: 0

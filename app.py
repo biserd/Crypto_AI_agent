@@ -434,10 +434,13 @@ from crypto_price_tracker import CryptoPriceTracker
 def price_history(symbol):
     try:
         timeframe = request.args.get('timeframe', '30d')  # Default to 30 days
+        logger.debug(f"Fetching price history for {symbol} with timeframe {timeframe}")
+
         # Get coin id from symbol
         tracker = CryptoPriceTracker()
         coin_id = tracker.crypto_ids.get(symbol)
         if not coin_id:
+            logger.error(f"No coin_id found for symbol {symbol}")
             return jsonify([])
 
         # Map timeframe to days
@@ -447,22 +450,28 @@ def price_history(symbol):
             '30d': 30
         }.get(timeframe, 30)
 
+        logger.debug(f"Using {timeframe_days} days for historical data")
+
         # Fetch historical data from CoinGecko
-        response = requests.get(
-            f"{tracker.base_url}/coins/{coin_id}/market_chart",
-            params={
-                'vs_currency': 'usd',
-                'days': timeframe_days,
-                'interval': 'hourly' if timeframe == '24h' else 'daily'
-            }
-        )
+        api_url = f"{tracker.base_url}/coins/{coin_id}/market_chart"
+        params = {
+            'vs_currency': 'usd',
+            'days': timeframe_days,
+            'interval': 'hourly' if timeframe == '24h' else 'daily'
+        }
+        logger.debug(f"Calling CoinGecko API: {api_url} with params {params}")
+
+        response = requests.get(api_url, params=params)
 
         if response.status_code != 200:
+            logger.error(f"CoinGecko API error: Status {response.status_code}, Response: {response.text}")
             return jsonify([])
 
         data = response.json()
         prices = data.get('prices', [])
         volumes = data.get('total_volumes', [])
+
+        logger.debug(f"Retrieved {len(prices)} price points and {len(volumes)} volume points")
 
         # Calculate Simple Moving Average (7-period)
         def calculate_sma(data, period=7):
@@ -493,6 +502,9 @@ def price_history(symbol):
                 'value': sma_values[i]
             } for i in range(len(prices)) if sma_values[i] is not None]
         }
+
+        logger.debug(f"Returning formatted data with {len(formatted_data['prices'])} prices, " +
+                    f"{len(formatted_data['volumes'])} volumes, {len(formatted_data['sma'])} SMA points")
 
         return jsonify(formatted_data)
 
