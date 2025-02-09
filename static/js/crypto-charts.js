@@ -104,16 +104,23 @@ const loadChartData = async (symbol, chart, timeframe = '30d') => {
     try {
         // Show loading state
         const chartElement = chart.canvas.parentElement;
+        const errorElement = chartElement.querySelector('#error-message');
+        const loadingOverlay = chartElement.querySelector('.loading-overlay');
+
+        if (errorElement) errorElement.classList.add('d-none');
+        if (loadingOverlay) loadingOverlay.classList.remove('d-none');
+
         chartElement.style.opacity = '0.5';
         chartElement.style.pointerEvents = 'none';
 
         // Fetch price history data
         const response = await fetch(`/api/price-history/${symbol}?timeframe=${timeframe}`);
+        const data = await response.json();
+
         if (!response.ok) {
-            throw new Error(`Failed to fetch data for ${symbol}`);
+            throw new Error(data.error || `HTTP error! status: ${response.status}`);
         }
 
-        const data = await response.json();
         if (!data || !data.prices || !data.sma) {
             throw new Error('Invalid data format received');
         }
@@ -131,16 +138,20 @@ const loadChartData = async (symbol, chart, timeframe = '30d') => {
 
         chart.update('none'); // Use 'none' for smoother updates
 
-        // Reset loading state
-        chartElement.style.opacity = '1';
-        chartElement.style.pointerEvents = 'auto';
-
     } catch (error) {
         console.error('Error loading chart data:', error);
-        const errorMessage = document.createElement('div');
-        errorMessage.className = 'alert alert-danger mt-3';
-        errorMessage.textContent = `Failed to load chart data: ${error.message}`;
-        chart.canvas.parentElement.appendChild(errorMessage);
+        const errorElement = chartElement.querySelector('#error-message');
+        if (errorElement) {
+            errorElement.textContent = error.message;
+            errorElement.classList.remove('d-none');
+        }
+    } finally {
+        // Reset loading state
+        const loadingOverlay = chartElement.querySelector('.loading-overlay');
+        if (loadingOverlay) loadingOverlay.classList.add('d-none');
+
+        chartElement.style.opacity = '1';
+        chartElement.style.pointerEvents = 'auto';
     }
 };
 
