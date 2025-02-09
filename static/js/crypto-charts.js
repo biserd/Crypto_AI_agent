@@ -94,14 +94,15 @@ const createPriceChart = (chartId, timeframe = '30d') => {
 };
 
 const loadChartData = async (symbol, chart, timeframe = '30d') => {
+    // Declare chart elements at the start
+    const chartElement = chart.canvas.parentElement;
+    const errorElement = chartElement.querySelector('#error-message');
+    const loadingOverlay = chartElement.querySelector('.loading-overlay');
+
     try {
         console.log(`Loading chart data for ${symbol} with timeframe ${timeframe}`);
 
         // Show loading state
-        const chartElement = chart.canvas.parentElement;
-        const errorElement = chartElement.querySelector('#error-message');
-        const loadingOverlay = chartElement.querySelector('.loading-overlay');
-
         if (errorElement) errorElement.classList.add('d-none');
         if (loadingOverlay) loadingOverlay.classList.remove('d-none');
 
@@ -141,16 +142,13 @@ const loadChartData = async (symbol, chart, timeframe = '30d') => {
 
     } catch (error) {
         console.error('Error loading chart data:', error);
-        const errorElement = chartElement.querySelector('#error-message');
         if (errorElement) {
             errorElement.textContent = error.message;
             errorElement.classList.remove('d-none');
         }
     } finally {
         // Reset loading state
-        const loadingOverlay = chartElement.querySelector('.loading-overlay');
         if (loadingOverlay) loadingOverlay.classList.add('d-none');
-
         chartElement.style.opacity = '1';
         chartElement.style.pointerEvents = 'auto';
     }
