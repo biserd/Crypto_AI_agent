@@ -149,7 +149,7 @@ class CryptoPriceTracker:
             headers = {
                 'Accept': 'application/json',
                 'User-Agent': 'CryptoIntelligence/1.0',
-                'x-cg-api-key': self.api_key
+                'x-cg-pro-api-key': self.api_key
             }
 
             for attempt in range(max_retries):
