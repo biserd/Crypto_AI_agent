@@ -23,8 +23,8 @@ const createPriceChart = (chartId, timeframe = '30d') => {
             ]
         },
         options: {
+            maintainAspectRatio: false, // Important: allows chart to fill container
             responsive: true,
-            maintainAspectRatio: false,
             interaction: {
                 intersect: false,
                 mode: 'index'
@@ -32,6 +32,10 @@ const createPriceChart = (chartId, timeframe = '30d') => {
             plugins: {
                 legend: {
                     position: 'top',
+                    labels: {
+                        boxWidth: 12,
+                        padding: 10
+                    }
                 },
                 tooltip: {
                     mode: 'index',
@@ -59,24 +63,36 @@ const createPriceChart = (chartId, timeframe = '30d') => {
                     time: {
                         unit: 'day'
                     },
-                    title: {
-                        display: true,
-                        text: 'Date'
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        maxRotation: 0
                     }
                 },
                 y: {
-                    title: {
-                        display: true,
-                        text: 'Price (USD)'
+                    position: 'left',
+                    grid: {
+                        color: 'rgba(0,0,0,0.05)'
                     },
                     ticks: {
                         callback: function(value) {
                             return new Intl.NumberFormat('en-US', {
                                 style: 'currency',
-                                currency: 'USD'
+                                currency: 'USD',
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
                             }).format(value);
                         }
                     }
+                }
+            },
+            layout: {
+                padding: {
+                    left: 10,
+                    right: 10,
+                    top: 10,
+                    bottom: 10
                 }
             }
         }
@@ -90,13 +106,13 @@ const loadChartData = async (symbol, chart, timeframe = '30d') => {
         const chartElement = chart.canvas.parentElement;
         chartElement.style.opacity = '0.5';
         chartElement.style.pointerEvents = 'none';
-        
+
         // Fetch price history data
         const response = await fetch(`/api/price-history/${symbol}?timeframe=${timeframe}`);
         if (!response.ok) {
             throw new Error(`Failed to fetch data for ${symbol}`);
         }
-        
+
         const data = await response.json();
         if (!data || !data.prices || !data.sma) {
             throw new Error('Invalid data format received');
@@ -113,7 +129,7 @@ const loadChartData = async (symbol, chart, timeframe = '30d') => {
             y: item.value
         }));
 
-        chart.update();
+        chart.update('none'); // Use 'none' for smoother updates
 
         // Reset loading state
         chartElement.style.opacity = '1';
@@ -135,11 +151,11 @@ const initializeTimeframeSelector = (chart, symbol) => {
         button.addEventListener('click', async (e) => {
             e.preventDefault();
             const timeframe = e.target.dataset.timeframe;
-            
+
             // Update active state
             timeframeButtons.forEach(btn => btn.classList.remove('active'));
             e.target.classList.add('active');
-            
+
             // Reload chart data with new timeframe
             await loadChartData(symbol, chart, timeframe);
         });
