@@ -601,6 +601,15 @@ def price_history(symbol):
                 'supported_symbols': list(tracker.crypto_ids.keys())
             }), 404
 
+        # Ensure we have current price data
+        success = tracker.fetch_current_prices()
+        if not success:
+            logger.error(f"Failed to fetch current prices for {symbol}")
+            return jsonify({
+                'error': f'Unable to fetch current price data for {symbol}',
+                'symbol': symbol
+            }), 500
+
         # Get historical data using the tracker
         historical_data = tracker.get_historical_prices(symbol, days=30, interval='daily')
 

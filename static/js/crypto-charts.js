@@ -1,6 +1,16 @@
 // Simple price chart implementation
 function createPriceChart(symbol) {
     const ctx = document.getElementById('priceChart').getContext('2d');
+    const chartContainer = document.querySelector('.price-chart-container');
+
+    // Create error message element if it doesn't exist
+    let errorElement = chartContainer.querySelector('.chart-error');
+    if (!errorElement) {
+        errorElement = document.createElement('div');
+        errorElement.className = 'chart-error alert alert-danger d-none';
+        chartContainer.appendChild(errorElement);
+    }
+
     const chart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -58,13 +68,21 @@ function createPriceChart(symbol) {
 
     // Load initial data
     fetch(`/api/price-history/${symbol}`)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.error) {
-                console.error('Error loading chart data:', data.error);
-                return;
+                throw new Error(data.error);
             }
 
+            // Hide any existing error message
+            errorElement.classList.add('d-none');
+
+            // Update chart with new data
             chart.data.datasets[0].data = data.prices.map(item => ({
                 x: item[0],
                 y: item[1]
@@ -73,6 +91,9 @@ function createPriceChart(symbol) {
         })
         .catch(error => {
             console.error('Error fetching price data:', error);
+            errorElement.textContent = `Unable to load price chart: ${error.message}`;
+            errorElement.classList.remove('d-none');
+            chart.clear();
         });
 
     return chart;
