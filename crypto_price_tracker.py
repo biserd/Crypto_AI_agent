@@ -158,9 +158,7 @@ class CryptoPriceTracker:
                 'interval': valid_intervals.get(interval, '24h')
             }
             
-            self._rate_limit_wait()  # Ensure we respect rate limits
             logger.info(f"Making request to {api_url} with params {params}")
-            
             data = self._make_request(api_url, params)
 
             if not data:
@@ -179,6 +177,7 @@ class CryptoPriceTracker:
                 return None
 
             logger.info(f"Successfully fetched {len(data['prices'])} price points for {symbol}")
+            logger.debug(f"First few price points: {data['prices'][:3]}")
             return {
                 'prices': data['prices'],
                 'market_caps': data['market_caps'],
