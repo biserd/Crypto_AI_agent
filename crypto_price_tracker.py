@@ -13,7 +13,7 @@ class CryptoPriceTracker:
     def __init__(self):
         self.base_url = "https://api.coingecko.com/api/v3"
         self.last_request_time = 0
-        self.min_request_interval = 1.2  # Increased to avoid rate limits
+        self.min_request_interval = 1.2  # Minimum time between requests in seconds
         self.crypto_ids = {
             'BTC': 'bitcoin', 'ETH': 'ethereum', 'USDT': 'tether', 'BNB': 'binancecoin',
             'SOL': 'solana', 'XRP': 'ripple', 'USDC': 'usd-coin', 'ADA': 'cardano',
@@ -34,23 +34,24 @@ class CryptoPriceTracker:
             time.sleep(wait_time)
         self.last_request_time = time.time()
 
-    def _make_request(self, url, params=None, max_retries=3, retry_delay=2):
-        """Make a request to the CoinGecko API with retries and error handling"""
+    def _make_request(self, url, params=None, max_retries=3):
+        """Make a request to the CoinGecko API with improved error handling"""
         headers = {
             'Accept': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (CryptoIntelligence/1.0)'
+            'User-Agent': 'CryptoIntelligence/1.0'
         }
 
         for attempt in range(max_retries):
             try:
                 self._rate_limit_wait()
                 logger.debug(f"Making request to {url} with params {params}")
+
                 response = requests.get(url, params=params, headers=headers, timeout=10)
 
-                if response.status_code == 429:  # Rate limit
-                    wait_time = float(response.headers.get('Retry-After', retry_delay * (attempt + 1)))
-                    logger.warning(f"Rate limited. Waiting {wait_time} seconds before retry")
-                    time.sleep(wait_time)
+                if response.status_code == 429:  # Rate limit reached
+                    retry_after = int(response.headers.get('Retry-After', 60))
+                    logger.warning(f"Rate limit hit. Waiting {retry_after} seconds")
+                    time.sleep(retry_after)
                     continue
 
                 response.raise_for_status()
@@ -64,46 +65,69 @@ class CryptoPriceTracker:
             except requests.exceptions.RequestException as e:
                 logger.error(f"Request error on attempt {attempt + 1}: {str(e)}")
 
+            # Only sleep between retries if we have more attempts left
             if attempt < max_retries - 1:
-                time.sleep(retry_delay * (attempt + 1))
+                sleep_time = (attempt + 1) * 2  # Progressive backoff
+                logger.info(f"Retrying in {sleep_time} seconds...")
+                time.sleep(sleep_time)
 
         return None
 
     def get_historical_prices(self, symbol, days=30, interval='daily'):
-        """Fetch historical price data for a cryptocurrency"""
+        """Fetch historical price data with improved validation and error handling"""
         try:
             logger.info(f"Fetching historical data for {symbol} with {days} days interval {interval}")
 
-            coin_id = self.crypto_ids.get(symbol.upper())
+            # Validate and normalize inputs
+            symbol = symbol.upper()
+            coin_id = self.crypto_ids.get(symbol)
             if not coin_id:
-                logger.error(f"Symbol {symbol} not found in mapping. Available symbols: {', '.join(sorted(self.crypto_ids.keys()))}")
+                logger.error(f"Invalid symbol: {symbol}")
                 return None
+
+            # Validate interval parameter
+            valid_intervals = {'daily': '24h', 'hourly': '1h'}
+            if interval not in valid_intervals:
+                logger.error(f"Invalid interval: {interval}")
+                interval = 'daily'  # Default to daily if invalid
 
             api_url = f"{self.base_url}/coins/{coin_id}/market_chart"
             params = {
                 'vs_currency': 'usd',
                 'days': str(days),
-                'interval': interval
+                'interval': valid_intervals.get(interval, '24h')
             }
 
             data = self._make_request(api_url, params)
-            if not data or 'prices' not in data:
-                logger.error(f"Invalid or empty data received for {symbol}")
+
+            if not data:
+                logger.error(f"No data received for {symbol}")
+                return None
+
+            # Validate response data structure
+            required_fields = ['prices', 'market_caps', 'total_volumes']
+            if not all(field in data for field in required_fields):
+                logger.error(f"Invalid data structure received for {symbol}")
+                return None
+
+            # Validate data points
+            if not data['prices'] or len(data['prices']) < 2:
+                logger.error(f"Insufficient price data points for {symbol}")
                 return None
 
             logger.info(f"Successfully fetched {len(data['prices'])} price points for {symbol}")
             return {
                 'prices': data['prices'],
-                'market_caps': data.get('market_caps', []),
-                'total_volumes': data.get('total_volumes', [])
+                'market_caps': data['market_caps'],
+                'total_volumes': data['total_volumes']
             }
 
         except Exception as e:
-            logger.error(f"Unexpected error fetching data for {symbol}: {str(e)}", exc_info=True)
+            logger.error(f"Error fetching historical data for {symbol}: {str(e)}", exc_info=True)
             return None
 
     def fetch_current_prices(self):
-        """Fetch current prices for tracked cryptocurrencies"""
+        """Fetch current prices for all tracked cryptocurrencies"""
         try:
             ids = ','.join(self.crypto_ids.values())
             api_url = f"{self.base_url}/simple/price"
@@ -129,7 +153,6 @@ class CryptoPriceTracker:
                             'last_updated': datetime.utcnow()
                         }
                         updates.append(price_data)
-                        logger.debug(f"Updated {symbol} price: ${price_data['price_usd']:.2f}")
                     except Exception as e:
                         logger.error(f"Error processing {symbol} price: {str(e)}")
                         continue
@@ -140,6 +163,7 @@ class CryptoPriceTracker:
                     if not price:
                         price = CryptoPrice(symbol=update['symbol'])
                         db.session.add(price)
+
                     price.price_usd = update['price_usd']
                     price.percent_change_24h = update['percent_change_24h']
                     price.last_updated = update['last_updated']
