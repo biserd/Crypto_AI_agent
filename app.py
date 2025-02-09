@@ -414,7 +414,8 @@ def price_history(symbol):
             logger.error(f"Symbol {symbol} not found in supported cryptocurrencies")
             return jsonify({
                 'error': f'Cryptocurrency {symbol} is not supported',
-                'symbol': symbol
+                'symbol': symbol,
+                'supported_symbols': list(tracker.crypto_ids.keys())
             }), 404
 
         # Map timeframe to days and interval
@@ -446,6 +447,9 @@ def price_history(symbol):
             prices = historical_data['prices']
             volumes = historical_data.get('total_volumes', [])
 
+            logger.debug(f"Raw price data points: {len(prices)}")
+            logger.debug(f"First price point: {prices[0] if prices else 'No data'}")
+
             # Calculate SMA for price data
             sma_data = []
             if len(prices) >= 7:
@@ -459,6 +463,7 @@ def price_history(symbol):
                     })
 
             logger.info(f"Successfully processed {len(prices)} price points for {symbol}")
+            logger.debug(f"SMA data points: {len(sma_data)}")
 
             return jsonify({
                 'prices': prices,
@@ -467,14 +472,14 @@ def price_history(symbol):
             })
 
         except Exception as e:
-            logger.error(f"Error processing price data for {symbol}: {str(e)}")
+            logger.error(f"Error processing price data for {symbol}: {str(e)}", exc_info=True)
             return jsonify({
                 'error': 'Error processing price data',
                 'details': str(e)
             }), 500
 
     except Exception as e:
-        logger.error(f"Error in price history endpoint for {symbol}: {str(e)}")
+        logger.error(f"Error in price history endpoint for {symbol}: {str(e)}", exc_info=True)
         return jsonify({
             'error': 'Internal server error',
             'details': str(e)

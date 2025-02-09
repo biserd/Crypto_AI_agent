@@ -1,5 +1,6 @@
 // Chart.js configuration and setup
 const createPriceChart = (chartId, timeframe = '30d') => {
+    console.log('Creating price chart with ID:', chartId);
     const chart = new Chart(document.getElementById(chartId), {
         type: 'line',
         data: {
@@ -23,7 +24,7 @@ const createPriceChart = (chartId, timeframe = '30d') => {
             ]
         },
         options: {
-            maintainAspectRatio: false, // Important: allows chart to fill container
+            maintainAspectRatio: false,
             responsive: true,
             interaction: {
                 intersect: false,
@@ -86,14 +87,6 @@ const createPriceChart = (chartId, timeframe = '30d') => {
                         }
                     }
                 }
-            },
-            layout: {
-                padding: {
-                    left: 10,
-                    right: 10,
-                    top: 10,
-                    bottom: 10
-                }
             }
         }
     });
@@ -102,6 +95,8 @@ const createPriceChart = (chartId, timeframe = '30d') => {
 
 const loadChartData = async (symbol, chart, timeframe = '30d') => {
     try {
+        console.log(`Loading chart data for ${symbol} with timeframe ${timeframe}`);
+
         // Show loading state
         const chartElement = chart.canvas.parentElement;
         const errorElement = chartElement.querySelector('#error-message');
@@ -117,13 +112,18 @@ const loadChartData = async (symbol, chart, timeframe = '30d') => {
         const response = await fetch(`/api/price-history/${symbol}?timeframe=${timeframe}`);
         const data = await response.json();
 
+        console.log('API Response:', data);
+
         if (!response.ok) {
             throw new Error(data.error || `HTTP error! status: ${response.status}`);
         }
 
         if (!data || !data.prices || !data.sma) {
+            console.error('Invalid data structure:', data);
             throw new Error('Invalid data format received');
         }
+
+        console.log(`Received ${data.prices.length} price points and ${data.sma.length} SMA points`);
 
         // Update chart datasets
         chart.data.datasets[0].data = data.prices.map(item => ({
@@ -137,6 +137,7 @@ const loadChartData = async (symbol, chart, timeframe = '30d') => {
         }));
 
         chart.update('none'); // Use 'none' for smoother updates
+        console.log('Chart updated successfully');
 
     } catch (error) {
         console.error('Error loading chart data:', error);
@@ -157,11 +158,13 @@ const loadChartData = async (symbol, chart, timeframe = '30d') => {
 
 // Timeframe selector handling
 const initializeTimeframeSelector = (chart, symbol) => {
+    console.log('Initializing timeframe selector');
     const timeframeButtons = document.querySelectorAll('[data-timeframe]');
     timeframeButtons.forEach(button => {
         button.addEventListener('click', async (e) => {
             e.preventDefault();
             const timeframe = e.target.dataset.timeframe;
+            console.log(`Timeframe button clicked: ${timeframe}`);
 
             // Update active state
             timeframeButtons.forEach(btn => btn.classList.remove('active'));
