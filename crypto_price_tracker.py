@@ -133,59 +133,44 @@ class CryptoPriceTracker:
         try:
             logger.info(f"Fetching historical data for {symbol} with {days} days interval {interval}")
 
-            # Validate and normalize inputs
             symbol = symbol.upper()
             coin_id = self.crypto_ids.get(symbol)
             if not coin_id:
                 logger.error(f"Invalid symbol: {symbol}")
                 return None
 
-            # First ensure we have current price data
-            if not CryptoPrice.query.filter_by(symbol=symbol).first():
-                logger.info(f"No current price data for {symbol}, fetching it first")
-                self.fetch_current_prices()
-
-            # Validate interval parameter
-            valid_intervals = {'daily': '24h', 'hourly': '1h'}
-            if interval not in valid_intervals:
-                logger.error(f"Invalid interval: {interval}")
-                interval = 'daily'  # Default to daily if invalid
-
             api_url = f"{self.base_url}/coins/{coin_id}/market_chart"
             params = {
                 'vs_currency': 'usd',
-                'days': str(days),
-                'interval': valid_intervals.get(interval, '24h')
+                'days': str(days)
             }
-            
+
+            headers = {
+                'Accept': 'application/json',
+                'User-Agent': 'CryptoIntelligence/1.0',
+                'x-cg-api-key': self.api_key
+            }
+
+            self._rate_limit_wait()
             logger.info(f"Making request to {api_url} with params {params}")
-            data = self._make_request(api_url, params)
+            
+            response = requests.get(api_url, params=params, headers=headers, timeout=10)
+            response.raise_for_status()
+            data = response.json()
 
-            if not data:
-                logger.error(f"No data received for {symbol}")
-                return None
-
-            # Validate response data structure
-            required_fields = ['prices', 'market_caps', 'total_volumes']
-            if not all(field in data for field in required_fields):
-                logger.error(f"Invalid data structure received for {symbol}")
-                return None
-
-            # Validate data points
-            if not data['prices'] or len(data['prices']) < 2:
-                logger.error(f"Insufficient price data points for {symbol}")
+            if not data or 'prices' not in data:
+                logger.error(f"Invalid response data for {symbol}")
                 return None
 
             logger.info(f"Successfully fetched {len(data['prices'])} price points for {symbol}")
-            logger.debug(f"First few price points: {data['prices'][:3]}")
             return {
                 'prices': data['prices'],
-                'market_caps': data['market_caps'],
-                'total_volumes': data['total_volumes']
+                'market_caps': data.get('market_caps', []),
+                'total_volumes': data.get('total_volumes', [])
             }
 
         except Exception as e:
-            logger.error(f"Error fetching historical data for {symbol}: {str(e)}", exc_info=True)
+            logger.error(f"Error fetching historical data for {symbol}: {str(e)}")
             return None
 
 def get_latest_prices():
