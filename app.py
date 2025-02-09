@@ -418,6 +418,15 @@ def price_history(symbol):
                 'supported_symbols': list(tracker.crypto_ids.keys())
             }), 404
 
+        # First check if we have current price data
+        current_price = CryptoPrice.query.filter_by(symbol=symbol).first()
+        if not current_price:
+            logger.error(f"No current price data found for {symbol}")
+            return jsonify({
+                'error': f'No price data available for {symbol}',
+                'symbol': symbol
+            }), 404
+
         # Map timeframe to days and interval
         timeframe_mapping = {
             '24h': {'days': 1, 'interval': 'hourly'},
@@ -436,9 +445,9 @@ def price_history(symbol):
         )
 
         if not historical_data or not historical_data.get('prices'):
-            logger.error(f"No price data available for {symbol}")
+            logger.error(f"No historical price data available for {symbol}")
             return jsonify({
-                'error': f'No price data available for {symbol}',
+                'error': f'No historical price data available for {symbol}',
                 'symbol': symbol
             }), 404
 

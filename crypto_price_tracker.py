@@ -21,15 +21,7 @@ class CryptoPriceTracker:
             'MATIC': 'matic-network', 'DOT': 'polkadot', 'WBTC': 'wrapped-bitcoin',
             'AVAX': 'avalanche-2', 'SHIB': 'shiba-inu', 'LEO': 'leo-token', 'LTC': 'litecoin',
             'UNI': 'uniswap', 'CAKE': 'pancakeswap-token', 'LINK': 'chainlink',
-            'ATOM': 'cosmos', 'APE': 'apecoin', 'AAVE': 'aave',
-            # Adding more popular tokens
-            'GMX': 'gmx', 'ARB': 'arbitrum', 'OP': 'optimism', 
-            'NEAR': 'near', 'GRT': 'the-graph', 'SNX': 'havven',
-            'CRV': 'curve-dao-token', 'LDO': 'lido-dao', 'MKR': 'maker',
-            'COMP': 'compound-governance-token', 'BAL': 'balancer',
-            'RPL': 'rocket-pool', '1INCH': '1inch', 'SUSHI': 'sushi',
-            'YFI': 'yearn-finance', 'RUNE': 'thorchain', 'KNC': 'kyber-network-crystal',
-            'ZRX': '0x', 'REN': 'republic-protocol', 'BAT': 'basic-attention-token'
+            'ATOM': 'cosmos', 'APE': 'apecoin', 'AAVE': 'aave'
         }
 
     def _rate_limit_wait(self):
@@ -65,21 +57,73 @@ class CryptoPriceTracker:
                 response.raise_for_status()
                 return response.json()
 
-            except requests.exceptions.HTTPError as e:
-                if response.status_code == 404:
-                    logger.error(f"Resource not found: {url}")
-                    return None
-                logger.error(f"HTTP error on attempt {attempt + 1}: {str(e)}")
             except requests.exceptions.RequestException as e:
                 logger.error(f"Request error on attempt {attempt + 1}: {str(e)}")
-
-            # Only sleep between retries if we have more attempts left
-            if attempt < max_retries - 1:
-                sleep_time = (attempt + 1) * 2  # Progressive backoff
-                logger.info(f"Retrying in {sleep_time} seconds...")
-                time.sleep(sleep_time)
+                if attempt < max_retries - 1:
+                    sleep_time = (attempt + 1) * 2
+                    logger.info(f"Retrying in {sleep_time} seconds...")
+                    time.sleep(sleep_time)
+                continue
 
         return None
+
+    def fetch_current_prices(self):
+        """Fetch current prices for all tracked cryptocurrencies"""
+        try:
+            logger.info("Starting to fetch current prices")
+            ids = ','.join(self.crypto_ids.values())
+            api_url = f"{self.base_url}/simple/price"
+            params = {
+                'ids': ids,
+                'vs_currencies': 'usd',
+                'include_24hr_change': 'true'
+            }
+
+            data = self._make_request(api_url, params)
+            if not data:
+                logger.error("Failed to fetch current prices")
+                return False
+
+            updates = []
+            for symbol, coin_id in self.crypto_ids.items():
+                if coin_id in data:
+                    try:
+                        price_data = {
+                            'symbol': symbol,
+                            'price_usd': data[coin_id]['usd'],
+                            'percent_change_24h': data[coin_id].get('usd_24h_change', 0),
+                            'last_updated': datetime.utcnow()
+                        }
+                        updates.append(price_data)
+                        logger.debug(f"Processed price data for {symbol}: ${price_data['price_usd']}")
+                    except Exception as e:
+                        logger.error(f"Error processing {symbol} price: {str(e)}")
+                        continue
+
+            try:
+                for update in updates:
+                    price = CryptoPrice.query.filter_by(symbol=update['symbol']).first()
+                    if not price:
+                        price = CryptoPrice(symbol=update['symbol'])
+                        db.session.add(price)
+                        logger.info(f"Created new price record for {update['symbol']}")
+
+                    price.price_usd = update['price_usd']
+                    price.percent_change_24h = update['percent_change_24h']
+                    price.last_updated = update['last_updated']
+
+                db.session.commit()
+                logger.info(f"Successfully updated prices for {len(updates)} cryptocurrencies")
+                return True
+
+            except Exception as e:
+                logger.error(f"Database error: {str(e)}")
+                db.session.rollback()
+                return False
+
+        except Exception as e:
+            logger.error(f"Error in fetch_current_prices: {str(e)}")
+            return False
 
     def get_historical_prices(self, symbol, days=30, interval='daily'):
         """Fetch historical price data with improved validation and error handling"""
@@ -92,6 +136,11 @@ class CryptoPriceTracker:
             if not coin_id:
                 logger.error(f"Invalid symbol: {symbol}")
                 return None
+
+            # First ensure we have current price data
+            if not CryptoPrice.query.filter_by(symbol=symbol).first():
+                logger.info(f"No current price data for {symbol}, fetching it first")
+                self.fetch_current_prices()
 
             # Validate interval parameter
             valid_intervals = {'daily': '24h', 'hourly': '1h'}
@@ -133,61 +182,6 @@ class CryptoPriceTracker:
         except Exception as e:
             logger.error(f"Error fetching historical data for {symbol}: {str(e)}", exc_info=True)
             return None
-
-    def fetch_current_prices(self):
-        """Fetch current prices for all tracked cryptocurrencies"""
-        try:
-            ids = ','.join(self.crypto_ids.values())
-            api_url = f"{self.base_url}/simple/price"
-            params = {
-                'ids': ids,
-                'vs_currencies': 'usd',
-                'include_24hr_change': 'true'
-            }
-
-            data = self._make_request(api_url, params)
-            if not data:
-                logger.error("Failed to fetch current prices")
-                return False
-
-            updates = []
-            for symbol, coin_id in self.crypto_ids.items():
-                if coin_id in data:
-                    try:
-                        price_data = {
-                            'symbol': symbol,
-                            'price_usd': data[coin_id]['usd'],
-                            'percent_change_24h': data[coin_id].get('usd_24h_change', 0),
-                            'last_updated': datetime.utcnow()
-                        }
-                        updates.append(price_data)
-                    except Exception as e:
-                        logger.error(f"Error processing {symbol} price: {str(e)}")
-                        continue
-
-            try:
-                for update in updates:
-                    price = CryptoPrice.query.filter_by(symbol=update['symbol']).first()
-                    if not price:
-                        price = CryptoPrice(symbol=update['symbol'])
-                        db.session.add(price)
-
-                    price.price_usd = update['price_usd']
-                    price.percent_change_24h = update['percent_change_24h']
-                    price.last_updated = update['last_updated']
-
-                db.session.commit()
-                logger.info(f"Successfully updated prices for {len(updates)} cryptocurrencies")
-                return True
-
-            except Exception as e:
-                logger.error(f"Database error: {str(e)}")
-                db.session.rollback()
-                return False
-
-        except Exception as e:
-            logger.error(f"Error in fetch_current_prices: {str(e)}")
-            return False
 
 def get_latest_prices():
     """Get latest prices for all tracked cryptocurrencies"""
