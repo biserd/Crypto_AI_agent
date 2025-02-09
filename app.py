@@ -585,6 +585,7 @@ def inject_ga_tracking_id():
 def price_history(symbol):
     try:
         logger.info(f"Fetching price history for {symbol}")
+        days = request.args.get('days', default=30, type=int)
 
         # Normalize symbol
         symbol = symbol.upper()
@@ -601,17 +602,8 @@ def price_history(symbol):
                 'supported_symbols': list(tracker.crypto_ids.keys())
             }), 404
 
-        # Ensure we have current price data
-        success = tracker.fetch_current_prices()
-        if not success:
-            logger.error(f"Failed to fetch current prices for {symbol}")
-            return jsonify({
-                'error': f'Unable to fetch current price data for {symbol}',
-                'symbol': symbol
-            }), 500
-
         # Get historical data using the tracker
-        historical_data = tracker.get_historical_prices(symbol, days=30, interval='daily')
+        historical_data = tracker.get_historical_prices(symbol, days=days)
 
         if not historical_data or not historical_data.get('prices'):
             logger.error(f"No price data available for {symbol}")
