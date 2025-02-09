@@ -21,7 +21,15 @@ class CryptoPriceTracker:
             'MATIC': 'matic-network', 'DOT': 'polkadot', 'WBTC': 'wrapped-bitcoin',
             'AVAX': 'avalanche-2', 'SHIB': 'shiba-inu', 'LEO': 'leo-token', 'LTC': 'litecoin',
             'UNI': 'uniswap', 'CAKE': 'pancakeswap-token', 'LINK': 'chainlink',
-            'ATOM': 'cosmos', 'APE': 'apecoin', 'AAVE': 'aave'
+            'ATOM': 'cosmos', 'APE': 'apecoin', 'AAVE': 'aave',
+            # Adding more popular tokens
+            'GMX': 'gmx', 'ARB': 'arbitrum', 'OP': 'optimism', 
+            'NEAR': 'near', 'GRT': 'the-graph', 'SNX': 'havven',
+            'CRV': 'curve-dao-token', 'LDO': 'lido-dao', 'MKR': 'maker',
+            'COMP': 'compound-governance-token', 'BAL': 'balancer',
+            'RPL': 'rocket-pool', '1INCH': '1inch', 'SUSHI': 'sushi',
+            'YFI': 'yearn-finance', 'RUNE': 'thorchain', 'KNC': 'kyber-network-crystal',
+            'ZRX': '0x', 'REN': 'republic-protocol', 'BAT': 'basic-attention-token'
         }
 
     def _rate_limit_wait(self):
