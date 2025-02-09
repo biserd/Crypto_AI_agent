@@ -14,6 +14,7 @@ class CryptoPriceTracker:
         self.base_url = "https://api.coingecko.com/api/v3"
         self.last_request_time = 0
         self.min_request_interval = 1.2  # Minimum time between requests in seconds
+        self.api_key = os.environ.get('COINGECKO_API_KEY', '')  # Get API key from environment variable
         self.crypto_ids = {
             'BTC': 'bitcoin', 'ETH': 'ethereum', 'USDT': 'tether', 'BNB': 'binancecoin',
             'SOL': 'solana', 'XRP': 'ripple', 'USDC': 'usd-coin', 'ADA': 'cardano',
@@ -38,7 +39,8 @@ class CryptoPriceTracker:
         """Make a request to the CoinGecko API with improved error handling"""
         headers = {
             'Accept': 'application/json',
-            'User-Agent': 'CryptoIntelligence/1.0'
+            'User-Agent': 'CryptoIntelligence/1.0',
+            'x-cg-api-key': self.api_key
         }
 
         for attempt in range(max_retries):
