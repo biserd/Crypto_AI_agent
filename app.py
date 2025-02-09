@@ -1,3 +1,7 @@
+# Monkey patch must happen before any other imports
+import eventlet
+eventlet.monkey_patch()
+
 import os
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, redirect, flash, url_for, session, make_response
@@ -14,13 +18,36 @@ import stripe
 from sqlalchemy import desc
 import pandas as pd
 import numpy as np
-import eventlet
 
-eventlet.monkey_patch()
+# Configure logging first
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Create Flask app
 app = Flask(__name__)
-socketio = SocketIO(app, async_mode='eventlet', cors_allowed_origins="*")
+
+# Configuration
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", os.urandom(24))
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/postgres")
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_recycle": 300,
+    "pool_pre_ping": True,
+}
+app.config['GA_TRACKING_ID'] = os.environ.get('GA_TRACKING_ID', '')
+
+# Initialize database
+init_app(app)
+
+# Initialize login manager
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+# Initialize SocketIO with proper configuration
+socketio = SocketIO(app, async_mode='eventlet', cors_allowed_origins="*", logger=True, engineio_logger=True)
 
 def filter_by_positive(value):
     return value.percent_change_24h > 0
@@ -37,27 +64,6 @@ app.jinja_env.filters['filter_by_negative'] = lambda x: apply_filter(x, filter_b
 # Initialize last run time in app config
 app.config['LAST_SCRAPER_RUN'] = datetime.utcnow()
 
-# Configure logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
-# Configuration
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", os.urandom(24))
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/postgres")
-
-# Add GA_TRACKING_ID to app config
-app.config['GA_TRACKING_ID'] = os.environ.get('GA_TRACKING_ID', '')  # Default to empty string if not set
-
-# Initialize database
-init_app(app)
-
-# Initialize login manager
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'login'
 
 # Import CryptoPriceTracker after database initialization
 from crypto_price_tracker import CryptoPriceTracker
@@ -396,7 +402,7 @@ def crypto_detail(symbol):
 @app.route('/api/price-history/<symbol>')
 def price_history(symbol):
     try:
-        timeframe = request.args.get('timeframe', '30d')  # Default to 30 days
+        timeframe = request.args.get('timeframe', '30d')
         logger.info(f"Fetching price history for {symbol} with timeframe {timeframe}")
 
         # Normalize symbol
@@ -407,7 +413,7 @@ def price_history(symbol):
         if symbol not in tracker.crypto_ids:
             logger.error(f"Symbol {symbol} not found in supported cryptocurrencies")
             return jsonify({
-                'error': f'Cryptocurrency {symbol} is not supported. Available symbols: {", ".join(sorted(tracker.crypto_ids.keys()))}',
+                'error': f'Cryptocurrency {symbol} is not supported',
                 'symbol': symbol
             }), 404
 
@@ -428,62 +434,47 @@ def price_history(symbol):
             interval=timeframe_config['interval']
         )
 
-        if not historical_data:
-            logger.error(f"Failed to fetch historical data for {symbol}")
+        if not historical_data or not historical_data.get('prices'):
+            logger.error(f"No price data available for {symbol}")
             return jsonify({
-                'error': f'Unable to fetch price history for {symbol}. The service might be temporarily unavailable.',
-                'symbol': symbol,
-                'timeframe': timeframe
-            }), 503
+                'error': f'No price data available for {symbol}',
+                'symbol': symbol
+            }), 404
 
         # Process the data
         try:
-            prices = historical_data.get('prices', [])
+            prices = historical_data['prices']
             volumes = historical_data.get('total_volumes', [])
-
-            if not prices:
-                logger.error(f"No price data points available for {symbol}")
-                return jsonify({
-                    'error': f'No price history available for {symbol}',
-                    'symbol': symbol
-                }), 404
-
-            logger.info(f"Retrieved {len(prices)} price points for {symbol}")
-            logger.debug(f"First price point: {prices[0] if prices else 'No prices'}")
-            logger.debug(f"Last price point: {prices[-1] if prices else 'No prices'}")
 
             # Calculate SMA for price data
             sma_data = []
             if len(prices) >= 7:
+                prices_only = [p[1] for p in prices]
                 for i in range(6, len(prices)):
-                    window = prices[i-7+1:i+1]
-                    if window:
-                        avg_price = sum(p[1] for p in window) / len(window)
-                        sma_data.append({
-                            'timestamp': prices[i][0],
-                            'value': avg_price
-                        })
+                    window = prices_only[i-7+1:i+1]
+                    avg_price = sum(window) / len(window)
+                    sma_data.append({
+                        'timestamp': prices[i][0],
+                        'value': avg_price
+                    })
 
-            formatted_data = {
+            logger.info(f"Successfully processed {len(prices)} price points for {symbol}")
+
+            return jsonify({
                 'prices': prices,
-                'volumes': volumes if volumes else [],
+                'volumes': volumes,
                 'sma': sma_data
-            }
-
-            response = jsonify(formatted_data)
-            response.headers.add('Access-Control-Allow-Origin', '*')
-            response.headers.add('Access-Control-Allow-Methods', 'GET')
-            return response
+            })
 
         except Exception as e:
-            logger.error(f"Error processing price data for {symbol}: {str(e)}", exc_info=True)
+            logger.error(f"Error processing price data for {symbol}: {str(e)}")
             return jsonify({
                 'error': 'Error processing price data',
                 'details': str(e)
             }), 500
 
     except Exception as e:
-        logger.error(f"Error in price history endpoint for {symbol}: {str(e)}", exc_info=True)
+        logger.error(f"Error in price history endpoint for {symbol}: {str(e)}")
         return jsonify({
             'error': 'Internal server error',
             'details': str(e)
@@ -680,4 +671,4 @@ with app.app_context():
         logger.error(f"Error creating database tables: {str(e)}")
 
 if __name__ == '__main__':
-    eventlet.wsgi.server(eventlet.listen(('0.0.0.0', 5000)), app)
+    socketio.run(app, host='0.0.0.0', port=5000)

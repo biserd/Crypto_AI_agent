@@ -299,13 +299,14 @@
 
 <script>
 const MAX_RETRIES = 3;
-const RETRY_DELAY = 2000;
-let retryCount = 0;
+const RETRY_DELAY = 1000; // 1 second between retries
 let priceChart = null;
-const loadingOverlay = document.querySelector('.loading-overlay');
-const errorMessage = document.getElementById('error-message');
 
+// Error handling functions
 function showError(message) {
+    const errorMessage = document.getElementById('error-message');
+    const loadingOverlay = document.querySelector('.loading-overlay');
+
     if (errorMessage) {
         errorMessage.textContent = message;
         errorMessage.classList.remove('d-none');
@@ -316,12 +317,14 @@ function showError(message) {
 }
 
 function hideError() {
+    const errorMessage = document.getElementById('error-message');
     if (errorMessage) {
         errorMessage.classList.add('d-none');
     }
 }
 
 function showLoading() {
+    const loadingOverlay = document.querySelector('.loading-overlay');
     if (loadingOverlay) {
         loadingOverlay.classList.add('active');
     }
@@ -329,36 +332,49 @@ function showLoading() {
 }
 
 function hideLoading() {
+    const loadingOverlay = document.querySelector('.loading-overlay');
     if (loadingOverlay) {
         loadingOverlay.classList.remove('active');
     }
 }
 
-async function fetchWithRetry(url, retries = MAX_RETRIES) {
-    showLoading();
-    try {
-        const response = await fetch(url);
-        const data = await response.json();
+// Fetch data with retry logic
+async function fetchChartData(timeframe) {
+    let retries = MAX_RETRIES;
 
-        if (!response.ok) {
-            throw new Error(data.error || `HTTP error! status: ${response.status}`);
-        }
+    while (retries > 0) {
+        try {
+            const response = await fetch(`/api/price-history/{{ crypto.symbol }}?timeframe=${timeframe}`);
+            const data = await response.json();
 
-        hideLoading();
-        return data;
-    } catch (error) {
-        console.error('Error fetching data:', error);
-        if (retries > 0) {
-            console.log(`Retrying... (${MAX_RETRIES - retries + 1}/${MAX_RETRIES})`);
+            if (!response.ok) {
+                throw new Error(data.error || `HTTP error! status: ${response.status}`);
+            }
+
+            return data;
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            retries--;
+
+            if (retries === 0) {
+                throw error;
+            }
+
             await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-            return fetchWithRetry(url, retries - 1);
+            console.log(`Retrying... (${MAX_RETRIES - retries}/${MAX_RETRIES})`);
         }
-        hideLoading();
-        showError(`Failed to load chart data: ${error.message}`);
-        throw error;
     }
 }
 
+// Format large numbers
+function formatValue(value) {
+    if (value >= 1e9) return (value / 1e9).toFixed(1) + 'B';
+    if (value >= 1e6) return (value / 1e6).toFixed(1) + 'M';
+    if (value >= 1e3) return (value / 1e3).toFixed(1) + 'K';
+    return value.toFixed(2);
+}
+
+// Update chart with new data
 async function updateChart(timeframe = '30d') {
     try {
         showLoading();
@@ -368,8 +384,7 @@ async function updateChart(timeframe = '30d') {
             priceChart.destroy();
         }
 
-        const apiUrl = `/api/price-history/{{ crypto.symbol }}?timeframe=${timeframe}`;
-        const data = await fetchWithRetry(apiUrl);
+        const data = await fetchChartData(timeframe);
 
         if (!data || !data.prices || data.prices.length === 0) {
             throw new Error('No price data available');
@@ -378,24 +393,28 @@ async function updateChart(timeframe = '30d') {
         const showSMA = document.getElementById('showSMA')?.checked ?? true;
         const showVolume = document.getElementById('showVolume')?.checked ?? true;
 
-        const datasets = [{
+        const ctx = document.getElementById('priceChart').getContext('2d');
+        const datasets = [];
+
+        // Add price dataset
+        datasets.push({
             label: '{{ crypto.symbol }} Price (USD)',
             data: data.prices.map(p => ({
-                x: moment(p[0]).toDate(),
+                x: p[0],
                 y: p[1]
             })),
             borderColor: '#2196F3',
             backgroundColor: 'rgba(33, 150, 243, 0.1)',
             fill: true,
-            yAxisID: 'y',
-            tension: 0.1
-        }];
+            yAxisID: 'y'
+        });
 
+        // Add SMA if available and enabled
         if (showSMA && data.sma && data.sma.length > 0) {
             datasets.push({
                 label: 'SMA (7)',
                 data: data.sma.map(p => ({
-                    x: moment(p.timestamp).toDate(),
+                    x: p.timestamp,
                     y: p.value
                 })),
                 borderColor: '#FF9800',
@@ -406,11 +425,12 @@ async function updateChart(timeframe = '30d') {
             });
         }
 
+        // Add volume if available and enabled
         if (showVolume && data.volumes && data.volumes.length > 0) {
             datasets.push({
                 label: 'Volume',
                 data: data.volumes.map(v => ({
-                    x: moment(v[0]).toDate(),
+                    x: v[0],
                     y: v[1]
                 })),
                 type: 'bar',
@@ -420,7 +440,6 @@ async function updateChart(timeframe = '30d') {
             });
         }
 
-        const ctx = document.getElementById('priceChart').getContext('2d');
         priceChart = new Chart(ctx, {
             type: 'line',
             data: { datasets },
@@ -431,17 +450,11 @@ async function updateChart(timeframe = '30d') {
                     intersect: false,
                     mode: 'index'
                 },
-                animation: false,
                 scales: {
                     x: {
                         type: 'time',
                         time: {
-                            unit: timeframe === '24h' ? 'hour' : 'day',
-                            tooltipFormat: 'MMM D, YYYY HH:mm',
-                            displayFormats: {
-                                hour: 'MMM D, HH:mm',
-                                day: 'MMM D'
-                            }
+                            unit: timeframe === '24h' ? 'hour' : 'day'
                         },
                         grid: {
                             display: false
@@ -454,14 +467,11 @@ async function updateChart(timeframe = '30d') {
                         title: {
                             display: true,
                             text: 'Price (USD)'
-                        },
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
                         }
                     },
-                    y1: {
+                    y1: showVolume ? {
                         type: 'linear',
-                        display: showVolume,
+                        display: true,
                         position: 'right',
                         grid: {
                             drawOnChartArea: false
@@ -471,11 +481,9 @@ async function updateChart(timeframe = '30d') {
                             text: 'Volume (USD)'
                         },
                         ticks: {
-                            callback: function(value) {
-                                return formatValue(value);
-                            }
+                            callback: value => formatValue(value)
                         }
-                    }
+                    } : null
                 },
                 plugins: {
                     tooltip: {
@@ -485,7 +493,7 @@ async function updateChart(timeframe = '30d') {
                                 if (label) {
                                     label += ': ';
                                 }
-                                if (context.datasetIndex === 2) { // Volume dataset
+                                if (context.dataset.label === 'Volume') {
                                     label += '$' + formatValue(context.parsed.y);
                                 } else {
                                     label += '$' + context.parsed.y.toFixed(2);
@@ -504,50 +512,36 @@ async function updateChart(timeframe = '30d') {
     } catch (error) {
         console.error('Error updating chart:', error);
         hideLoading();
-        showError(`Error loading chart data: ${error.message}`);
+        showError(`Failed to load chart data: ${error.message}`);
     }
 }
 
-function formatValue(value) {
-    if (value >= 1e9) {
-        return (value / 1e9).toFixed(2) + 'B';
-    } else if (value >= 1e6) {
-        return (value / 1e6).toFixed(2) + 'M';
-    } else if (value >= 1e3) {
-        return (value / 1e3).toFixed(2) + 'K';
-    }
-    return value.toFixed(2);
-}
-
+// Initialize chart and set up event listeners
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize chart with slight delay to ensure DOM is ready
-    setTimeout(() => {
-        updateChart('30d');
-    }, 100);
+    // Initialize chart with default timeframe
+    setTimeout(() => updateChart('30d'), 100);
 
-    // Set up event listeners
+    // Set up timeframe buttons
     document.querySelectorAll('.timeframe-btn').forEach(button => {
         button.addEventListener('click', function() {
-            document.querySelectorAll('.timeframe-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.timeframe-btn').forEach(btn => 
+                btn.classList.remove('active'));
             this.classList.add('active');
             updateChart(this.dataset.timeframe);
         });
     });
 
-    const smaToggle = document.getElementById('showSMA');
-    const volumeToggle = document.getElementById('showVolume');
-
-    if (smaToggle) {
-        smaToggle.addEventListener('change', () => {
-            updateChart(document.querySelector('.timeframe-btn.active').dataset.timeframe);
-        });
-    }
-
-    if (volumeToggle) {
-        volumeToggle.addEventListener('change', () => {
-            updateChart(document.querySelector('.timeframe-btn.active').dataset.timeframe);
-        });
-    }
+    // Set up indicator toggles
+    ['showSMA', 'showVolume'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('change', () => {
+                const activeTimeframe = document.querySelector('.timeframe-btn.active');
+                updateChart(activeTimeframe?.dataset.timeframe || '30d');
+            });
+        }
+    });
 });
 </script>
+
 {% endblock %}
