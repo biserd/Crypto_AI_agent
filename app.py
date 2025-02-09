@@ -581,6 +581,49 @@ import time
 def inject_ga_tracking_id():
     return dict(ga_tracking_id=app.config['GA_TRACKING_ID'])
 
+@app.route('/api/price-history/<symbol>')
+def price_history(symbol):
+    try:
+        logger.info(f"Fetching price history for {symbol}")
+
+        # Normalize symbol
+        symbol = symbol.upper()
+
+        # Initialize tracker
+        tracker = CryptoPriceTracker()
+
+        # Check if symbol exists in our tracked cryptocurrencies
+        if symbol not in tracker.crypto_ids:
+            logger.error(f"Symbol {symbol} not found in supported cryptocurrencies")
+            return jsonify({
+                'error': f'Cryptocurrency {symbol} is not supported',
+                'symbol': symbol,
+                'supported_symbols': list(tracker.crypto_ids.keys())
+            }), 404
+
+        # Get historical data using the tracker
+        historical_data = tracker.get_historical_prices(symbol, days=30, interval='daily')
+
+        if not historical_data or not historical_data.get('prices'):
+            logger.error(f"No price data available for {symbol}")
+            return jsonify({
+                'error': f'No price data available for {symbol}',
+                'symbol': symbol
+            }), 404
+
+        logger.info(f"Successfully fetched price history for {symbol}")
+        return jsonify({
+            'prices': historical_data['prices']
+        })
+
+    except Exception as e:
+        logger.error(f"Error in price history endpoint for {symbol}: {str(e)}", exc_info=True)
+        return jsonify({
+            'error': 'Internal server error',
+            'details': str(e)
+        }), 500
+
+
 with app.app_context():
     try:
         db.create_all()

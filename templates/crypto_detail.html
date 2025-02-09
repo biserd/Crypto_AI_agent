@@ -41,6 +41,11 @@
         </div>
     </div>
 
+    <!-- Simple Price Chart -->
+    <div class="price-chart-container mb-4">
+        <canvas id="priceChart"></canvas>
+    </div>
+
     <!-- News Sentiment Analysis -->
     <div class="row mt-4">
         <div class="col-md-6">
@@ -99,4 +104,16 @@
         </div>
     </div>
 </div>
+
+<!-- Required Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js"></script>
+<script src="{{ url_for('static', filename='js/crypto-charts.js') }}"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    createPriceChart('{{ crypto.symbol }}');
+});
+</script>
 {% endblock %}

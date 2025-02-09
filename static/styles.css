@@ -371,3 +371,12 @@
 #error-message.show {
     display: block;
 }
+
+.price-chart-container {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    height: 400px;
+    position: relative;
+}
