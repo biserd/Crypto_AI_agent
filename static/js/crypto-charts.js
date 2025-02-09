@@ -1,3 +1,4 @@
+
 // Price chart implementation
 function createPriceChart(symbol) {
     const ctx = document.getElementById('priceChart').getContext('2d');
@@ -9,35 +10,45 @@ function createPriceChart(symbol) {
     let currentChart = null;
 
     function showLoader() {
-        loader.classList.remove('d-none');
-        errorElement.classList.add('d-none');
+        if (loader) {
+            loader.classList.remove('d-none');
+        }
+        if (errorElement) {
+            errorElement.classList.add('d-none');
+        }
     }
 
     function hideLoader() {
-        loader.classList.add('d-none');
+        if (loader) {
+            loader.classList.add('d-none');
+        }
     }
 
     function showError(message) {
-        errorElement.textContent = message;
-        errorElement.classList.remove('d-none');
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.classList.remove('d-none');
+        }
         hideLoader();
     }
 
     function createChart(data) {
-        // Destroy existing chart if it exists
         if (currentChart) {
             currentChart.destroy();
         }
+
+        // Format the data
+        const chartData = data.map(item => ({
+            x: new Date(item[0]),
+            y: parseFloat(item[1])
+        })).filter(item => !isNaN(item.y));
 
         currentChart = new Chart(ctx, {
             type: 'line',
             data: {
                 datasets: [{
                     label: `${symbol} Price (USD)`,
-                    data: data.map(item => ({
-                        x: item[0],
-                        y: item[1]
-                    })),
+                    data: chartData,
                     borderColor: '#2196F3',
                     backgroundColor: 'rgba(33, 150, 243, 0.1)',
                     borderWidth: 2,
@@ -96,11 +107,12 @@ function createPriceChart(symbol) {
             showLoader();
 
             const response = await fetch(`/api/price-history/${symbol}?days=${days}`);
+            const data = await response.json();
+
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                throw new Error(data.error || 'Failed to load price data');
             }
 
-            const data = await response.json();
             if (data.error) {
                 throw new Error(data.error);
             }
@@ -111,7 +123,10 @@ function createPriceChart(symbol) {
 
             createChart(data.prices);
             hideLoader();
-            errorElement.classList.add('d-none');
+            if (errorElement) {
+                errorElement.classList.add('d-none');
+            }
+
         } catch (error) {
             console.error('Error fetching price data:', error);
             showError(`Unable to load price chart: ${error.message}`);
@@ -123,14 +138,12 @@ function createPriceChart(symbol) {
         button.addEventListener('click', (e) => {
             timeframeButtons.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
-            loadChartData(button.dataset.days);
+            loadChartData(parseInt(button.dataset.days, 10));
         });
     });
 
     // Load initial data
     loadChartData(30);
-
-    return currentChart;
 }
 
 // Initialize when DOM is loaded
