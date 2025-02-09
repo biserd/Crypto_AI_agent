@@ -22,7 +22,8 @@ class CryptoPriceTracker:
             'MATIC': 'matic-network', 'DOT': 'polkadot', 'WBTC': 'wrapped-bitcoin',
             'AVAX': 'avalanche-2', 'SHIB': 'shiba-inu', 'LEO': 'leo-token', 'LTC': 'litecoin',
             'UNI': 'uniswap', 'CAKE': 'pancakeswap-token', 'LINK': 'chainlink',
-            'ATOM': 'cosmos', 'APE': 'apecoin', 'AAVE': 'aave', 'ETH': 'ethereum'
+            'ATOM': 'cosmos', 'APE': 'apecoin', 'AAVE': 'aave', 'ETH': 'ethereum',
+            'RPL': 'rocket-pool'
         }
 
     def _rate_limit_wait(self):
