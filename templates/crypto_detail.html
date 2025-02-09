@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ crypto_names.get(crypto.symbol, crypto.symbol) }} ({{ crypto.symbol }}) Price & Analysis | Exploding Crypto{% endblock %}
+{% block title %}{{ crypto_names.get(crypto.symbol, crypto.symbol) }} ({{ crypto.symbol }}) Price & Analysis{% endblock %}
 
 {% block meta_description %}Get real-time {{ crypto_names.get(crypto.symbol, crypto.symbol) }} ({{ crypto.symbol }}) price updates, trading signals, and market analysis. View historical price charts and news sentiment analysis.{% endblock %}
 
@@ -29,78 +29,121 @@
 
 {% block content %}
 <div class="container mt-4">
+    <!-- Crypto Header -->
     <div class="crypto-header mb-4">
-        <div class="d-flex justify-content-between align-items-center">
-            <h1 class="mb-0">{{ crypto_names.get(crypto.symbol, crypto.symbol) }} ({{ crypto.symbol }})</h1>
-            <div>
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="crypto-title">
+                    {{ crypto_names.get(crypto.symbol, crypto.symbol) }} 
+                    <span class="symbol-badge">{{ crypto.symbol }}</span>
+                </h1>
+            </div>
+            <div class="col-md-4 text-md-end">
                 <div class="price-display">${{ "%.2f"|format(crypto.price_usd) }}</div>
-                <div class="price-change {% if crypto.percent_change_24h > 0 %}price-up{% else %}price-down{% endif %}">
+                <div class="price-change {{ 'price-up' if crypto.percent_change_24h > 0 else 'price-down' }}">
                     {{ "%.1f"|format(crypto.percent_change_24h) }}% (24h)
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Simple Price Chart -->
-    <div class="price-chart-container mb-4">
-        <canvas id="priceChart"></canvas>
-    </div>
+    <div class="row">
+        <!-- Price Chart Section -->
+        <div class="col-12 mb-4">
+            <div class="content-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">Price Chart</h3>
+                    <div class="timeframe-selector">
+                        <button class="btn btn-outline-primary btn-sm active" data-days="7">7D</button>
+                        <button class="btn btn-outline-primary btn-sm" data-days="30">30D</button>
+                        <button class="btn btn-outline-primary btn-sm" data-days="90">90D</button>
+                    </div>
+                </div>
+                <div class="price-chart-container">
+                    <canvas id="priceChart"></canvas>
+                    <div class="chart-loader d-none">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                    <div class="chart-error alert alert-danger d-none"></div>
+                </div>
+            </div>
+        </div>
 
-    <!-- News Sentiment Analysis -->
-    <div class="row mt-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">News Sentiment Analysis</h5>
+        <!-- Market Stats -->
+        <div class="col-md-4 mb-4">
+            <div class="content-card">
+                <h3>Market Stats</h3>
+                <div class="market-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Current Price</span>
+                        <span class="stat-value">${{ "%.2f"|format(crypto.price_usd) }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">24h Change</span>
+                        <span class="stat-value {{ 'text-success' if crypto.percent_change_24h > 0 else 'text-danger' }}">
+                            {{ "%.1f"|format(crypto.percent_change_24h) }}%
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sentiment Analysis -->
+        <div class="col-md-8 mb-4">
+            <div class="content-card">
+                <h3>News Sentiment</h3>
+                <div class="sentiment-overview">
                     <div class="sentiment-stats">
-                        <div class="d-flex justify-content-between mb-3">
-                            <div>
-                                <h6>Positive</h6>
-                                <span class="badge bg-success">{{ news_impact.positive }}</span>
-                            </div>
-                            <div>
-                                <h6>Neutral</h6>
-                                <span class="badge bg-warning">{{ news_impact.neutral }}</span>
-                            </div>
-                            <div>
-                                <h6>Negative</h6>
-                                <span class="badge bg-danger">{{ news_impact.negative }}</span>
-                            </div>
+                        <div class="stat-box positive">
+                            <span class="stat-number">{{ news_impact.positive }}</span>
+                            <span class="stat-label">Positive</span>
+                        </div>
+                        <div class="stat-box neutral">
+                            <span class="stat-number">{{ news_impact.neutral }}</span>
+                            <span class="stat-label">Neutral</span>
+                        </div>
+                        <div class="stat-box negative">
+                            <span class="stat-number">{{ news_impact.negative }}</span>
+                            <span class="stat-label">Negative</span>
+                        </div>
+                    </div>
+                    <div class="trading-signal mt-3">
+                        <div class="signal-indicator signal-{{ recommendation }}">
+                            <i class="fas fa-signal"></i>
+                            <span>Signal: {{ recommendation|upper }}</span>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="recommendation-indicator recommendation-{{ recommendation }}">
-                Trading Signal: {{ recommendation|upper }}
-            </div>
-        </div>
     </div>
 
-    <!-- Latest News -->
-    <div class="row mt-4">
+    <!-- News Section -->
+    <div class="row">
         <div class="col-12">
-            <h3>Latest {{ crypto.symbol }} News</h3>
-            {% for article in news %}
-            <div class="card mb-3">
-                <div class="card-body">
-                    <h5 class="card-title">{{ article.title }}</h5>
-                    <h6 class="card-subtitle mb-2 text-muted">
-                        {{ article.source_name }} - {{ article.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
-                    </h6>
-                    <p class="card-text">{{ article.summary }}</p>
-                    {% if article.sentiment_label %}
-                    <div class="sentiment-indicator sentiment-{{ article.sentiment_label|lower }}">
-                        {{ article.sentiment_label }}
-                        {% if article.sentiment_score %}
-                        <span class="sentiment-score">{{ "%.2f"|format(article.sentiment_score) }}</span>
+            <div class="content-card">
+                <h3>Latest News</h3>
+                {% for article in news %}
+                <div class="news-item">
+                    <h4>{{ article.title }}</h4>
+                    <div class="news-meta">
+                        <span class="source">{{ article.source_name }}</span>
+                        <span class="date">{{ article.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                        {% if article.sentiment_label %}
+                        <span class="sentiment-badge sentiment-{{ article.sentiment_label|lower }}">
+                            {{ article.sentiment_label }}
+                            {% if article.sentiment_score %}
+                            <span class="score">{{ "%.2f"|format(article.sentiment_score) }}</span>
+                            {% endif %}
+                        </span>
                         {% endif %}
                     </div>
-                    {% endif %}
+                    <p class="news-summary">{{ article.summary }}</p>
                 </div>
+                {% endfor %}
             </div>
-            {% endfor %}
         </div>
     </div>
 </div>
@@ -110,10 +153,4 @@
 <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js"></script>
 <script src="{{ url_for('static', filename='js/crypto-charts.js') }}"></script>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    createPriceChart('{{ crypto.symbol }}');
-});
-</script>
 {% endblock %}
