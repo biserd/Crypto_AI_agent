@@ -184,8 +184,9 @@ class CryptoPriceTracker:
                         time.sleep(2 ** attempt)  # Exponential backoff
                     continue
 
-            logger.error(f"Failed to fetch data for {symbol} after {max_retries} attempts")
-            return None
+            error_msg = f"Failed to fetch data for {symbol} after {max_retries} attempts due to rate limits"
+            logger.error(error_msg)
+            return {'error': error_msg, 'retry_after': 30}
 
         except Exception as e:
             logger.error(f"Error fetching historical data for {symbol}: {str(e)}")

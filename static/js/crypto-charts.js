@@ -102,15 +102,23 @@ function createPriceChart(symbol) {
         });
     }
 
-    async function loadChartData(days = 30) {
+    async function loadChartData(days = 30, retryCount = 0) {
         try {
             showLoader();
-            console.log(`Fetching data for ${symbol} with ${days} days`);
+            console.log(`Fetching data for ${symbol} with ${days} days (attempt ${retryCount + 1})`);
 
             const response = await fetch(`/api/price-history/${symbol}?days=${days}`);
             const data = await response.json();
             
             console.log('API Response:', data);
+
+            if (response.status === 429 && retryCount < 3) {
+                const retryAfter = parseInt(response.headers.get('Retry-After') || '30');
+                console.log(`Rate limited, retrying after ${retryAfter} seconds...`);
+                showError(`Rate limited, retrying in ${retryAfter} seconds...`);
+                await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+                return loadChartData(days, retryCount + 1);
+            }
 
             if (!response.ok) {
                 throw new Error(data.error || 'Failed to load price data');
