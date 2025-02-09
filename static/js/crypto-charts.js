@@ -105,22 +105,39 @@ function createPriceChart(symbol) {
     async function loadChartData(days = 30) {
         try {
             showLoader();
+            console.log(`Fetching data for ${symbol} with ${days} days`);
 
             const response = await fetch(`/api/price-history/${symbol}?days=${days}`);
             const data = await response.json();
+            
+            console.log('API Response:', data);
 
             if (!response.ok) {
                 throw new Error(data.error || 'Failed to load price data');
             }
 
-            if (data.error) {
-                throw new Error(data.error);
+            if (!data.prices || !Array.isArray(data.prices)) {
+                console.error('Invalid price data format:', data);
+                throw new Error('Invalid price data format received');
             }
 
-            if (!data.prices || data.prices.length === 0) {
+            if (data.prices.length === 0) {
                 throw new Error('No price data available');
             }
 
+            // Validate data format before creating chart
+            const validData = data.prices.every(item => 
+                Array.isArray(item) && 
+                item.length === 2 && 
+                !isNaN(new Date(item[0]).getTime()) && 
+                !isNaN(parseFloat(item[1]))
+            );
+
+            if (!validData) {
+                throw new Error('Invalid price data format');
+            }
+
+            console.log(`Processing ${data.prices.length} price points`);
             createChart(data.prices);
             hideLoader();
             if (errorElement) {
