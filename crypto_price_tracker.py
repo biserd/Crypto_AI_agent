@@ -41,8 +41,9 @@ class CryptoPriceTracker:
         headers = {
             'Accept': 'application/json',
             'User-Agent': 'CryptoIntelligence/1.0',
-            'x-cg-api-key': self.api_key
+            'x-cg-demo-api-key': self.api_key  # Updated header name for CoinGecko API
         }
+        logger.info("Making API request with key present: %s", bool(self.api_key))
 
         for attempt in range(max_retries):
             try:
