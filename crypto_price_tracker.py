@@ -41,7 +41,7 @@ class CryptoPriceTracker:
         headers = {
             'Accept': 'application/json',
             'User-Agent': 'CryptoIntelligence/1.0',
-            'x-cg-pro-api-key': self.api_key
+            'x-cg-demo-api-key': self.api_key
         }
         logger.info("Making API request with key present: %s", bool(self.api_key))
 
@@ -149,22 +149,22 @@ class CryptoPriceTracker:
             headers = {
                 'Accept': 'application/json',
                 'User-Agent': 'CryptoIntelligence/1.0',
-                'x-cg-pro-api-key': self.api_key
+                'x-cg-demo-api-key': self.api_key
             }
 
             for attempt in range(max_retries):
                 try:
                     self._rate_limit_wait()
                     logger.info(f"Making request to {api_url} with params {params} (attempt {attempt + 1})")
-                    
+
                     response = requests.get(api_url, params=params, headers=headers, timeout=10)
-                    
+
                     if response.status_code == 429:
                         retry_after = int(response.headers.get('Retry-After', 60))
                         logger.warning(f"Rate limit hit, waiting {retry_after} seconds")
                         time.sleep(retry_after)
                         continue
-                        
+
                     response.raise_for_status()
                     data = response.json()
 
