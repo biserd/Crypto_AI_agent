@@ -128,7 +128,7 @@ class CryptoPriceTracker:
             logger.error(f"Error in fetch_current_prices: {str(e)}")
             return False
 
-    def get_historical_prices(self, symbol, days=30, interval='daily'):
+    def get_historical_prices(self, symbol, days=30, interval='daily', max_retries=3):
         """Fetch historical price data with improved validation and error handling"""
         try:
             logger.info(f"Fetching historical data for {symbol} with {days} days interval {interval}")
@@ -151,23 +151,41 @@ class CryptoPriceTracker:
                 'x-cg-api-key': self.api_key
             }
 
-            self._rate_limit_wait()
-            logger.info(f"Making request to {api_url} with params {params}")
-            
-            response = requests.get(api_url, params=params, headers=headers, timeout=10)
-            response.raise_for_status()
-            data = response.json()
+            for attempt in range(max_retries):
+                try:
+                    self._rate_limit_wait()
+                    logger.info(f"Making request to {api_url} with params {params} (attempt {attempt + 1})")
+                    
+                    response = requests.get(api_url, params=params, headers=headers, timeout=10)
+                    
+                    if response.status_code == 429:
+                        retry_after = int(response.headers.get('Retry-After', 60))
+                        logger.warning(f"Rate limit hit, waiting {retry_after} seconds")
+                        time.sleep(retry_after)
+                        continue
+                        
+                    response.raise_for_status()
+                    data = response.json()
 
-            if not data or 'prices' not in data:
-                logger.error(f"Invalid response data for {symbol}")
-                return None
+                    if not data or 'prices' not in data:
+                        logger.error(f"Invalid response data for {symbol}")
+                        continue
 
-            logger.info(f"Successfully fetched {len(data['prices'])} price points for {symbol}")
-            return {
-                'prices': data['prices'],
-                'market_caps': data.get('market_caps', []),
-                'total_volumes': data.get('total_volumes', [])
-            }
+                    logger.info(f"Successfully fetched {len(data['prices'])} price points for {symbol}")
+                    return {
+                        'prices': data['prices'],
+                        'market_caps': data.get('market_caps', []),
+                        'total_volumes': data.get('total_volumes', [])
+                    }
+
+                except requests.exceptions.RequestException as e:
+                    logger.error(f"Request error on attempt {attempt + 1}: {str(e)}")
+                    if attempt < max_retries - 1:
+                        time.sleep(2 ** attempt)  # Exponential backoff
+                    continue
+
+            logger.error(f"Failed to fetch data for {symbol} after {max_retries} attempts")
+            return None
 
         except Exception as e:
             logger.error(f"Error fetching historical data for {symbol}: {str(e)}")
