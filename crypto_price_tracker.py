@@ -157,6 +157,21 @@ class CryptoPriceTracker:
                 'days': str(days),
                 'interval': valid_intervals.get(interval, '24h')
             }
+            
+            self._rate_limit_wait()  # Ensure we respect rate limits
+            logger.info(f"Making request to {api_url} with params {params}")
+            
+            try:
+                response = requests.get(api_url, params=params, headers={
+                    'Accept': 'application/json',
+                    'User-Agent': 'CryptoIntelligence/1.0',
+                    'x-cg-api-key': self.api_key
+                }, timeout=10)
+                response.raise_for_status()
+                data = response.json()
+            except Exception as e:
+                logger.error(f"API request failed: {str(e)}")
+                return None
 
             data = self._make_request(api_url, params)
 
