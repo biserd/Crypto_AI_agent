@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ crypto_names.get(crypto.symbol, crypto.symbol) }} ({{ crypto.symbol }}) Price, Charts & Analysis | Exploding Crypto{% endblock %}
+{% block title %}{{ crypto_names.get(crypto.symbol, crypto.symbol) }} ({{ crypto.symbol }}) Price & Analysis | Exploding Crypto{% endblock %}
 
 {% block meta_description %}Get real-time {{ crypto_names.get(crypto.symbol, crypto.symbol) }} ({{ crypto.symbol }}) price updates, trading signals, and market analysis. View historical price charts and news sentiment analysis.{% endblock %}
 
@@ -38,35 +38,6 @@
                     {{ "%.1f"|format(crypto.percent_change_24h) }}% (24h)
                 </div>
             </div>
-        </div>
-    </div>
-
-    <div class="chart-container">
-        <div class="chart-header">
-            <div class="timeframe-selector">
-                <button class="timeframe-btn" data-timeframe="24h">24H</button>
-                <button class="timeframe-btn" data-timeframe="7d">7D</button>
-                <button class="timeframe-btn active" data-timeframe="30d">30D</button>
-            </div>
-            <div class="indicator-toggle">
-                <label>
-                    <input type="checkbox" id="showSMA" checked>
-                    <span>SMA (7)</span>
-                </label>
-                <label>
-                    <input type="checkbox" id="showVolume" checked>
-                    <span>Volume</span>
-                </label>
-            </div>
-        </div>
-        <div class="chart-wrapper">
-            <canvas id="priceChart"></canvas>
-            <div class="loading-overlay">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-            </div>
-            <div id="error-message" class="alert alert-danger d-none"></div>
         </div>
     </div>
 
@@ -128,23 +99,4 @@
         </div>
     </div>
 </div>
-
-<!-- Required Scripts -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js"></script>
-<script src="{{ url_for('static', filename='js/crypto-charts.js') }}"></script>
-
-<script>
-document.addEventListener('DOMContentLoaded', async function() {
-    const symbol = '{{ crypto.symbol }}';
-    const chart = CryptoCharts.createPriceChart('priceChart');
-
-    // Initialize timeframe selector
-    CryptoCharts.initializeTimeframeSelector(chart, symbol);
-
-    // Load initial data
-    await CryptoCharts.loadChartData(symbol, chart, '30d');
-});
-</script>
 {% endblock %}
