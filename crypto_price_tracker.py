@@ -22,8 +22,15 @@ class CryptoPriceTracker:
             'MATIC': 'matic-network', 'DOT': 'polkadot', 'WBTC': 'wrapped-bitcoin',
             'AVAX': 'avalanche-2', 'SHIB': 'shiba-inu', 'LEO': 'leo-token', 'LTC': 'litecoin',
             'UNI': 'uniswap', 'CAKE': 'pancakeswap-token', 'LINK': 'chainlink',
-            'ATOM': 'cosmos', 'APE': 'apecoin', 'AAVE': 'aave', 'ETH': 'ethereum',
-            'RPL': 'rocket-pool'
+            'ATOM': 'cosmos', 'APE': 'apecoin', 'AAVE': 'aave', 'RPL': 'rocket-pool',
+            'REN': 'republic-protocol', 'SNX': 'synthetix-network-token', 'COMP': 'compound-governance-token',
+            'YFI': 'yearn-finance', 'MKR': 'maker', 'CRV': 'curve-dao-token',
+            'BAL': 'balancer', '1INCH': '1inch', 'SUSHI': 'sushi', 'GRT': 'the-graph',
+            'FIL': 'filecoin', 'NEAR': 'near', 'ALGO': 'algorand', 'VET': 'vechain',
+            'ICP': 'internet-computer', 'XLM': 'stellar', 'FTM': 'fantom', 'HBAR': 'hedera-hashgraph',
+            'THETA': 'theta-network', 'EOS': 'eos', 'XTZ': 'tezos', 'ZEC': 'zcash',
+            'MANA': 'decentraland', 'ENJ': 'enjincoin', 'CHZ': 'chiliz', 'HOT': 'holotoken',
+            'ZIL': 'zilliqa', 'ONE': 'harmony', 'BAT': 'basic-attention-token', 'AR': 'arweave'
         }
 
     def _rate_limit_wait(self):
