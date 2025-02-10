@@ -159,10 +159,13 @@ class CryptoPriceTracker:
                 logger.error(f"Invalid symbol: {symbol}")
                 return None
 
-            api_url = f"{self.base_url}/coins/{coin_id}/market_chart"
+            api_url = f"{self.base_url}/coins/{coin_id}/market_chart/range"
+            end_time = int(datetime.utcnow().timestamp())
+            start_time = end_time - (days * 24 * 60 * 60)
             params = {
                 'vs_currency': 'usd',
-                'days': str(days)
+                'from': start_time,
+                'to': end_time
             }
             
             logger.info(f"Making market chart request to: {api_url}")
