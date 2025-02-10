@@ -47,11 +47,11 @@ class CryptoPriceTracker:
         }
 
     def _rate_limit_wait(self):
-        """Ensure we don't exceed API rate limits"""
+        """Ensure we don't exceed API rate limits with exponential backoff"""
         current_time = time.time()
         time_since_last_request = current_time - self.last_request_time
         if time_since_last_request < self.min_request_interval:
-            wait_time = self.min_request_interval - time_since_last_request
+            wait_time = max(self.min_request_interval - time_since_last_request, 2)
             logger.debug(f"Rate limiting: waiting {wait_time:.2f} seconds")
             time.sleep(wait_time)
         self.last_request_time = time.time()
@@ -160,13 +160,12 @@ class CryptoPriceTracker:
                 logger.error(f"Invalid symbol: {symbol}")
                 return None
 
-            api_url = f"{self.base_url}/coins/{coin_id}/market_chart/range"
-            end_time = int(datetime.utcnow().timestamp())
-            start_time = end_time - (days * 24 * 60 * 60)
+            # Use simpler market_chart endpoint instead of range
+            api_url = f"{self.base_url}/coins/{coin_id}/market_chart"
             params = {
                 'vs_currency': 'usd',
-                'from': start_time,
-                'to': end_time
+                'days': str(days),
+                'interval': 'daily'
             }
             
             logger.info(f"Making market chart request to: {api_url}")
