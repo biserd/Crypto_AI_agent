@@ -145,6 +145,10 @@ class CryptoPriceTracker:
                 'vs_currency': 'usd',
                 'days': str(days)
             }
+            
+            logger.info(f"Making market chart request to: {api_url}")
+            logger.info(f"With params: {params}")
+            logger.info(f"API Key present: {bool(self.api_key)}")
 
             headers = {
                 'Accept': 'application/json',
