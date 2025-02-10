@@ -160,13 +160,6 @@ class CryptoPriceTracker:
                 logger.error(f"Invalid symbol: {symbol}")
                 return None
 
-            # First verify the token is supported
-            verify_url = f"{self.base_url}/simple/supported_v2/price_chart"
-            supported_data = self._make_request(verify_url)
-            if not supported_data or coin_id not in supported_data:
-                logger.error(f"Token {symbol} ({coin_id}) not supported for price chart")
-                return None
-
             api_url = f"{self.base_url}/coins/{coin_id}/market_chart/range"
             end_time = int(datetime.utcnow().timestamp())
             start_time = end_time - (days * 24 * 60 * 60)
