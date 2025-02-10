@@ -43,7 +43,7 @@ class CryptoPriceTracker:
             'AAVE': 'aave',
             'RPL': 'rocket-pool',
             'REN': 'ren',
-            'MKR': 'maker-dao'
+            'MKR': 'maker'
         }
 
     def _rate_limit_wait(self):
