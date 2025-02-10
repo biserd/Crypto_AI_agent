@@ -42,7 +42,8 @@ class CryptoPriceTracker:
             'APE': 'apecoin',
             'AAVE': 'aave',
             'RPL': 'rocket-pool',
-            'REN': 'ren'
+            'REN': 'ren',
+            'MKR': 'maker'
         }
 
     def _rate_limit_wait(self):
