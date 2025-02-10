@@ -43,7 +43,7 @@ class CryptoPriceTracker:
             'AAVE': 'aave',
             'RPL': 'rocket-pool',
             'REN': 'ren',
-            'MKR': 'maker'
+            'MKR': 'maker-dao'
         }
 
     def _rate_limit_wait(self):
@@ -167,7 +167,7 @@ class CryptoPriceTracker:
                 'days': str(days),
                 'interval': 'daily'
             }
-            
+
             logger.info(f"Making market chart request to: {api_url}")
             logger.info(f"With params: {params}")
             logger.info(f"API Key present: {bool(self.api_key)}")
@@ -195,10 +195,11 @@ class CryptoPriceTracker:
                     data = response.json()
 
                     if not data or 'prices' not in data:
-                        logger.error(f"Invalid response data for {symbol}")
+                        logger.error(f"Invalid response data for {symbol}: {data}")
                         continue
 
                     logger.info(f"Successfully fetched {len(data['prices'])} price points for {symbol}")
+                    logger.debug(f"First price point: {data['prices'][0] if data['prices'] else 'No data'}")
                     return {
                         'prices': data['prices'],
                         'market_caps': data.get('market_caps', []),
