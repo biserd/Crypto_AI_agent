@@ -1,0 +1,9 @@
+
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /register
+Disallow: /profile
+Disallow: /subscription/status
+
+Sitemap: /sitemap.xml
