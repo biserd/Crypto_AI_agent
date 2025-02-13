@@ -5,15 +5,13 @@
     <div class="ticker-wrap">
         <div class="ticker">
             {% for price in crypto_prices %}
-                <a href="{{ url_for('crypto_detail', symbol=price.symbol) }}" class="text-decoration-none">
-                    <div class="ticker-item">
-                        <span class="ticker-symbol">{{ price.symbol }}</span>
-                        <span class="ticker-price">${{ "%.2f"|format(price.price_usd) }}</span>
-                        <span class="ticker-change {{ 'change-up' if price.percent_change_24h|float > 0 else 'change-down' }}">
-                            {{ "%.1f"|format(price.percent_change_24h) }}%
-                        </span>
-                    </div>
-                </a>
+                <div class="ticker-item" onclick="window.location.href='{{ url_for('crypto_detail', symbol=price.symbol) }}'">
+                    <span class="ticker-symbol">{{ price.symbol }}</span>
+                    <span class="ticker-price">${{ "%.2f"|format(price.price_usd) }}</span>
+                    <span class="ticker-change {{ 'change-up' if price.percent_change_24h|float > 0 else 'change-down' }}">
+                        {{ "%.1f"|format(price.percent_change_24h) }}%
+                    </span>
+                </div>
             {% endfor %}
         </div>
     </div>
