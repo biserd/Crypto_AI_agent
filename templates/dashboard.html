@@ -129,13 +129,13 @@
                         </div>
                         <div class="action-buttons">
                             {% if article.sentiment_label == 'positive' %}
-                                {% for crypto in ['BTC', 'ETH', 'BNB', 'ADA', 'SOL', 'XRP', 'DOGE', 'MATIC', 'AVAX'] %}
+                                {% for crypto in ['BTC', 'ETH', 'BNB', 'ADA', 'SOL', 'XRP', 'DOGE', 'MATIC', 'AVAX', 'VRA', 'NEAR', 'RNDR', 'ICP', 'TAO'] %}
                                     {% if crypto.lower() in article.content.lower() or crypto in article.content %}
                                         <a href="{{ url_for('crypto_detail', symbol=crypto) }}" class="btn btn-sm btn-success">View {{ crypto }}</a>
                                     {% endif %}
                                 {% endfor %}
                             {% elif article.sentiment_label == 'negative' %}
-                                {% for crypto in ['BTC', 'ETH', 'BNB', 'ADA', 'SOL', 'XRP', 'DOGE', 'MATIC', 'AVAX'] %}
+                                {% for crypto in ['BTC', 'ETH', 'BNB', 'ADA', 'SOL', 'XRP', 'DOGE', 'MATIC', 'AVAX', 'VRA', 'NEAR', 'RNDR', 'ICP', 'TAO'] %}
                                     {% if crypto.lower() in article.content.lower() or crypto in article.content %}
                                         <a href="{{ url_for('crypto_detail', symbol=crypto) }}" class="btn btn-sm btn-danger">View {{ crypto }}</a>
                                     {% endif %}
