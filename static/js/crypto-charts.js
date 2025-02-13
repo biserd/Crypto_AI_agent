@@ -34,33 +34,46 @@ function createPriceChart(symbol) {
             errorElement.classList.remove('d-none');
         }
         hideLoader();
+        console.error('Chart error:', message);
     }
 
     function calculateSMA(data, period) {
-        const sma = [];
-        for (let i = 0; i < data.length; i++) {
-            if (i < period - 1) {
-                sma.push(null);
-                continue;
+        try {
+            const sma = [];
+            for (let i = 0; i < data.length; i++) {
+                if (i < period - 1) {
+                    sma.push(null);
+                    continue;
+                }
+                let sum = 0;
+                for (let j = 0; j < period; j++) {
+                    sum += data[i - j].y;
+                }
+                sma.push({x: data[i].x, y: sum / period});
             }
-            let sum = 0;
-            for (let j = 0; j < period; j++) {
-                sum += data[i - j].y;
-            }
-            sma.push({x: data[i].x, y: sum / period});
+            return sma;
+        } catch (error) {
+            console.error('Error calculating SMA:', error);
+            return [];
         }
-        return sma;
     }
 
     function validateDataPoint(item) {
-        return Array.isArray(item) && 
-               item.length === 2 && 
-               !isNaN(new Date(item[0]).getTime()) && 
-               !isNaN(parseFloat(item[1]));
+        try {
+            return Array.isArray(item) && 
+                   item.length === 2 && 
+                   !isNaN(new Date(item[0]).getTime()) && 
+                   !isNaN(parseFloat(item[1]));
+        } catch (error) {
+            console.error('Data point validation error:', error);
+            return false;
+        }
     }
 
     function createChart(data) {
         try {
+            console.log('Creating chart with data:', data);
+
             if (!data || typeof data !== 'object') {
                 throw new Error('No data received');
             }
@@ -70,8 +83,11 @@ function createPriceChart(symbol) {
             }
 
             // Validate data points
-            if (!data.prices.every(validateDataPoint)) {
-                throw new Error('Invalid price data format');
+            const validPrices = data.prices.filter(validateDataPoint);
+            const validVolumes = data.total_volumes.filter(validateDataPoint);
+
+            if (validPrices.length === 0) {
+                throw new Error('No valid price data points available');
             }
 
             if (currentChart) {
@@ -79,22 +95,16 @@ function createPriceChart(symbol) {
             }
 
             // Format the price data
-            const chartData = data.prices.map(item => ({
+            const chartData = validPrices.map(item => ({
                 x: new Date(item[0]),
                 y: parseFloat(item[1])
             })).filter(item => !isNaN(item.y));
 
-            if (chartData.length === 0) {
-                throw new Error('No valid price data available');
-            }
-
             // Format the volume data
-            const volumeData = data.total_volumes
-                .filter(validateDataPoint)
-                .map(item => ({
-                    x: new Date(item[0]),
-                    y: parseFloat(item[1])
-                }));
+            const volumeData = validVolumes.map(item => ({
+                x: new Date(item[0]),
+                y: parseFloat(item[1])
+            })).filter(item => !isNaN(item.y));
 
             // Calculate moving averages
             const sma50 = calculateSMA(chartData, 50);
@@ -105,6 +115,7 @@ function createPriceChart(symbol) {
             const lastPrice = chartData[chartData.length - 1]?.y;
             const priceChange = firstPrice && lastPrice ? ((lastPrice - firstPrice) / firstPrice) * 100 : 0;
 
+            console.log('Creating Chart.js instance');
             currentChart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -238,13 +249,15 @@ function createPriceChart(symbol) {
 
             const priceChangeElement = document.createElement('div');
             priceChangeElement.className = `price-change-indicator ${priceChange >= 0 ? 'positive' : 'negative'}`;
-            priceChangeElement.innerHTML = `${priceChange >= 0 ? '+' : ''}${priceChange.toFixed(2)}% (${data.prices.length}d)`;
+            priceChangeElement.innerHTML = `${priceChange >= 0 ? '+' : ''}${priceChange.toFixed(2)}% (${validPrices.length}d)`;
             chartContainer.insertBefore(priceChangeElement, chartContainer.firstChild);
 
             hideLoader();
             if (errorElement) {
                 errorElement.classList.add('d-none');
             }
+
+            console.log('Chart created successfully');
 
         } catch (error) {
             console.error('Error creating chart:', error);
@@ -302,6 +315,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const symbolElement = document.querySelector('.symbol-badge');
     if (symbolElement) {
         const symbol = symbolElement.textContent.trim();
+        console.log('Initializing price chart for symbol:', symbol);
         createPriceChart(symbol);
+    } else {
+        console.error('Symbol badge element not found');
     }
 });
