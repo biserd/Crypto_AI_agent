@@ -43,7 +43,9 @@
                 <div class="price-change {{ 'price-up' if crypto.percent_change_24h > 0 else 'price-down' }}">
                     {{ "%.1f"|format(crypto.percent_change_24h) }}% (24h)
                 </div>
-                <div class="signal-indicator signal-{{ recommendation }} mt-2">
+            </div>
+            <div class="col-12 mt-3">
+                <div class="signal-indicator signal-{{ recommendation }}">
                     <i class="fas fa-signal"></i>
                     <span>Signal: {{ recommendation|upper }}</span>
                 </div>
@@ -56,7 +58,7 @@
         <div class="col-12 mb-4">
             <div class="content-card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="mb-0">Price Chart</h3>
+                    <h3 class="mb-0">{{ crypto_names.get(crypto.symbol, crypto.symbol) }} Price Chart</h3>
                     <div class="timeframe-selector">
                         <button class="btn btn-outline-primary btn-sm active" data-days="7">7D</button>
                         <button class="btn btn-outline-primary btn-sm" data-days="30">30D</button>
