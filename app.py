@@ -230,10 +230,10 @@ def dashboard():
             logger.error(f"Error fetching news sources: {str(e)}")
             news_sources = []
 
-        # Get buy signals - temporary implementation just showing positive price movements
+        # Get buy signals - only show tokens with positive movement and high confidence
         try:
             buy_signals = CryptoPrice.query.filter(
-                CryptoPrice.percent_change_24h > 0
+                CryptoPrice.percent_change_24h > 2.0  # Only show significant positive moves
             ).order_by(
                 CryptoPrice.percent_change_24h.desc()
             ).limit(5).all()
