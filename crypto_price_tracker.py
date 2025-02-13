@@ -43,7 +43,8 @@ class CryptoPriceTracker:
             'AAVE': 'aave',
             'RPL': 'rocket-pool',
             'REN': 'ren',
-            'MKR': 'maker-protocol'
+            'MKR': 'maker-protocol',
+            'BAT': 'basic-attention-token'
         }
 
     def _rate_limit_wait(self):
