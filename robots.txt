@@ -1,9 +1,15 @@
 
 User-agent: *
 Allow: /
+Allow: /crypto/*
+Allow: /glossary
+Allow: /about
 Disallow: /login
 Disallow: /register
 Disallow: /profile
 Disallow: /subscription/status
+Disallow: /create-checkout-session
+Disallow: /*.json$
+Disallow: /api/*
 
 Sitemap: /sitemap.xml

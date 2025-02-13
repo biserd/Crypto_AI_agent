@@ -558,10 +558,20 @@ def sitemap():
 
     # Static routes
     routes = ['/', '/about', '/pricing', '/contact', '/glossary', '/login', '/register']
+    priorities = {
+        '/': '1.0',
+        '/about': '0.8',
+        '/glossary': '0.9',
+        '/crypto': '0.9',
+        '/contact': '0.7',
+        '/pricing': '0.8'
+    }
     for route in routes:
         pages.append({
             'loc': request.url_root[:-1] + route,
-            'lastmod': datetime.utcnow().strftime('%Y-%m-%d')
+            'lastmod': datetime.utcnow().strftime('%Y-%m-%d'),
+            'changefreq': 'daily' if route == '/' else 'weekly',
+            'priority': priorities.get(route, '0.5')
         })
 
     # Add crypto detail pages for each tracked cryptocurrency

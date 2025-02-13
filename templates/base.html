@@ -5,12 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="{% block meta_description %}Real-time cryptocurrency news and market analysis{% endblock %}">
     <meta name="keywords" content="{% block meta_keywords %}crypto, cryptocurrency, blockchain, bitcoin, ethereum, trading{% endblock %}">
+    <meta name="robots" content="index, follow">
+    <meta name="author" content="Exploding Crypto">
+    <meta name="language" content="English">
+    <link rel="canonical" href="{{ request.url }}">
     <title>{% block title %}Exploding Crypto{% endblock %}</title>
     <meta property="og:title" content="{% block og_title %}Exploding Crypto{% endblock %}">
     <meta property="og:description" content="{% block og_description %}Real-time cryptocurrency news and market analysis{% endblock %}">
     <meta property="og:type" content="{% block og_type %}website{% endblock %}">
     <meta property="og:url" content="{{ request.url }}">
+    <meta property="og:site_name" content="Exploding Crypto">
     <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{% block twitter_title %}{{ self.title() }}{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}{{ self.meta_description() }}{% endblock %}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/styles.css">
     <!-- Google Analytics -->
