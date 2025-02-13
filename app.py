@@ -230,40 +230,8 @@ def dashboard():
             logger.error(f"Error fetching news sources: {str(e)}")
             news_sources = []
 
-        # Get buy signals - check both price movement and sentiment
+        # Calculate signals consistently
         try:
-            # Get tokens with positive movement and their latest sentiment analysis
-            potential_signals = CryptoPrice.query.filter(
-                CryptoPrice.percent_change_24h > 0
-            ).all()
-            
-            buy_signals = []
-            for signal in potential_signals:
-                # Get recent news for this token
-                cutoff_time = datetime.utcnow() - timedelta(days=3)  # Look at last 3 days for more recent signals
-                related_news = Article.query.filter(
-                    db.and_(
-                        db.or_(
-                            Article.content.ilike(f'%{signal.symbol}%'),
-                            Article.title.ilike(f'%{signal.symbol}%')
-                        ),
-                        Article.created_at >= cutoff_time
-                    )
-                ).order_by(Article.created_at.desc()).all()
-
-                # Calculate sentiment
-                total_articles = len(related_news)
-                if total_articles > 0:
-                    positive_count = sum(1 for article in related_news if article.sentiment_label == 'positive')
-                    neutral_count = sum(1 for article in related_news if article.sentiment_label == 'neutral')
-                    positive_ratio = (positive_count + (neutral_count * 0.5)) / total_articles
-                    
-                    # Include if price is up and sentiment is positive or neutral-positive
-                    if positive_ratio >= 0.5 and signal.percent_change_24h > 1.0:
-                        confidence = 50.0 + (positive_ratio * 30.0) + min(20.0, signal.percent_change_24h)
-                        signal.confidence_score = min(95.0, confidence)
-                        buy_signals.append(signal)
-
             # Apply sentiment analysis to all crypto prices
             for price in crypto_prices:
                 try:
@@ -285,11 +253,11 @@ def dashboard():
                         positive_count = sum(1 for article in related_news if article.sentiment_label == 'positive')
                         neutral_count = sum(1 for article in related_news if article.sentiment_label == 'neutral')
                         positive_ratio = (positive_count + (neutral_count * 0.5)) / total_articles
-                        
-                        # Calculate confidence and signal
+
+                        # Calculate confidence and signal consistently
                         confidence = 50.0 + (positive_ratio * 30.0) + min(20.0, abs(price.percent_change_24h))
                         price.confidence_score = min(95.0, confidence)
-                        
+
                         # Determine signal based on both sentiment and price movement
                         if positive_ratio >= 0.6 and price.percent_change_24h > 1.0:
                             price.signal = 'buy'
@@ -299,16 +267,16 @@ def dashboard():
                             price.signal = 'hold'
                     else:
                         price.confidence_score = None
-                        price.signal = None
+                        price.signal = 'hold'
                 except Exception as e:
                     logger.error(f"Error calculating sentiment for {price.symbol}: {str(e)}")
                     price.confidence_score = None
-                    price.signal = None
+                    price.signal = 'hold'
 
-            logger.info("Completed sentiment analysis for crypto prices")
+            logger.info(f"Calculated signals for {len(crypto_prices)} cryptocurrencies")
         except Exception as e:
             logger.error(f"Error processing crypto data: {str(e)}")
-            
+
         # Prepare articles with enhanced summaries
         for article in recent_articles:
             try:
@@ -350,7 +318,7 @@ def dashboard():
                             articles=recent_articles,
                             crypto_prices=crypto_prices,
                             news_sources=news_sources,
-                            buy_signals=buy_signals,
+                            buy_signals=crypto_prices, #Use crypto_prices as buy_signals now.
                             last_scraper_run=app.config['LAST_SCRAPER_RUN'],
                             ga_tracking_id=app.config['GA_TRACKING_ID'])
     except Exception as e:
