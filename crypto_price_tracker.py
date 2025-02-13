@@ -263,7 +263,7 @@ class CryptoPriceTracker:
             coin_id = self.crypto_ids.get(symbol)
             if not coin_id:
                 logger.error(f"Invalid symbol: {symbol}")
-                return None
+                return {'prices': [], 'total_volumes': []}
 
             # Use simpler market_chart endpoint instead of range
             api_url = f"{self.base_url}/coins/{coin_id}/market_chart"
@@ -299,20 +299,30 @@ class CryptoPriceTracker:
                     response.raise_for_status()
                     data = response.json()
 
-                    if not data or 'prices' not in data:
-                        logger.error(f"Invalid response data for {symbol}: {data}")
-                        continue
+                    # Initialize empty arrays for prices and volumes
+                    prices = []
+                    volumes = []
 
-                    # Ensure both prices and total_volumes are present and properly formatted
-                    prices = data.get('prices', [])
-                    volumes = data.get('total_volumes', [])
+                    # Extract and validate price data
+                    if data and isinstance(data, dict):
+                        prices = data.get('prices', [])
+                        volumes = data.get('total_volumes', [])
 
-                    # If no volume data, create empty volume data points matching price timestamps
-                    if not volumes and prices:
-                        volumes = [[price[0], 0] for price in prices]
+                        # Validate price data points
+                        prices = [
+                            p for p in prices 
+                            if isinstance(p, list) and len(p) == 2 and 
+                            all(isinstance(x, (int, float)) for x in p)
+                        ]
 
-                    logger.info(f"Successfully fetched {len(prices)} price points for {symbol}")
-                    logger.debug(f"First price point: {prices[0] if prices else 'No data'}")
+                        # Validate volume data points
+                        volumes = [
+                            v for v in volumes 
+                            if isinstance(v, list) and len(v) == 2 and 
+                            all(isinstance(x, (int, float)) for x in v)
+                        ]
+
+                    # Always return a valid data structure
                     return {
                         'prices': prices,
                         'total_volumes': volumes
@@ -322,15 +332,16 @@ class CryptoPriceTracker:
                     logger.error(f"Request error on attempt {attempt + 1}: {str(e)}")
                     if attempt < max_retries - 1:
                         time.sleep(2 ** attempt)  # Exponential backoff
-                    continue
+                        continue
+                    # Return empty arrays on final failure
+                    return {'prices': [], 'total_volumes': []}
 
-            error_msg = f"Failed to fetch data for {symbol} after {max_retries} attempts due to rate limits"
-            logger.error(error_msg)
-            return {'error': error_msg, 'retry_after': 30}
+            logger.error(f"Failed to fetch data for {symbol} after {max_retries} attempts")
+            return {'prices': [], 'total_volumes': []}
 
         except Exception as e:
             logger.error(f"Error fetching historical data for {symbol}: {str(e)}")
-            return None
+            return {'prices': [], 'total_volumes': []}
 
 def get_latest_prices():
     """Get latest prices for all tracked cryptocurrencies"""

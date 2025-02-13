@@ -642,45 +642,18 @@ def price_history(symbol):
         # Get historical data using the tracker
         historical_data = tracker.get_historical_prices(symbol, days=days)
 
-        logger.debug(f"Raw historical data type: {type(historical_data)}")
-        logger.debug(f"Raw historical data keys: {historical_data.keys() if isinstance(historical_data, dict) else 'Not a dict'}")
-
-        # Validate the historical data structure
         if not historical_data or not isinstance(historical_data, dict):
-            logger.error(f"Invalid historical data type for {symbol}: {type(historical_data)}")
-            return jsonify({
-                'error': f'Invalid data format received for {symbol}',
-                'symbol': symbol
-            }), 500
+            logger.error(f"Invalid historical data structure for {symbol}")
+            return jsonify({'prices': [], 'total_volumes': []})
 
-        # Ensure both prices and total_volumes exist and are lists
         prices = historical_data.get('prices', [])
         volumes = historical_data.get('total_volumes', [])
 
-        if not isinstance(prices, list) or not isinstance(volumes, list):
-            logger.error(f"Invalid price or volume data type for {symbol}")
-            return jsonify({
-                'error': f'Invalid price or volume data for {symbol}',
-                'symbol': symbol
-            }), 500
-
-        # Filter out any invalid data points
-        prices = [p for p in prices if isinstance(p, list) and len(p) == 2 and 
-                 all(isinstance(x, (int, float)) or 
-                     (isinstance(x, str) and x.replace('.', '').isdigit()) 
-                     for x in p)]
-
-        volumes = [v for v in volumes if isinstance(v, list) and len(v) == 2 and 
-                  all(isinstance(x, (int, float)) or 
-                      (isinstance(x, str) and x.replace('.', '').isdigit()) 
-                      for x in v)]
-
-        if not prices:
-            logger.error(f"No valid price data points for {symbol}")
-            return jsonify({
-                'error': f'No valid price data available for {symbol}',
-                'symbol': symbol
-            }), 500
+        # Ensure we always return valid arrays
+        if not isinstance(prices, list):
+            prices = []
+        if not isinstance(volumes, list):
+            volumes = []
 
         logger.info(f"Successfully fetched price history for {symbol}")
         logger.debug(f"Returning {len(prices)} price points and {len(volumes)} volume points")
@@ -692,10 +665,7 @@ def price_history(symbol):
 
     except Exception as e:
         logger.error(f"Error in price history endpoint for {symbol}: {str(e)}", exc_info=True)
-        return jsonify({
-            'error': 'Internal server error',
-            'details': str(e)
-        }), 500
+        return jsonify({'prices': [], 'total_volumes': []})
 
 with app.app_context():
     try:
