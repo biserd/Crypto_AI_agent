@@ -185,10 +185,19 @@ def dashboard():
         # Fetch articles with error handling
         try:
             # Get articles from last 24 hours only
-            cutoff_time = datetime.utcnow() - timedelta(hours=24) # Corrected to 24 hours
+            cutoff_time = datetime.utcnow() - timedelta(hours=24)
             recent_articles = Article.query.filter(
-                Article.created_at >= cutoff_time
+                Article.created_at >= cutoff_time,
+                Article.sentiment_score.isnot(None)  # Ensure sentiment score exists
             ).order_by(Article.created_at.desc()).all()
+            
+            # Set default values for any None fields
+            for article in recent_articles:
+                if article.sentiment_score is None:
+                    article.sentiment_score = 0.0
+                if article.sentiment_label is None:
+                    article.sentiment_label = 'neutral'
+                    
             logger.info(f"Retrieved {len(recent_articles)} articles from last 24 hours")
         except Exception as e:
             logger.error(f"Error fetching articles: {str(e)}")
@@ -196,7 +205,18 @@ def dashboard():
 
         # Fetch crypto prices with error handling
         try:
-            crypto_prices = CryptoPrice.query.all()
+            crypto_prices = CryptoPrice.query.filter(
+                CryptoPrice.price_usd.isnot(None),
+                CryptoPrice.percent_change_24h.isnot(None)
+            ).all()
+            
+            # Set default values for any None fields
+            for price in crypto_prices:
+                if price.price_usd is None:
+                    price.price_usd = 0.0
+                if price.percent_change_24h is None:
+                    price.percent_change_24h = 0.0
+                    
             logger.info(f"Retrieved {len(crypto_prices)} crypto prices")
         except Exception as e:
             logger.error(f"Error fetching crypto prices: {str(e)}")
