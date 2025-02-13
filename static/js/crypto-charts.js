@@ -80,12 +80,23 @@ function createPriceChart(symbol) {
             }
 
             // Handle empty price data
-            if (!data.prices || !Array.isArray(data.prices) || data.prices.length === 0) {
+            if (!data || !data.prices) {
                 console.error('No price data available');
+                hideLoader();
                 return;
             }
 
             // Ensure prices array exists and is not empty
+            if (!Array.isArray(data.prices) || data.prices.length === 0) {
+                console.error('Invalid or empty price data');
+                hideLoader();
+                return;
+            }
+
+            // Initialize volumes array if missing
+            if (!data.total_volumes || !Array.isArray(data.total_volumes)) {
+                data.total_volumes = data.prices.map(price => [price[0], 0]);
+            }
             if (!data || !data.prices || !Array.isArray(data.prices)) {
                 console.error('Invalid data structure received:', data);
                 throw new Error('Invalid data structure');

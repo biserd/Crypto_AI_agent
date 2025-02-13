@@ -181,6 +181,7 @@ def profile():
 def dashboard():
     try:
         logger.info("Starting dashboard view generation")
+        db.session.commit()  # Reset any stale sessions
 
         # Fetch articles with error handling
         try:
