@@ -74,8 +74,15 @@ function createPriceChart(symbol) {
         try {
             console.log('Creating chart with data:', data);
 
-            if (!data || typeof data !== 'object') {
-                throw new Error('No data received');
+            if (!data) {
+                console.error('No data received');
+                return;
+            }
+
+            // Handle empty price data
+            if (!data.prices || !Array.isArray(data.prices) || data.prices.length === 0) {
+                console.error('No price data available');
+                return;
             }
 
             // Ensure prices array exists and is not empty

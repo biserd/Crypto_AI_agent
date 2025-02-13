@@ -164,7 +164,15 @@
         window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
     }
 
-    let stripe;
+    // Only initialize Stripe if needed
+    let stripe = null;
+    if (window.Stripe) {
+        try {
+            stripe = window.Stripe(stripePublicKey);
+        } catch (e) {
+            console.log('Stripe initialization skipped');
+        }
+    }
 </script>
 
 {{ super() }}
