@@ -642,7 +642,9 @@ def price_history(symbol):
         # Get historical data using the tracker
         historical_data = tracker.get_historical_prices(symbol, days=days)
 
-        if not historical_data or not historical_data.get('prices'):
+        logger.debug(f"Historical data for {symbol}: {historical_data}")
+
+        if not historical_data or not isinstance(historical_data, dict) or 'prices' not in historical_data:
             logger.error(f"No price data available for {symbol}")
             return jsonify({
                 'error': f'No price data available for {symbol}',
@@ -650,10 +652,22 @@ def price_history(symbol):
             }), 404
 
         logger.info(f"Successfully fetched price history for {symbol}")
-        return jsonify({
-            'prices': historical_data['prices'],
+
+        # Ensure we have both prices and volumes data
+        response_data = {
+            'prices': historical_data.get('prices', []),
             'total_volumes': historical_data.get('total_volumes', [])
-        })
+        }
+
+        # Validate data structure
+        if not response_data['prices'] or not isinstance(response_data['prices'], list):
+            logger.error(f"Invalid price data structure for {symbol}")
+            return jsonify({
+                'error': f'Invalid price data structure for {symbol}',
+                'symbol': symbol
+            }), 500
+
+        return jsonify(response_data)
 
     except Exception as e:
         logger.error(f"Error in price history endpoint for {symbol}: {str(e)}", exc_info=True)
