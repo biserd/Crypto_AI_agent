@@ -303,12 +303,19 @@ class CryptoPriceTracker:
                         logger.error(f"Invalid response data for {symbol}: {data}")
                         continue
 
-                    logger.info(f"Successfully fetched {len(data['prices'])} price points for {symbol}")
-                    logger.debug(f"First price point: {data['prices'][0] if data['prices'] else 'No data'}")
+                    # Ensure both prices and total_volumes are present and properly formatted
+                    prices = data.get('prices', [])
+                    volumes = data.get('total_volumes', [])
+
+                    # If no volume data, create empty volume data points matching price timestamps
+                    if not volumes and prices:
+                        volumes = [[price[0], 0] for price in prices]
+
+                    logger.info(f"Successfully fetched {len(prices)} price points for {symbol}")
+                    logger.debug(f"First price point: {prices[0] if prices else 'No data'}")
                     return {
-                        'prices': data['prices'],
-                        'market_caps': data.get('market_caps', []),
-                        'total_volumes': data.get('total_volumes', [])
+                        'prices': prices,
+                        'total_volumes': volumes
                     }
 
                 except requests.exceptions.RequestException as e:

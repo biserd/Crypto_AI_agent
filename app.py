@@ -642,32 +642,40 @@ def price_history(symbol):
         # Get historical data using the tracker
         historical_data = tracker.get_historical_prices(symbol, days=days)
 
-        logger.debug(f"Historical data for {symbol}: {historical_data}")
+        logger.debug(f"Raw historical data type: {type(historical_data)}")
+        logger.debug(f"Raw historical data keys: {historical_data.keys() if isinstance(historical_data, dict) else 'Not a dict'}")
 
-        if not historical_data or not isinstance(historical_data, dict) or 'prices' not in historical_data:
-            logger.error(f"No price data available for {symbol}")
+        if not historical_data:
+            logger.error(f"No historical data returned for {symbol}")
             return jsonify({
                 'error': f'No price data available for {symbol}',
                 'symbol': symbol
             }), 404
 
-        logger.info(f"Successfully fetched price history for {symbol}")
-
-        # Ensure we have both prices and volumes data
-        response_data = {
-            'prices': historical_data.get('prices', []),
-            'total_volumes': historical_data.get('total_volumes', [])
-        }
-
-        # Validate data structure
-        if not response_data['prices'] or not isinstance(response_data['prices'], list):
-            logger.error(f"Invalid price data structure for {symbol}")
+        if not isinstance(historical_data, dict):
+            logger.error(f"Invalid historical data type for {symbol}: {type(historical_data)}")
             return jsonify({
-                'error': f'Invalid price data structure for {symbol}',
+                'error': f'Invalid data format received for {symbol}',
                 'symbol': symbol
             }), 500
 
-        return jsonify(response_data)
+        prices = historical_data.get('prices', [])
+        volumes = historical_data.get('total_volumes', [])
+
+        if not prices or not isinstance(prices, list):
+            logger.error(f"Invalid or missing price data for {symbol}")
+            return jsonify({
+                'error': f'Invalid price data for {symbol}',
+                'symbol': symbol
+            }), 500
+
+        logger.info(f"Successfully fetched price history for {symbol}")
+        logger.debug(f"Returning {len(prices)} price points and {len(volumes)} volume points")
+
+        return jsonify({
+            'prices': prices,
+            'total_volumes': volumes
+        })
 
     except Exception as e:
         logger.error(f"Error in price history endpoint for {symbol}: {str(e)}", exc_info=True)
@@ -675,7 +683,6 @@ def price_history(symbol):
             'error': 'Internal server error',
             'details': str(e)
         }), 500
-
 
 with app.app_context():
     try:
