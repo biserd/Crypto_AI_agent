@@ -52,6 +52,8 @@ class CryptoPriceTracker:
             'LTC': 'litecoin',
             'UNI': 'uniswap',
             'CAKE': 'pancakeswap-token',
+            'MELANX': 'melania-trump',
+            'TRUMP': 'trump-token',
             'LINK': 'chainlink',
             'ATOM': 'cosmos',
             'APE': 'apecoin',
