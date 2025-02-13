@@ -651,7 +651,8 @@ def price_history(symbol):
 
         logger.info(f"Successfully fetched price history for {symbol}")
         return jsonify({
-            'prices': historical_data['prices']
+            'prices': historical_data['prices'],
+            'total_volumes': historical_data.get('total_volumes', [])
         })
 
     except Exception as e:

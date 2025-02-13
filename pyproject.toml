@@ -31,4 +31,5 @@ dependencies = [
     "pandas>=2.1.0",
     "openai>=1.61.1",
     "flask-wtf>=1.2.2",
+    "praw>=7.8.1",
 ]

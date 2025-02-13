@@ -1,4 +1,3 @@
-
 // Price chart implementation
 function createPriceChart(symbol) {
     const ctx = document.getElementById('priceChart').getContext('2d');
@@ -32,29 +31,95 @@ function createPriceChart(symbol) {
         hideLoader();
     }
 
+    function calculateSMA(data, period) {
+        const sma = [];
+        for (let i = 0; i < data.length; i++) {
+            if (i < period - 1) {
+                sma.push(null);
+                continue;
+            }
+            let sum = 0;
+            for (let j = 0; j < period; j++) {
+                sum += data[i - j].y;
+            }
+            sma.push({x: data[i].x, y: sum / period});
+        }
+        return sma;
+    }
+
     function createChart(data) {
         if (currentChart) {
             currentChart.destroy();
         }
 
-        // Format the data
-        const chartData = data.map(item => ({
+        // Format the price data
+        const chartData = data.prices.map(item => ({
             x: new Date(item[0]),
             y: parseFloat(item[1])
         })).filter(item => !isNaN(item.y));
 
+        // Format the volume data
+        const volumeData = data.total_volumes.map(item => ({
+            x: new Date(item[0]),
+            y: parseFloat(item[1])
+        })).filter(item => !isNaN(item.y));
+
+        // Calculate moving averages
+        const sma50 = calculateSMA(chartData, 50);
+        const sma200 = calculateSMA(chartData, 200);
+
+        // Calculate price change
+        const firstPrice = chartData[0]?.y;
+        const lastPrice = chartData[chartData.length - 1]?.y;
+        const priceChange = firstPrice && lastPrice ? ((lastPrice - firstPrice) / firstPrice) * 100 : 0;
+
         currentChart = new Chart(ctx, {
-            type: 'line',
             data: {
-                datasets: [{
-                    label: `${symbol} Price (USD)`,
-                    data: chartData,
-                    borderColor: '#2196F3',
-                    backgroundColor: 'rgba(33, 150, 243, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4
-                }]
+                datasets: [
+                    {
+                        label: `${symbol} Price (USD)`,
+                        data: chartData,
+                        borderColor: '#2196F3',
+                        backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        yAxisID: 'y',
+                        order: 1
+                    },
+                    {
+                        label: '50-day MA',
+                        data: sma50,
+                        borderColor: '#4CAF50',
+                        borderWidth: 1.5,
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.4,
+                        yAxisID: 'y',
+                        order: 2
+                    },
+                    {
+                        label: '200-day MA',
+                        data: sma200,
+                        borderColor: '#FFA726',
+                        borderWidth: 1.5,
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.4,
+                        yAxisID: 'y',
+                        order: 3
+                    },
+                    {
+                        label: 'Volume',
+                        data: volumeData,
+                        type: 'bar',
+                        backgroundColor: 'rgba(156, 39, 176, 0.2)',
+                        borderColor: 'rgba(156, 39, 176, 0.4)',
+                        borderWidth: 1,
+                        yAxisID: 'volume',
+                        order: 4
+                    }
+                ]
             },
             options: {
                 responsive: true,
@@ -65,12 +130,33 @@ function createPriceChart(symbol) {
                 },
                 plugins: {
                     legend: {
-                        display: false
+                        display: true,
+                        position: 'top'
                     },
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                return `$${context.parsed.y.toFixed(2)}`;
+                                const label = context.dataset.label || '';
+                                const value = context.parsed.y;
+
+                                if (label.includes('Volume')) {
+                                    return `${label}: $${value.toLocaleString()}`;
+                                }
+
+                                if (label.includes('Price')) {
+                                    const dataPoint = chartData[context.dataIndex];
+                                    const prevDataPoint = chartData[context.dataIndex - 1];
+                                    let change = '';
+
+                                    if (prevDataPoint) {
+                                        const percentChange = ((dataPoint.y - prevDataPoint.y) / prevDataPoint.y) * 100;
+                                        change = ` (${percentChange >= 0 ? '+' : ''}${percentChange.toFixed(2)}%)`;
+                                    }
+
+                                    return `${label}: $${value.toFixed(2)}${change}`;
+                                }
+
+                                return `${label}: $${value.toFixed(2)}`;
                             }
                         }
                     }
@@ -96,10 +182,27 @@ function createPriceChart(symbol) {
                                 return '$' + value.toFixed(2);
                             }
                         }
+                    },
+                    volume: {
+                        position: 'left',
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + (value / 1000000).toFixed(1) + 'M';
+                            }
+                        }
                     }
                 }
             }
         });
+
+        // Add price change indicator to the chart container
+        const priceChangeElement = document.createElement('div');
+        priceChangeElement.className = `price-change-indicator ${priceChange >= 0 ? 'positive' : 'negative'}`;
+        priceChangeElement.innerHTML = `${priceChange >= 0 ? '+' : ''}${priceChange.toFixed(2)}% (${data.prices.length}d)`;
+        chartContainer.insertBefore(priceChangeElement, chartContainer.firstChild);
     }
 
     async function loadChartData(days = 30, retryCount = 0) {
@@ -109,7 +212,7 @@ function createPriceChart(symbol) {
 
             const response = await fetch(`/api/price-history/${symbol}?days=${days}`);
             const data = await response.json();
-            
+
             console.log('API Response:', data);
 
             if (response.status === 429 && retryCount < 3) {
@@ -146,7 +249,7 @@ function createPriceChart(symbol) {
             }
 
             console.log(`Processing ${data.prices.length} price points`);
-            createChart(data.prices);
+            createChart(data);
             hideLoader();
             if (errorElement) {
                 errorElement.classList.add('d-none');
