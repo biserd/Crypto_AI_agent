@@ -74,9 +74,11 @@ function createPriceChart(symbol) {
         const priceChange = firstPrice && lastPrice ? ((lastPrice - firstPrice) / firstPrice) * 100 : 0;
 
         currentChart = new Chart(ctx, {
+            type: 'line', // Set default type as line
             data: {
                 datasets: [
                     {
+                        type: 'line',
                         label: `${symbol} Price (USD)`,
                         data: chartData,
                         borderColor: '#2196F3',
@@ -88,6 +90,7 @@ function createPriceChart(symbol) {
                         order: 1
                     },
                     {
+                        type: 'line',
                         label: '50-day MA',
                         data: sma50,
                         borderColor: '#4CAF50',
@@ -99,6 +102,7 @@ function createPriceChart(symbol) {
                         order: 2
                     },
                     {
+                        type: 'line',
                         label: '200-day MA',
                         data: sma200,
                         borderColor: '#FFA726',
@@ -110,9 +114,9 @@ function createPriceChart(symbol) {
                         order: 3
                     },
                     {
+                        type: 'bar',
                         label: 'Volume',
                         data: volumeData,
-                        type: 'bar',
                         backgroundColor: 'rgba(156, 39, 176, 0.2)',
                         borderColor: 'rgba(156, 39, 176, 0.4)',
                         borderWidth: 1,
@@ -197,6 +201,12 @@ function createPriceChart(symbol) {
                 }
             }
         });
+
+        // Remove any existing price change indicator
+        const existingIndicator = chartContainer.querySelector('.price-change-indicator');
+        if (existingIndicator) {
+            existingIndicator.remove();
+        }
 
         // Add price change indicator to the chart container
         const priceChangeElement = document.createElement('div');
