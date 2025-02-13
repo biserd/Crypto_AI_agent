@@ -264,14 +264,51 @@ def dashboard():
                         signal.confidence_score = min(95.0, confidence)
                         buy_signals.append(signal)
 
-            # Sort by confidence and limit to top 5
-            buy_signals = sorted(buy_signals, key=lambda x: x.confidence_score, reverse=True)[:5]
+            # Apply sentiment analysis to all crypto prices
+            for price in crypto_prices:
+                try:
+                    # Get recent news for this token
+                    cutoff_time = datetime.utcnow() - timedelta(days=3)
+                    related_news = Article.query.filter(
+                        db.and_(
+                            db.or_(
+                                Article.content.ilike(f'%{price.symbol}%'),
+                                Article.title.ilike(f'%{price.symbol}%')
+                            ),
+                            Article.created_at >= cutoff_time
+                        )
+                    ).order_by(Article.created_at.desc()).all()
 
-            logger.info(f"Retrieved {len(buy_signals)} buy signals")
+                    # Calculate sentiment
+                    total_articles = len(related_news)
+                    if total_articles > 0:
+                        positive_count = sum(1 for article in related_news if article.sentiment_label == 'positive')
+                        neutral_count = sum(1 for article in related_news if article.sentiment_label == 'neutral')
+                        positive_ratio = (positive_count + (neutral_count * 0.5)) / total_articles
+                        
+                        # Calculate confidence and signal
+                        confidence = 50.0 + (positive_ratio * 30.0) + min(20.0, abs(price.percent_change_24h))
+                        price.confidence_score = min(95.0, confidence)
+                        
+                        # Determine signal based on both sentiment and price movement
+                        if positive_ratio >= 0.6 and price.percent_change_24h > 1.0:
+                            price.signal = 'buy'
+                        elif positive_ratio <= 0.3 or price.percent_change_24h < -5.0:
+                            price.signal = 'sell'
+                        else:
+                            price.signal = 'hold'
+                    else:
+                        price.confidence_score = None
+                        price.signal = None
+                except Exception as e:
+                    logger.error(f"Error calculating sentiment for {price.symbol}: {str(e)}")
+                    price.confidence_score = None
+                    price.signal = None
+
+            logger.info("Completed sentiment analysis for crypto prices")
         except Exception as e:
-            logger.error(f"Error fetching buy signals: {str(e)}")
-            buy_signals = []
-
+            logger.error(f"Error processing crypto data: {str(e)}")
+            
         # Prepare articles with enhanced summaries
         for article in recent_articles:
             try:
