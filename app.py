@@ -252,16 +252,16 @@ def dashboard():
                     if total_articles > 0:
                         positive_count = sum(1 for article in related_news if article.sentiment_label == 'positive')
                         neutral_count = sum(1 for article in related_news if article.sentiment_label == 'neutral')
-                        positive_ratio = (positive_count + (neutral_count * 0.5)) / total_articles
+                        positive_ratio = (positive_count + (neutral_count * 0.3)) / total_articles
 
                         # Calculate confidence and signal consistently
-                        confidence = 50.0 + (positive_ratio * 30.0) + min(20.0, abs(price.percent_change_24h))
+                        confidence = 50.0 + (positive_ratio * 35.0) + min(15.0, abs(price.percent_change_24h))
                         price.confidence_score = min(95.0, confidence)
 
                         # Determine signal based on both sentiment and price movement
-                        if positive_ratio >= 0.6 and price.percent_change_24h > 1.0:
+                        if positive_ratio >= 0.5 and price.percent_change_24h > 2.0:
                             price.signal = 'buy'
-                        elif positive_ratio <= 0.3 or price.percent_change_24h < -5.0:
+                        elif positive_ratio <= 0.2 or price.percent_change_24h < -8.0:
                             price.signal = 'sell'
                         else:
                             price.signal = 'hold'
