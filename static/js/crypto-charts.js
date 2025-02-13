@@ -78,9 +78,17 @@ function createPriceChart(symbol) {
                 throw new Error('No data received');
             }
 
-            if (!Array.isArray(data.prices) || !Array.isArray(data.total_volumes)) {
-                throw new Error('Invalid data structure: missing prices or volumes array');
+            // Ensure prices array exists and is not empty
+            if (!data.prices || !Array.isArray(data.prices) || data.prices.length === 0) {
+                throw new Error('Invalid or empty price data');
             }
+
+            // Initialize volumes array if missing
+            const volumes = data.total_volumes && Array.isArray(data.total_volumes) ? 
+                          data.total_volumes : 
+                          data.prices.map(price => [price[0], 0]);
+
+            data.total_volumes = volumes;
 
             // Validate data points
             const validPrices = data.prices.filter(validateDataPoint);
