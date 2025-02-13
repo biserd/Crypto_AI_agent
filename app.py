@@ -252,25 +252,30 @@ def dashboard():
                     if total_articles > 0:
                         positive_count = sum(1 for article in related_news if article.sentiment_label == 'positive')
                         neutral_count = sum(1 for article in related_news if article.sentiment_label == 'neutral')
-                        positive_ratio = (positive_count + (neutral_count * 0.3)) / total_articles
+                        negative_count = sum(1 for article in related_news if article.sentiment_label == 'negative')
+
+                        # Weight each sentiment type
+                        weighted_score = (positive_count * 1.0 + neutral_count * 0.3 - negative_count * 0.5) / total_articles
+                        price_weight = 0.4 if price.percent_change_24h > 0 else -0.4
 
                         # Calculate confidence and signal consistently
-                        confidence = 50.0 + (positive_ratio * 35.0) + min(15.0, abs(price.percent_change_24h))
-                        price.confidence_score = min(95.0, confidence)
+                        total_score = weighted_score + price_weight
+                        confidence = 50.0 + (total_score * 35.0) + min(15.0, abs(price.percent_change_24h))
+                        price.confidence_score = min(95.0, max(5.0, confidence))
 
-                        # Determine signal based on both sentiment and price movement
-                        if positive_ratio >= 0.5 and price.percent_change_24h > 2.0:
+                        # Unified signal determination
+                        if total_score > 0.3 and price.percent_change_24h > 1.0:
                             price.signal = 'buy'
-                        elif positive_ratio <= 0.2 or price.percent_change_24h < -8.0:
+                        elif total_score < -0.3 or price.percent_change_24h < -5.0:
                             price.signal = 'sell'
                         else:
                             price.signal = 'hold'
                     else:
-                        price.confidence_score = None
+                        price.confidence_score = 50.0
                         price.signal = 'hold'
                 except Exception as e:
                     logger.error(f"Error calculating sentiment for {price.symbol}: {str(e)}")
-                    price.confidence_score = None
+                    price.confidence_score = 50.0
                     price.signal = 'hold'
 
             logger.info(f"Calculated signals for {len(crypto_prices)} cryptocurrencies")
