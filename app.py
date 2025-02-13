@@ -394,7 +394,18 @@ crypto_names = {
     'APE': 'ApeCoin',
     'AAVE': 'Aave',
     'MELANX': 'Melania Token',
-    'TRUMP': 'Trump Token'
+    'TRUMP': 'Trump Token',
+    'TUSD': 'True USD',
+    'KLAY': 'Klaytn',
+    'GT': 'Gatetoken',
+    'CHZ': 'Chiliz',
+    'XEC': 'Ecash',
+    'BEAM': 'Beam',
+    'VRA': 'Virtuals',
+    'NEAR': 'NEAR Protocol',
+    'RNDR': 'Render Token',
+    'ICP': 'Internet Computer',
+    'TAO': 'Bittensor',
 }
 
 def calculate_crypto_signals(symbol, related_news=None, price_data=None):
@@ -414,7 +425,7 @@ def calculate_crypto_signals(symbol, related_news=None, price_data=None):
             ).order_by(desc(Article.created_at)).all()
 
         total_articles = len(related_news)
-        
+
         if total_articles > 0:
             positive_count = sum(1 for article in related_news if article.sentiment_label == 'positive')
             neutral_count = sum(1 for article in related_news if article.sentiment_label == 'neutral')
@@ -422,7 +433,7 @@ def calculate_crypto_signals(symbol, related_news=None, price_data=None):
 
             # Weight each sentiment type
             weighted_score = (positive_count * 1.2 + neutral_count * 0.2 - negative_count * 0.8) / total_articles
-            
+
             if price_data and price_data.percent_change_24h:
                 price_weight = 0.5 if price_data.percent_change_24h > 2.0 else (-0.5 if price_data.percent_change_24h < -2.0 else 0)
             else:
