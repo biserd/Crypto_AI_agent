@@ -1,6 +1,11 @@
 // Price chart implementation
 function createPriceChart(symbol) {
-    const ctx = document.getElementById('priceChart').getContext('2d');
+    const ctx = document.getElementById('priceChart');
+    if (!ctx) {
+        console.error('Price chart canvas element not found');
+        return;
+    }
+
     const chartContainer = document.querySelector('.price-chart-container');
     const loader = chartContainer.querySelector('.chart-loader');
     const errorElement = chartContainer.querySelector('.chart-error');
@@ -47,10 +52,26 @@ function createPriceChart(symbol) {
         return sma;
     }
 
+    function validateDataPoint(item) {
+        return Array.isArray(item) && 
+               item.length === 2 && 
+               !isNaN(new Date(item[0]).getTime()) && 
+               !isNaN(parseFloat(item[1]));
+    }
+
     function createChart(data) {
         try {
-            if (!data || !Array.isArray(data.prices) || !Array.isArray(data.total_volumes)) {
-                throw new Error('Invalid data format received');
+            if (!data || typeof data !== 'object') {
+                throw new Error('No data received');
+            }
+
+            if (!Array.isArray(data.prices) || !Array.isArray(data.total_volumes)) {
+                throw new Error('Invalid data structure: missing prices or volumes array');
+            }
+
+            // Validate data points
+            if (!data.prices.every(validateDataPoint)) {
+                throw new Error('Invalid price data format');
             }
 
             if (currentChart) {
@@ -68,10 +89,12 @@ function createPriceChart(symbol) {
             }
 
             // Format the volume data
-            const volumeData = data.total_volumes.map(item => ({
-                x: new Date(item[0]),
-                y: parseFloat(item[1])
-            })).filter(item => !isNaN(item.y));
+            const volumeData = data.total_volumes
+                .filter(validateDataPoint)
+                .map(item => ({
+                    x: new Date(item[0]),
+                    y: parseFloat(item[1])
+                }));
 
             // Calculate moving averages
             const sma50 = calculateSMA(chartData, 50);
@@ -95,8 +118,7 @@ function createPriceChart(symbol) {
                             borderWidth: 2,
                             fill: true,
                             tension: 0.4,
-                            yAxisID: 'y',
-                            order: 1
+                            yAxisID: 'y'
                         },
                         {
                             type: 'line',
@@ -107,8 +129,7 @@ function createPriceChart(symbol) {
                             borderDash: [5, 5],
                             fill: false,
                             tension: 0.4,
-                            yAxisID: 'y',
-                            order: 2
+                            yAxisID: 'y'
                         },
                         {
                             type: 'line',
@@ -119,8 +140,7 @@ function createPriceChart(symbol) {
                             borderDash: [5, 5],
                             fill: false,
                             tension: 0.4,
-                            yAxisID: 'y',
-                            order: 3
+                            yAxisID: 'y'
                         },
                         {
                             type: 'bar',
@@ -129,8 +149,7 @@ function createPriceChart(symbol) {
                             backgroundColor: 'rgba(156, 39, 176, 0.2)',
                             borderColor: 'rgba(156, 39, 176, 0.4)',
                             borderWidth: 1,
-                            yAxisID: 'volume',
-                            order: 4
+                            yAxisID: 'volume'
                         }
                     ]
                 },
@@ -179,7 +198,7 @@ function createPriceChart(symbol) {
                             type: 'time',
                             time: {
                                 unit: 'day',
-                                tooltipFormat: 'MMM DD, YYYY'
+                                tooltipFormat: 'MMM dd, yyyy'
                             },
                             grid: {
                                 display: false
@@ -211,13 +230,12 @@ function createPriceChart(symbol) {
                 }
             });
 
-            // Remove any existing price change indicator
+            // Update price change indicator
             const existingIndicator = chartContainer.querySelector('.price-change-indicator');
             if (existingIndicator) {
                 existingIndicator.remove();
             }
 
-            // Add price change indicator to the chart container
             const priceChangeElement = document.createElement('div');
             priceChangeElement.className = `price-change-indicator ${priceChange >= 0 ? 'positive' : 'negative'}`;
             priceChangeElement.innerHTML = `${priceChange >= 0 ? '+' : ''}${priceChange.toFixed(2)}% (${data.prices.length}d)`;
@@ -227,6 +245,7 @@ function createPriceChart(symbol) {
             if (errorElement) {
                 errorElement.classList.add('d-none');
             }
+
         } catch (error) {
             console.error('Error creating chart:', error);
             showError(`Unable to create price chart: ${error.message}`);
@@ -241,14 +260,8 @@ function createPriceChart(symbol) {
             const response = await fetch(`/api/price-history/${symbol}?days=${days}`);
             const data = await response.json();
 
-            console.log('API Response:', data);
-
             if (data.error) {
-                if (data.supported_symbols) {
-                    throw new Error(`${data.error}. Supported cryptocurrencies: ${data.supported_symbols.slice(0, 5).join(', ')}...`);
-                } else {
-                    throw new Error(data.error);
-                }
+                throw new Error(data.error);
             }
 
             if (response.status === 429 && retryCount < 3) {
@@ -260,14 +273,14 @@ function createPriceChart(symbol) {
             }
 
             if (!response.ok) {
-                throw new Error(data.error || 'Failed to load price data');
+                throw new Error('Failed to load price data');
             }
 
             createChart(data);
 
         } catch (error) {
             console.error('Error fetching price data:', error);
-            showError(`${error.message}`);
+            showError(error.message);
         }
     }
 

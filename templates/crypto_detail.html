@@ -133,7 +133,12 @@
 
 <!-- Required Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+<script>
+// Register required Chart.js controllers and elements
+Chart.register(Chart.controllers.line);
+Chart.register(Chart.controllers.bar);
+</script>
 <script src="{{ url_for('static', filename='js/crypto-charts.js') }}"></script>
 {% endblock %}
