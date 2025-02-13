@@ -395,6 +395,20 @@
         });
         
         
+        function shareArticle(url) {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Exploding Crypto',
+                    text: 'Check out this crypto news!',
+                    url: url
+                })
+                .catch(error => console.log('Error sharing:', error));
+            } else {
+                // Fallback for browsers that don't support Web Share API
+                window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}`, '_blank');
+            }
+        }
+
         // Close modal when clicking outside
         window.onclick = function(event) {
             const modal = document.getElementById('upgradeModal');
