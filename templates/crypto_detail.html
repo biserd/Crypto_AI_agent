@@ -43,6 +43,10 @@
                 <div class="price-change {{ 'price-up' if crypto.percent_change_24h > 0 else 'price-down' }}">
                     {{ "%.1f"|format(crypto.percent_change_24h) }}% (24h)
                 </div>
+                <div class="signal-indicator signal-{{ recommendation }} mt-2">
+                    <i class="fas fa-signal"></i>
+                    <span>Signal: {{ recommendation|upper }}</span>
+                </div>
             </div>
         </div>
     </div>
@@ -71,27 +75,9 @@
             </div>
         </div>
 
-        <!-- Market Stats -->
-        <div class="col-md-4 mb-4">
-            <div class="content-card">
-                <h3>Market Stats</h3>
-                <div class="market-stats">
-                    <div class="stat-item">
-                        <span class="stat-label">Current Price</span>
-                        <span class="stat-value">${{ "%.2f"|format(crypto.price_usd) }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">24h Change</span>
-                        <span class="stat-value {{ 'text-success' if crypto.percent_change_24h > 0 else 'text-danger' }}">
-                            {{ "%.1f"|format(crypto.percent_change_24h) }}%
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- Sentiment Analysis -->
-        <div class="col-md-8 mb-4">
+        <div class="col-12 mb-4">
             <div class="content-card">
                 <h3>News Sentiment</h3>
                 <div class="sentiment-overview">
@@ -109,12 +95,7 @@
                             <span class="stat-label">Negative</span>
                         </div>
                     </div>
-                    <div class="trading-signal mt-3">
-                        <div class="signal-indicator signal-{{ recommendation }}">
-                            <i class="fas fa-signal"></i>
-                            <span>Signal: {{ recommendation|upper }}</span>
-                        </div>
-                    </div>
+                    
                 </div>
             </div>
         </div>
