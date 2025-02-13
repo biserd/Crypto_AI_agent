@@ -74,54 +74,24 @@ function createPriceChart(symbol) {
         try {
             console.log('Creating chart with data:', data);
 
-            if (!data) {
-                console.error('No data received');
-                return;
-            }
-
-            // Handle empty price data
-            if (!data || !data.prices) {
-                console.error('No price data available');
-                hideLoader();
-                return;
+            if (!data || typeof data !== 'object') {
+                throw new Error('No data received');
             }
 
             // Ensure prices array exists and is not empty
-            if (!Array.isArray(data.prices) || data.prices.length === 0) {
-                console.error('Invalid or empty price data');
-                hideLoader();
-                return;
+            if (!data.prices || !Array.isArray(data.prices) || data.prices.length === 0) {
+                throw new Error('Invalid or empty price data');
             }
 
             // Initialize volumes array if missing
-            if (!data.total_volumes || !Array.isArray(data.total_volumes)) {
-                data.total_volumes = data.prices.map(price => [price[0], 0]);
-            }
-            if (!data || !data.prices || !Array.isArray(data.prices)) {
-                console.error('Invalid data structure received:', data);
-                throw new Error('Invalid data structure');
-            }
+            const volumes = data.total_volumes && Array.isArray(data.total_volumes) ? 
+                          data.total_volumes : 
+                          data.prices.map(price => [price[0], 0]);
 
-            // Ensure we have price data
-            const validPrices = data.prices.filter(point => 
-                Array.isArray(point) && point.length === 2 && 
-                !isNaN(point[0]) && !isNaN(point[1])
-            );
-
-            if (validPrices.length === 0) {
-                throw new Error('No valid price data points found');
-            }
-
-            // Initialize or validate volumes
-            const volumes = (!data.total_volumes || !Array.isArray(data.total_volumes)) ?
-                validPrices.map(price => [price[0], 0]) :
-                data.total_volumes.filter(point =>
-                    Array.isArray(point) && point.length === 2 &&
-                    !isNaN(point[0]) && !isNaN(point[1])
-                );
-
-            data.prices = validPrices;
             data.total_volumes = volumes;
+
+            // Validate data points
+            const validPrices = data.prices.filter(validateDataPoint);
             const validVolumes = data.total_volumes.filter(validateDataPoint);
 
             if (validPrices.length === 0) {
