@@ -202,7 +202,9 @@ def scrape_rss_feed(source):
             response = session.get(source.url, timeout=15, headers=headers)
             response.raise_for_status()
             feed_content = response.content
-            logger.debug(f"Received RSS content from {source.name}: {feed_content[:500]}")
+            logger.info(f"Fetching RSS feed from {source.name} with status code: {response.status_code}")
+            logger.info(f"Found {len(feedparser.parse(feed_content).entries)} entries in {source.name} feed")
+            logger.debug(f"First 500 chars of RSS content from {source.name}: {feed_content[:500]}")
             feed = feedparser.parse(feed_content)
 
             if hasattr(feed, 'status') and feed.status != 200:
