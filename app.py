@@ -232,15 +232,15 @@ def dashboard():
 
         # Get buy signals - check both price movement and sentiment
         try:
-            # First get tokens with positive movement
+            # Get tokens with positive movement and their latest sentiment analysis
             potential_signals = CryptoPrice.query.filter(
-                CryptoPrice.percent_change_24h > 2.0
+                CryptoPrice.percent_change_24h > 0
             ).all()
             
             buy_signals = []
             for signal in potential_signals:
                 # Get recent news for this token
-                cutoff_time = datetime.utcnow() - timedelta(days=7)
+                cutoff_time = datetime.utcnow() - timedelta(days=3)  # Look at last 3 days for more recent signals
                 related_news = Article.query.filter(
                     db.and_(
                         db.or_(
@@ -249,17 +249,19 @@ def dashboard():
                         ),
                         Article.created_at >= cutoff_time
                     )
-                ).all()
+                ).order_by(Article.created_at.desc()).all()
 
                 # Calculate sentiment
                 total_articles = len(related_news)
                 if total_articles > 0:
                     positive_count = sum(1 for article in related_news if article.sentiment_label == 'positive')
-                    positive_ratio = positive_count / total_articles
+                    neutral_count = sum(1 for article in related_news if article.sentiment_label == 'neutral')
+                    positive_ratio = (positive_count + (neutral_count * 0.5)) / total_articles
                     
-                    # Only include if sentiment suggests "buy"
-                    if positive_ratio > 0.6:
-                        signal.confidence_score = min(85.0, 50.0 + (positive_ratio * 100))
+                    # Include if price is up and sentiment is positive or neutral-positive
+                    if positive_ratio >= 0.5 and signal.percent_change_24h > 1.0:
+                        confidence = 50.0 + (positive_ratio * 30.0) + min(20.0, signal.percent_change_24h)
+                        signal.confidence_score = min(95.0, confidence)
                         buy_signals.append(signal)
 
             # Sort by confidence and limit to top 5
