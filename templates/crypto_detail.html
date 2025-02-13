@@ -43,7 +43,7 @@
                 <div class="d-flex gap-2 align-items-center">
                     <div class="signal-indicator signal-{{ recommendation }}">
                         <i class="fas fa-signal"></i>
-                        <span>{{ recommendation|upper }}</span>
+                        <span>SIGNAL: {{ recommendation|upper }}</span>
                     </div>
                     <div class="price-change {{ 'price-up' if crypto.percent_change_24h > 0 else 'price-down' }}">
                         {{ "%.1f"|format(crypto.percent_change_24h) }}% (24h)

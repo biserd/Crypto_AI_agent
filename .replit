@@ -8,7 +8,6 @@ deploymentTarget = "autoscale"
 run = ["python", "main.py"]
 
 [workflows]
-runButton = "Web Server"
 
 [[workflows.workflow]]
 name = "Project"
@@ -32,7 +31,7 @@ agentRequireRestartOnSave = false
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python app.py"
+args = "python main.py"
 
 [[workflows.workflow]]
 name = "News Scheduler"
@@ -40,9 +39,6 @@ author = "agent"
 
 [workflows.workflow.metadata]
 agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
