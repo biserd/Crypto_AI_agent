@@ -103,6 +103,83 @@
         </div>
     </div>
 
+    <!-- Market Statistics -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="content-card">
+                <h3>Market Statistics</h3>
+                <div class="market-stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-label">Market Cap</div>
+                        <div class="stat-value">${{ "{:,.0f}".format(crypto.price_usd * crypto.circulating_supply if crypto.circulating_supply else 0) }}</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">24h Volume</div>
+                        <div class="stat-value">${{ "{:,.0f}".format(crypto.volume_24h if crypto.volume_24h else 0) }}</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Circulating Supply</div>
+                        <div class="stat-value">{{ "{:,.0f}".format(crypto.circulating_supply if crypto.circulating_supply else 0) }}</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">All-Time High</div>
+                        <div class="stat-value">${{ "{:,.2f}".format(crypto.ath if crypto.ath else 0) }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Technical Analysis -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="content-card">
+                <h3>Price Indicators</h3>
+                <div class="indicator-list">
+                    <div class="indicator-item">
+                        <span class="indicator-label">RSI (14):</span>
+                        <span class="indicator-value {{ 'overbought' if crypto.rsi > 70 else 'oversold' if crypto.rsi < 30 else '' }}">
+                            {{ "%.2f"|format(crypto.rsi if crypto.rsi else 0) }}
+                        </span>
+                    </div>
+                    <div class="indicator-item">
+                        <span class="indicator-label">MACD:</span>
+                        <span class="indicator-value {{ 'positive' if crypto.macd > 0 else 'negative' }}">
+                            {{ "%.2f"|format(crypto.macd if crypto.macd else 0) }}
+                        </span>
+                    </div>
+                    <div class="indicator-item">
+                        <span class="indicator-label">50 MA:</span>
+                        <span class="indicator-value">${{ "%.2f"|format(crypto.ma_50 if crypto.ma_50 else 0) }}</span>
+                    </div>
+                    <div class="indicator-item">
+                        <span class="indicator-label">200 MA:</span>
+                        <span class="indicator-value">${{ "%.2f"|format(crypto.ma_200 if crypto.ma_200 else 0) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="content-card">
+                <h3>Trade Activity</h3>
+                <div class="trade-stats">
+                    <div class="trade-stat-item">
+                        <span class="stat-label">Buy Orders:</span>
+                        <span class="stat-value positive">{{ "{:,.0f}".format(crypto.buy_orders_24h if crypto.buy_orders_24h else 0) }}</span>
+                    </div>
+                    <div class="trade-stat-item">
+                        <span class="stat-label">Sell Orders:</span>
+                        <span class="stat-value negative">{{ "{:,.0f}".format(crypto.sell_orders_24h if crypto.sell_orders_24h else 0) }}</span>
+                    </div>
+                    <div class="trade-stat-item">
+                        <span class="stat-label">Average Trade Size:</span>
+                        <span class="stat-value">${{ "%.2f"|format(crypto.avg_trade_size_24h if crypto.avg_trade_size_24h else 0) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- News Section -->
     <div class="row">
         <div class="col-12">

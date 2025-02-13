@@ -381,6 +381,65 @@
     position: relative;
 }
 
+.market-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.stat-box {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.stat-label {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.stat-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.indicator-list {
+    padding: 1rem;
+}
+
+.indicator-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.indicator-value {
+    font-weight: bold;
+}
+
+.indicator-value.overbought { color: #dc3545; }
+.indicator-value.oversold { color: #28a745; }
+.indicator-value.positive { color: #28a745; }
+.indicator-value.negative { color: #dc3545; }
+
+.trade-stats {
+    padding: 1rem;
+}
+
+.trade-stat-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.trade-stat-item .positive { color: #28a745; }
+.trade-stat-item .negative { color: #dc3545; }
+
 .chart-error {
     position: absolute;
     top: 50%;
