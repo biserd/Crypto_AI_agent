@@ -79,15 +79,6 @@ class CryptoPrice(db.Model):
     def __repr__(self):
         return f'<CryptoPrice {self.symbol}: ${self.price_usd:.2f}>'
 
-class TokenSignal(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    symbol = db.Column(db.String(10), nullable=False)
-    signal_type = db.Column(db.String(10), nullable=False)  # 'buy', 'sell', 'hold'
-    confidence_score = db.Column(db.Float, nullable=False)
-    price_at_signal = db.Column(db.Float, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    analysis_summary = db.Column(db.Text)
-
 class CryptoGlossary(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     term = db.Column(db.String(100), unique=True, nullable=False)

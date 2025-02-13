@@ -21,39 +21,6 @@
 
 <div class="container mt-4">
     <div class="row">
-        <div class="col-12 mb-4">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Latest Buy Signals</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Token</th>
-                                    <th>Signal</th>
-                                    <th>Confidence</th>
-                                    <th>Price</th>
-                                    <th>Time</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for signal in buy_signals %}
-                                <tr>
-                                    <td><a href="{{ url_for('crypto_detail', symbol=signal.symbol) }}">{{ signal.symbol }}</a></td>
-                                    <td><span class="badge bg-success">BUY</span></td>
-                                    <td>{{ "%.1f"|format(signal.confidence_score) }}%</td>
-                                    <td>${{ "%.2f"|format(signal.price_at_signal) }}</td>
-                                    <td>{{ signal.created_at.strftime('%Y-%m-%d %H:%M UTC') }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
         <div class="col-12">
             <div class="data-pulse">
                 <span class="pulse-indicator"></span>
