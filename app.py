@@ -230,6 +230,23 @@ def dashboard():
             logger.error(f"Error fetching news sources: {str(e)}")
             news_sources = []
 
+        # Get buy signals - temporary implementation just showing positive price movements
+        try:
+            buy_signals = CryptoPrice.query.filter(
+                CryptoPrice.percent_change_24h > 0
+            ).order_by(
+                CryptoPrice.percent_change_24h.desc()
+            ).limit(5).all()
+
+            # Add mock confidence scores for now
+            for signal in buy_signals:
+                signal.confidence_score = min(85.0, 50.0 + signal.percent_change_24h)
+
+            logger.info(f"Retrieved {len(buy_signals)} buy signals")
+        except Exception as e:
+            logger.error(f"Error fetching buy signals: {str(e)}")
+            buy_signals = []
+
         # Prepare articles with enhanced summaries
         for article in recent_articles:
             try:
@@ -271,6 +288,7 @@ def dashboard():
                             articles=recent_articles,
                             crypto_prices=crypto_prices,
                             news_sources=news_sources,
+                            buy_signals=buy_signals,
                             last_scraper_run=app.config['LAST_SCRAPER_RUN'],
                             ga_tracking_id=app.config['GA_TRACKING_ID'])
     except Exception as e:

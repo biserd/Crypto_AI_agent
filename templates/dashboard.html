@@ -21,6 +21,47 @@
 
 <div class="container mt-4">
     <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Top Buy Signals 🔥</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Token</th>
+                                    <th>Price</th>
+                                    <th>24h Change</th>
+                                    <th>Confidence</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for signal in buy_signals[:5] %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('crypto_detail', symbol=signal.symbol) }}" class="text-decoration-none">
+                                            <strong>{{ signal.symbol }}</strong>
+                                        </a>
+                                    </td>
+                                    <td>${{ "%.2f"|format(signal.price_usd) }}</td>
+                                    <td class="{{ 'text-success' if signal.percent_change_24h > 0 else 'text-danger' }}">
+                                        {{ "%.1f"|format(signal.percent_change_24h) }}%
+                                    </td>
+                                    <td>{{ "%.1f"|format(signal.confidence_score) }}%</td>
+                                    <td>
+                                        <span class="badge bg-success">BUY</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="col-12">
             <div class="data-pulse">
                 <span class="pulse-indicator"></span>
