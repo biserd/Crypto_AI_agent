@@ -645,27 +645,40 @@ def price_history(symbol):
         logger.debug(f"Raw historical data type: {type(historical_data)}")
         logger.debug(f"Raw historical data keys: {historical_data.keys() if isinstance(historical_data, dict) else 'Not a dict'}")
 
-        if not historical_data:
-            logger.error(f"No historical data returned for {symbol}")
-            return jsonify({
-                'error': f'No price data available for {symbol}',
-                'symbol': symbol
-            }), 404
-
-        if not isinstance(historical_data, dict):
+        # Validate the historical data structure
+        if not historical_data or not isinstance(historical_data, dict):
             logger.error(f"Invalid historical data type for {symbol}: {type(historical_data)}")
             return jsonify({
                 'error': f'Invalid data format received for {symbol}',
                 'symbol': symbol
             }), 500
 
+        # Ensure both prices and total_volumes exist and are lists
         prices = historical_data.get('prices', [])
         volumes = historical_data.get('total_volumes', [])
 
-        if not prices or not isinstance(prices, list):
-            logger.error(f"Invalid or missing price data for {symbol}")
+        if not isinstance(prices, list) or not isinstance(volumes, list):
+            logger.error(f"Invalid price or volume data type for {symbol}")
             return jsonify({
-                'error': f'Invalid price data for {symbol}',
+                'error': f'Invalid price or volume data for {symbol}',
+                'symbol': symbol
+            }), 500
+
+        # Filter out any invalid data points
+        prices = [p for p in prices if isinstance(p, list) and len(p) == 2 and 
+                 all(isinstance(x, (int, float)) or 
+                     (isinstance(x, str) and x.replace('.', '').isdigit()) 
+                     for x in p)]
+
+        volumes = [v for v in volumes if isinstance(v, list) and len(v) == 2 and 
+                  all(isinstance(x, (int, float)) or 
+                      (isinstance(x, str) and x.replace('.', '').isdigit()) 
+                      for x in v)]
+
+        if not prices:
+            logger.error(f"No valid price data points for {symbol}")
+            return jsonify({
+                'error': f'No valid price data available for {symbol}',
                 'symbol': symbol
             }), 500
 
