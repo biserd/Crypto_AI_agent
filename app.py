@@ -254,19 +254,19 @@ def dashboard():
                         neutral_count = sum(1 for article in related_news if article.sentiment_label == 'neutral')
                         negative_count = sum(1 for article in related_news if article.sentiment_label == 'negative')
 
-                        # Weight each sentiment type
-                        weighted_score = (positive_count * 1.0 + neutral_count * 0.3 - negative_count * 0.5) / total_articles
-                        price_weight = 0.4 if price.percent_change_24h > 0 else -0.4
+                        # Weight each sentiment type with adjusted weights
+                        weighted_score = (positive_count * 1.2 + neutral_count * 0.2 - negative_count * 0.8) / total_articles
+                        price_weight = 0.5 if price.percent_change_24h > 2.0 else (-0.5 if price.percent_change_24h < -2.0 else 0)
 
-                        # Calculate confidence and signal consistently
+                        # Calculate confidence and signal with stricter thresholds
                         total_score = weighted_score + price_weight
-                        confidence = 50.0 + (total_score * 35.0) + min(15.0, abs(price.percent_change_24h))
+                        confidence = 50.0 + (total_score * 40.0) + min(10.0, abs(price.percent_change_24h))
                         price.confidence_score = min(95.0, max(5.0, confidence))
 
-                        # Unified signal determination
-                        if total_score > 0.3 and price.percent_change_24h > 1.0:
+                        # More defined signal thresholds
+                        if total_score > 0.4 and price.percent_change_24h > 2.0:
                             price.signal = 'buy'
-                        elif total_score < -0.3 or price.percent_change_24h < -5.0:
+                        elif total_score < -0.4 or price.percent_change_24h < -6.0:
                             price.signal = 'sell'
                         else:
                             price.signal = 'hold'
