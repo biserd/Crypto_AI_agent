@@ -15,7 +15,7 @@ from flask_socketio import SocketIO, emit
 import json
 from datetime import datetime, timedelta
 import stripe
-from sqlalchemy import desc
+from sqlalchemy import desc, Column, Integer, String, DateTime, Float, Boolean
 import pandas as pd
 import numpy as np
 
@@ -267,12 +267,17 @@ def dashboard():
             )
 
         logger.info("Successfully prepared all data for dashboard")
+
+        # Fetch buy signals
+        buy_signals = get_buy_signals()
+
         return render_template('dashboard.html', 
                             articles=recent_articles,
                             crypto_prices=crypto_prices,
                             news_sources=news_sources,
                             last_scraper_run=app.config['LAST_SCRAPER_RUN'],
-                            ga_tracking_id=app.config['GA_TRACKING_ID'])
+                            ga_tracking_id=app.config['GA_TRACKING_ID'],
+                            buy_signals=buy_signals)
     except Exception as e:
         logger.error(f"Error generating dashboard: {str(e)}")
         return "Error loading dashboard", 500
@@ -696,6 +701,18 @@ def price_history(symbol):
             'error': 'Internal server error',
             'details': str(e)
         }), 500
+
+class TokenSignal(db.Model):
+    id = Column(Integer, primary_key=True)
+    symbol = Column(String)
+    signal_type = Column(String) # buy, sell, hold
+    created_at = Column(DateTime, default=datetime.utcnow)
+    confidence_score = Column(Float)
+
+def get_buy_signals():
+    # Placeholder: Replace with actual logic to fetch or generate buy signals
+    return TokenSignal.query.filter_by(signal_type='buy').order_by(TokenSignal.created_at.desc()).limit(10).all()
+
 
 with app.app_context():
     try:
