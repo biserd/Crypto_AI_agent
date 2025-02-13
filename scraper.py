@@ -244,7 +244,7 @@ def scrape_rss_feed(source):
         try:
             # Get current time for comparison
             current_time = datetime.utcnow()
-            cutoff_time = current_time - timedelta(hours=24)  # Only get articles from last 24 hours
+            cutoff_time = current_time - timedelta(days=7)  # Get articles from last 7 days
 
             for entry in feed.entries:
                 try:
