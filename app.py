@@ -230,17 +230,40 @@ def dashboard():
             logger.error(f"Error fetching news sources: {str(e)}")
             news_sources = []
 
-        # Get buy signals - only show tokens with positive movement and high confidence
+        # Get buy signals - check both price movement and sentiment
         try:
-            buy_signals = CryptoPrice.query.filter(
-                CryptoPrice.percent_change_24h > 2.0  # Only show significant positive moves
-            ).order_by(
-                CryptoPrice.percent_change_24h.desc()
-            ).limit(5).all()
+            # First get tokens with positive movement
+            potential_signals = CryptoPrice.query.filter(
+                CryptoPrice.percent_change_24h > 2.0
+            ).all()
+            
+            buy_signals = []
+            for signal in potential_signals:
+                # Get recent news for this token
+                cutoff_time = datetime.utcnow() - timedelta(days=7)
+                related_news = Article.query.filter(
+                    db.and_(
+                        db.or_(
+                            Article.content.ilike(f'%{signal.symbol}%'),
+                            Article.title.ilike(f'%{signal.symbol}%')
+                        ),
+                        Article.created_at >= cutoff_time
+                    )
+                ).all()
 
-            # Add mock confidence scores for now
-            for signal in buy_signals:
-                signal.confidence_score = min(85.0, 50.0 + signal.percent_change_24h)
+                # Calculate sentiment
+                total_articles = len(related_news)
+                if total_articles > 0:
+                    positive_count = sum(1 for article in related_news if article.sentiment_label == 'positive')
+                    positive_ratio = positive_count / total_articles
+                    
+                    # Only include if sentiment suggests "buy"
+                    if positive_ratio > 0.6:
+                        signal.confidence_score = min(85.0, 50.0 + (positive_ratio * 100))
+                        buy_signals.append(signal)
+
+            # Sort by confidence and limit to top 5
+            buy_signals = sorted(buy_signals, key=lambda x: x.confidence_score, reverse=True)[:5]
 
             logger.info(f"Retrieved {len(buy_signals)} buy signals")
         except Exception as e:
