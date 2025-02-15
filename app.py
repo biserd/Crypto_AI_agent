@@ -339,9 +339,36 @@ def dashboard():
 def glossary():
     try:
         logger.info("Accessing crypto glossary page")
+        # Ensure table exists
+        with app.app_context():
+            if not db.engine.dialect.has_table(db.engine, 'crypto_glossary'):
+                db.create_all()
+                logger.info("Created crypto_glossary table")
+        
         terms = CryptoGlossary.query.order_by(CryptoGlossary.term).all()
         categories = db.session.query(CryptoGlossary.category).distinct().all()
         categories = [cat[0] for cat in categories if cat[0]]
+
+        if not terms:
+            # If no terms exist, create some default ones
+            default_terms = [
+                CryptoGlossary(
+                    term="Blockchain",
+                    definition="A decentralized, distributed ledger technology that records transactions across multiple computers securely.",
+                    category="Technology",
+                    difficulty_level="Beginner"
+                ),
+                CryptoGlossary(
+                    term="Bitcoin",
+                    definition="The first and most well-known cryptocurrency, created by Satoshi Nakamoto in 2009.",
+                    category="Cryptocurrency",
+                    difficulty_level="Beginner"
+                )
+            ]
+            db.session.bulk_save_objects(default_terms)
+            db.session.commit()
+            terms = CryptoGlossary.query.order_by(CryptoGlossary.term).all()
+            categories = ["Technology", "Cryptocurrency"]
 
         return render_template('glossary.html', 
                              terms=terms,
@@ -349,7 +376,9 @@ def glossary():
                              ga_tracking_id=app.config['GA_TRACKING_ID'])
     except Exception as e:
         logger.error(f"Error accessing glossary: {str(e)}")
-        return "Error loading glossary", 500
+        db.session.rollback()
+        flash("Unable to load glossary. Please try again later.", "error")
+        return redirect(url_for('dashboard'))
 
 @app.route('/glossary/<term_name>')
 def get_term_details(term_name):
