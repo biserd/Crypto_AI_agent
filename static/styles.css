@@ -35,6 +35,17 @@ body {
     background-color: #f8f9fa;
 }
 
+/* Optimize rendering */
+.news-item:not(:first-child) {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 200px;
+}
+
+.crypto-price:not(:first-child) {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 100px;
+}
+
 .card, .content-card {
     background-color: #fff;
     color: #333;
