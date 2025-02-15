@@ -33,4 +33,5 @@ dependencies = [
     "flask-wtf>=1.2.2",
     "praw>=7.8.1",
     "flask-compress>=1.17",
+    "flask-mail>=0.10.0",
 ]

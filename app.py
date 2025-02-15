@@ -6,6 +6,7 @@ import os
 import logging
 from flask import Flask, render_template, request, jsonify, redirect, flash, url_for, session, make_response, send_from_directory
 from flask_compress import Compress
+from flask_mail import Mail, Message
 from flask_login import LoginManager, UserMixin, current_user, login_required, login_user, logout_user
 from database import db, init_app, sync_article_counts
 from models import Article, CryptoPrice, NewsSourceMetrics, CryptoGlossary, Subscription, Users
@@ -31,6 +32,15 @@ logger = logging.getLogger(__name__)
 # Create Flask app
 app = Flask(__name__)
 Compress(app)
+
+# Mail configuration
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME')
+mail = Mail(app)
 
 # Configuration
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", os.urandom(24))
@@ -152,6 +162,17 @@ def register():
         )
         db.session.add(subscription)
         db.session.commit()
+
+        # Send notification email
+        try:
+            msg = Message(
+                'New User Registration',
+                recipients=['hello@bigappledigital.nyc'],
+                body=f'New user registered:\nEmail: {email}\nRegistration Time: {user.created_at}'
+            )
+            mail.send(msg)
+        except Exception as e:
+            logger.error(f"Failed to send registration notification: {str(e)}")
 
         login_user(user)
         return redirect(url_for('dashboard'))
