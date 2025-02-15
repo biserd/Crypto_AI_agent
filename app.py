@@ -339,30 +339,42 @@ def dashboard():
 def glossary():
     try:
         logger.info("Accessing crypto glossary page")
-        # Ensure table exists
+        # Drop and recreate the table to handle schema changes
         with app.app_context():
-            if not db.engine.dialect.has_table(db.engine, 'crypto_glossary'):
-                db.create_all()
-                logger.info("Created crypto_glossary table")
+            db.drop_all()
+            db.create_all()
+            logger.info("Recreated crypto_glossary table with updated schema")
         
         terms = CryptoGlossary.query.order_by(CryptoGlossary.term).all()
         categories = db.session.query(CryptoGlossary.category).distinct().all()
         categories = [cat[0] for cat in categories if cat[0]]
 
         if not terms:
-            # If no terms exist, create some default ones
+            # If no terms exist, create some default ones with all fields
             default_terms = [
                 CryptoGlossary(
                     term="Blockchain",
                     definition="A decentralized, distributed ledger technology that records transactions across multiple computers securely.",
+                    detailed_explanation="A blockchain is a type of distributed database that stores data in blocks that are linked together using cryptography.",
+                    technical_details="Uses cryptographic hashing and consensus mechanisms to maintain data integrity.",
+                    real_world_usage="Used in cryptocurrencies, supply chain management, and digital identity verification.",
+                    historical_context="First implemented as part of Bitcoin in 2009 by Satoshi Nakamoto.",
                     category="Technology",
-                    difficulty_level="Beginner"
+                    difficulty_level="Beginner",
+                    related_terms="Bitcoin,Cryptocurrency,Mining",
+                    sources="Bitcoin Whitepaper, Blockchain Academic Papers"
                 ),
                 CryptoGlossary(
                     term="Bitcoin",
                     definition="The first and most well-known cryptocurrency, created by Satoshi Nakamoto in 2009.",
+                    detailed_explanation="Bitcoin is a peer-to-peer electronic cash system that enables online payments without going through financial institutions.",
+                    technical_details="Uses SHA-256 hashing algorithm and Proof of Work consensus mechanism.",
+                    real_world_usage="Digital payments, store of value, and international remittances.",
+                    historical_context="Created in 2009 as a response to the 2008 financial crisis.",
                     category="Cryptocurrency",
-                    difficulty_level="Beginner"
+                    difficulty_level="Beginner",
+                    related_terms="Blockchain,Mining,Wallet",
+                    sources="Bitcoin Whitepaper, Bitcoin.org"
                 )
             ]
             db.session.bulk_save_objects(default_terms)
