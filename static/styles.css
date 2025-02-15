@@ -760,13 +760,81 @@ main {
     text-align: center;
 }
 
-.market-data-grid {
+.market-stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
     padding: 1rem;
-    background: var(--card-bg);
+}
+
+.sentiment-stats-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.sentiment-stats-vertical .stat-box {
+    flex: 1;
+    padding: 1rem;
     border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.social-stats {
+    padding: 1rem;
+}
+
+.social-stat {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.05);
+    margin-bottom: 0.75rem;
+}
+
+.social-stat i {
+    font-size: 1.5rem;
+    width: 2rem;
+    text-align: center;
+}
+
+.social-stat:last-child {
+    margin-bottom: 0;
+}
+
+.trading-signal {
+    text-align: center;
+    padding: 1rem;
+    background: rgba(0,0,0,0.05);
+    border-radius: 8px;
+}
+
+.trading-signal h4 {
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.market-stats-grid .stat-item {
+    background: rgba(0,0,0,0.05);
+    padding: 1rem;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+}
+
+.market-stats-grid .stat-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.market-stats-grid .stat-value {
+    font-size: 1.1rem;
+    font-weight: bold;
 }
 
 .market-data-item {

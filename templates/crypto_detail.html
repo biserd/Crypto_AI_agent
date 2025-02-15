@@ -89,9 +89,10 @@
     {% endif %}
 
     <div class="row">
-        <!-- Price Chart Section -->
-        <div class="col-12 mb-4">
-            <div class="content-card">
+        <!-- Left Column: Chart and Market Data -->
+        <div class="col-lg-8">
+            <!-- Price Chart Section -->
+            <div class="content-card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="mb-0">{{ crypto_names.get(crypto.symbol, crypto.symbol) }} Price Chart</h3>
                     <div class="timeframe-selector">
@@ -102,23 +103,48 @@
                 </div>
                 <div class="price-chart-container" style="height: 400px; position: relative;">
                     <canvas id="priceChart"></canvas>
-                    <div class="chart-loader d-none" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                    <div class="chart-loader d-none">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Loading...</span>
                         </div>
                     </div>
-                    <div class="chart-error alert alert-danger d-none" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%;"></div>
+                    <div class="chart-error alert alert-danger d-none"></div>
                 </div>
             </div>
+
+            <!-- Market Statistics Grid -->
+            {% if coin_data %}
+            <div class="content-card mb-4">
+                <h3>Market Statistics</h3>
+                <div class="market-stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Market Cap Rank</span>
+                        <span class="stat-value">#{{ coin_data.market_cap_rank }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Market Cap</span>
+                        <span class="stat-value">${{ "{:,.0f}".format(coin_data.market_cap) }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">24h Volume</span>
+                        <span class="stat-value">${{ "{:,.0f}".format(coin_data.total_volume) }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Circulating Supply</span>
+                        <span class="stat-value">{{ "{:,.0f}".format(coin_data.circulating_supply) }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
 
-
-        <!-- Sentiment Analysis -->
-        <div class="col-12 mb-4">
-            <div class="content-card">
-                <h3>{{ crypto_names.get(crypto.symbol, crypto.symbol) }} News Sentiment</h3>
+        <!-- Right Column: Sentiment and News -->
+        <div class="col-lg-4">
+            <!-- Sentiment Analysis -->
+            <div class="content-card mb-4">
+                <h3>News Sentiment</h3>
                 <div class="sentiment-overview">
-                    <div class="sentiment-stats">
+                    <div class="sentiment-stats-vertical">
                         <div class="stat-box positive">
                             <span class="stat-number">{{ news_impact.positive }}</span>
                             <span class="stat-label">Positive</span>
@@ -132,9 +158,36 @@
                             <span class="stat-label">Negative</span>
                         </div>
                     </div>
-
+                    <div class="trading-signal mt-4">
+                        <h4>Trading Signal</h4>
+                        <div class="signal-indicator signal-{{ recommendation }}">
+                            <i class="fas fa-signal"></i>
+                            <span>{{ recommendation|upper }}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <!-- Social Stats -->
+            {% if coin_data and (coin_data.reddit_subscribers or coin_data.twitter_followers) %}
+            <div class="content-card mb-4">
+                <h3>Social Statistics</h3>
+                <div class="social-stats">
+                    {% if coin_data.reddit_subscribers %}
+                    <div class="social-stat">
+                        <i class="fab fa-reddit"></i>
+                        <span>{{ "{:,.0f}".format(coin_data.reddit_subscribers) }} subscribers</span>
+                    </div>
+                    {% endif %}
+                    {% if coin_data.twitter_followers %}
+                    <div class="social-stat">
+                        <i class="fab fa-twitter"></i>
+                        <span>{{ "{:,.0f}".format(coin_data.twitter_followers) }} followers</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 
