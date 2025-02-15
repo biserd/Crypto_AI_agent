@@ -36,14 +36,7 @@
                             <div class="crypto-item">
                                 <a href="{{ url_for('crypto_detail', symbol=price.symbol) }}" class="text-decoration-none">
                                     <div class="crypto-tooltip crypto-price {{ 'price-up' if price.percent_change_24h|float > 0 else 'price-down' }}">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <span>{{ price.symbol }}: ${{ "%.2f"|format(price.price_usd) }}</span>
-                                            {% if price.confidence_score %}
-                                                <span class="badge {% if price.signal == 'buy' %}bg-success{% elif price.signal == 'sell' %}bg-danger{% else %}bg-warning{% endif %}">
-                                                    {{ price.signal|upper }} ({{ "%.0f"|format(price.confidence_score) }}%)
-                                                </span>
-                                            {% endif %}
-                                        </div>
+                                        {{ price.symbol }}: ${{ "%.2f"|format(price.price_usd) }}
                                         <small>({{ "%.1f"|format(price.percent_change_24h) }}%)</small>
                                     </div>
                                 </a>
@@ -58,14 +51,7 @@
                             <div class="crypto-item">
                                 <a href="{{ url_for('crypto_detail', symbol=price.symbol) }}" class="text-decoration-none">
                                     <div class="crypto-tooltip crypto-price {{ 'price-up' if price.percent_change_24h|float > 0 else 'price-down' }}">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <span>{{ price.symbol }}: ${{ "%.2f"|format(price.price_usd) }}</span>
-                                            {% if price.confidence_score %}
-                                                <span class="badge {% if price.signal == 'buy' %}bg-success{% elif price.signal == 'sell' %}bg-danger{% else %}bg-warning{% endif %}">
-                                                    {{ price.signal|upper }} ({{ "%.0f"|format(price.confidence_score) }}%)
-                                                </span>
-                                            {% endif %}
-                                        </div>
+                                        {{ price.symbol }}: ${{ "%.2f"|format(price.price_usd) }}
                                         <small>({{ "%.1f"|format(price.percent_change_24h) }}%)</small>
                                     </div>
                                 </a>
@@ -101,9 +87,9 @@
 
             <!-- Articles Section -->
             {% for article in articles %}
-            <article class="card mb-3">
+            <div class="card mb-3">
                 <div class="card-body">
-                    <h2 class="card-title h5">{{ article.title.replace('**', '').replace('($BTC)', '').replace('($Btc)', '').replace('($ADA)', '').replace('($Ada)', '').replace('($ETH)', '').replace('($AVAX)', '').replace('($SOL)', '').replace('($XRP)', '').replace('($MATIC)', '').replace('($DOGE)', '').replace('($BNB)', '') }}</h2>
+                    <h5 class="card-title">{{ article.title.replace('**', '').replace('($BTC)', '').replace('($Btc)', '').replace('($ADA)', '').replace('($Ada)', '').replace('($ETH)', '').replace('($AVAX)', '').replace('($SOL)', '').replace('($XRP)', '').replace('($MATIC)', '').replace('($DOGE)', '').replace('($BNB)', '') }}</h5>
                     <h6 class="card-subtitle mb-2 text-muted">
                         {{ article.source_name }}
                         {% if article.source_metrics %}
@@ -129,24 +115,24 @@
                         </div>
                         <div class="action-buttons">
                             {% if article.sentiment_label == 'positive' %}
-                                {% for crypto in ['BTC', 'ETH', 'BNB', 'ADA', 'SOL', 'XRP', 'DOGE', 'MATIC', 'AVAX', 'VRA', 'NEAR', 'RNDR', 'ICP', 'TAO'] %}
+                                {% for crypto in ['BTC', 'ETH', 'BNB', 'ADA', 'SOL', 'XRP', 'DOGE', 'MATIC', 'AVAX'] %}
                                     {% if crypto.lower() in article.content.lower() or crypto in article.content %}
                                         <a href="{{ url_for('crypto_detail', symbol=crypto) }}" class="btn btn-sm btn-success">View {{ crypto }}</a>
                                     {% endif %}
                                 {% endfor %}
                             {% elif article.sentiment_label == 'negative' %}
-                                {% for crypto in ['BTC', 'ETH', 'BNB', 'ADA', 'SOL', 'XRP', 'DOGE', 'MATIC', 'AVAX', 'VRA', 'NEAR', 'RNDR', 'ICP', 'TAO'] %}
+                                {% for crypto in ['BTC', 'ETH', 'BNB', 'ADA', 'SOL', 'XRP', 'DOGE', 'MATIC', 'AVAX'] %}
                                     {% if crypto.lower() in article.content.lower() or crypto in article.content %}
                                         <a href="{{ url_for('crypto_detail', symbol=crypto) }}" class="btn btn-sm btn-danger">View {{ crypto }}</a>
                                     {% endif %}
                                 {% endfor %}
                             {% endif %}
-                            <button class="btn btn-info btn-sm share-btn" onclick="shareArticle('{{ article.url }}')">Share</button>
-                            <a href="{{ article.source_url }}" class="btn btn-primary btn-sm" target="_blank" rel="nofollow noopener">Read More</a>
+                            <button class="btn btn-info btn-sm" onclick="showShareModal('{{ article.id }}')">Share</button>
+                            <a href="{{ article.source_url }}" class="btn btn-primary btn-sm" target="_blank">Read More</a>
                         </div>
                     </div>
                 </div>
-            </article>
+            </div>
             {% endfor %}
         </div>
     </div>
