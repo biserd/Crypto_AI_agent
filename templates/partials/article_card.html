@@ -24,8 +24,8 @@
                     </span>
                 {% endif %}
             </div>
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="action-buttons">
+            <div class="article-actions">
+                <div class="crypto-buttons">
                     {% if article.sentiment_label in ['positive', 'negative'] %}
                         {% for symbol, name in crypto_names.items() %}
                             {% if symbol.lower() in article.content.lower() or 
@@ -40,7 +40,7 @@
                         {% endfor %}
                     {% endif %}
                 </div>
-                <div>
+                <div class="general-buttons">
                     <button class="btn btn-info btn-sm share-btn" onclick="shareArticle('{{ article.url }}')">Share</button>
                     <a href="{{ article.source_url }}" class="btn btn-primary btn-sm" target="_blank" rel="nofollow noopener">Read More</a>
                 </div>
