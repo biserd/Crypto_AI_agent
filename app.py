@@ -3,7 +3,7 @@ import eventlet
 eventlet.monkey_patch()
 
 import os
-from functools import wraps
+from functools import wraps, lru_cache
 from flask import Flask, render_template, request, jsonify, redirect, flash, url_for, session, make_response, send_from_directory
 from flask_login import LoginManager, UserMixin, current_user, login_required, login_user, logout_user
 from database import db, init_app, sync_article_counts
@@ -28,6 +28,11 @@ logger = logging.getLogger(__name__)
 
 # Create Flask app
 app = Flask(__name__)
+
+# Initialize compression before other extensions
+from flask_compress import Compress
+compress = Compress()
+compress.init_app(app)
 
 # Configuration
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", os.urandom(24))
@@ -55,7 +60,8 @@ try:
         logger=True,
         engineio_logger=True,
         ping_timeout=60,
-        ping_interval=25
+        ping_interval=25,
+        manage_session=False
     )
     logger.info("Successfully initialized SocketIO")
 except Exception as e:
@@ -77,7 +83,6 @@ app.jinja_env.filters['filter_by_negative'] = lambda x: apply_filter(x, filter_b
 
 # Initialize last run time in app config
 app.config['LAST_SCRAPER_RUN'] = datetime.utcnow()
-
 
 # Import CryptoPriceTracker after database initialization
 from crypto_price_tracker import CryptoPriceTracker
@@ -191,98 +196,59 @@ def profile():
     subscription = Subscription.query.filter_by(user_id=current_user.id, active=True).first()
     return render_template('profile.html', user=current_user, subscription=subscription)
 
+
+# Add caching decorator for expensive operations
+@lru_cache(maxsize=128)
+def get_cached_crypto_prices():
+    """Cache crypto prices for 1 minute"""
+    return CryptoPrice.query.filter(
+        CryptoPrice.price_usd.isnot(None),
+        CryptoPrice.percent_change_24h.isnot(None)
+    ).all()
+
+@lru_cache(maxsize=128)
+def get_cached_news_sources():
+    """Cache news sources for 5 minutes"""
+    return NewsSourceMetrics.query.order_by(NewsSourceMetrics.trust_score.desc()).all()
+
+# Update dashboard route with optimizations
 @app.route('/')
 def dashboard():
     try:
         logger.info("Starting dashboard view generation")
+        page = request.args.get('page', 1, type=int)
+        per_page = 10  # Number of articles per page
 
-        # Fetch articles with error handling
-        try:
-            # Get articles from last 24 hours only
-            cutoff_time = datetime.utcnow() - timedelta(hours=24)
-            recent_articles = Article.query.filter(
-                Article.created_at >= cutoff_time,
-                Article.sentiment_score.isnot(None)  # Ensure sentiment score exists
-            ).order_by(Article.created_at.desc()).all()
+        # Get articles with pagination
+        cutoff_time = datetime.utcnow() - timedelta(hours=24)
+        recent_articles = Article.query.filter(
+            Article.created_at >= cutoff_time,
+            Article.sentiment_score.isnot(None)
+        ).order_by(Article.created_at.desc()).paginate(
+            page=page, 
+            per_page=per_page,
+            error_out=False
+        )
 
-            # Set default values for any None fields
-            for article in recent_articles:
-                if article.sentiment_score is None:
-                    article.sentiment_score = 0.0
-                if article.sentiment_label is None:
-                    article.sentiment_label = 'neutral'
+        # Use cached data for crypto prices and news sources
+        crypto_prices = get_cached_crypto_prices()
+        news_sources = get_cached_news_sources()
 
-            logger.info(f"Retrieved {len(recent_articles)} articles from last 24 hours")
-        except Exception as e:
-            logger.error(f"Error fetching articles: {str(e)}")
-            recent_articles = []
+        # Pre-calculate signals in batch
+        crypto_signals = {}
+        for price in crypto_prices:
+            try:
+                signals = calculate_crypto_signals(price.symbol, None, price)
+                crypto_signals[price.symbol] = signals
+            except Exception as e:
+                logger.error(f"Error calculating signals for {price.symbol}: {str(e)}")
+                crypto_signals[price.symbol] = {'signal': 'hold', 'confidence': 50.0}
 
-        # Fetch crypto prices with error handling
-        try:
-            crypto_prices = CryptoPrice.query.filter(
-                CryptoPrice.price_usd.isnot(None),
-                CryptoPrice.percent_change_24h.isnot(None)
-            ).all()
-
-            # Set default values for any None fields
-            for price in crypto_prices:
-                if price.price_usd is None:
-                    price.price_usd = 0.0
-                if price.percent_change_24h is None:
-                    price.percent_change_24h = 0.0
-
-            logger.info(f"Retrieved {len(crypto_prices)} crypto prices")
-        except Exception as e:
-            logger.error(f"Error fetching crypto prices: {str(e)}")
-            crypto_prices = []
-
-        # Fetch news sources with error handling
-        try:
-            news_sources = NewsSourceMetrics.query.order_by(NewsSourceMetrics.trust_score.desc()).all()
-            logger.info(f"Retrieved {len(news_sources)} news sources")
-        except Exception as e:
-            logger.error(f"Error fetching news sources: {str(e)}")
-            news_sources = []
-
-        # Calculate signals consistently
-        try:
-            # Apply sentiment analysis to all crypto prices
-            for price in crypto_prices:
-                try:
-                    # Get recent news for this token
-                    cutoff_time = datetime.utcnow() - timedelta(days=3)
-                    related_news = Article.query.filter(
-                        db.and_(
-                            db.or_(
-                                Article.content.ilike(f'%{price.symbol}%'),
-                                Article.title.ilike(f'%{price.symbol}%')
-                            ),
-                            Article.created_at >= cutoff_time
-                        )
-                    ).order_by(Article.created_at.desc()).all()
-
-                    # Calculate sentiment
-                    total_articles = len(related_news)
-                    # Use the unified signal calculation function
-                    signals = calculate_crypto_signals(price.symbol, related_news, price)
-                    price.signal = signals['signal']
-                    price.confidence_score = signals['confidence']
-                except Exception as e:
-                    logger.error(f"Error calculating sentiment for {price.symbol}: {str(e)}")
-                    price.confidence_score = 50.0
-                    price.signal = 'hold'
-
-            logger.info(f"Calculated signals for {len(crypto_prices)} cryptocurrencies")
-        except Exception as e:
-            logger.error(f"Error processing crypto data: {str(e)}")
-
-        # Prepare articles with enhanced summaries
-        for article in recent_articles:
+        # Process articles and add tooltips
+        for article in recent_articles.items:
             try:
                 enhanced_summary = escape(article.summary)
-                logger.debug(f"Processing article {article.id} summary: {enhanced_summary[:100]}...")
-
-                # Add crypto price tooltips to the summary
+                # Add crypto price tooltips
                 for crypto in crypto_prices:
                     pattern = re.compile(r'\b' + re.escape(crypto.symbol) + r'\b', re.IGNORECASE)
                     if pattern.search(str(enhanced_summary)):
@@ -294,32 +260,34 @@ def dashboard():
                             f'{crypto.percent_change_24h:.1f}%</span>'
                             f'</div></span>'
                         )
-
                         enhanced_summary = Markup(pattern.sub(str(tooltip_html), str(enhanced_summary)))
-                        logger.debug(f"Added tooltip for whole word match {crypto.symbol} in article {article.id}")
-                        logger.debug(f"Generated tooltip HTML: {tooltip_html}")
-                    else:
-                        logger.debug(f"No whole word match found for {crypto.symbol} in article {article.id}")
 
                 article.enhanced_summary = enhanced_summary
+                article.source_metrics = next(
+                    (source for source in news_sources if source.source_name == article.source_name),
+                    None
+                )
 
             except Exception as e:
-                logger.error(f"Error processing tooltips for article {article.id}: {str(e)}")
+                logger.error(f"Error processing article {article.id}: {str(e)}")
                 article.enhanced_summary = article.summary
 
-            article.source_metrics = next(
-                (source for source in news_sources if source.source_name == article.source_name),
-                None
-            )
-
         logger.info("Successfully prepared all data for dashboard")
-        return render_template('dashboard.html', 
-                            articles=recent_articles,
-                            crypto_prices=crypto_prices,
-                            news_sources=news_sources,
-                            buy_signals=crypto_prices, #Use crypto_prices as buy_signals now.
-                            last_scraper_run=app.config['LAST_SCRAPER_RUN'],
-                            ga_tracking_id=app.config['GA_TRACKING_ID'])
+
+        response = make_response(render_template(
+            'dashboard.html',
+            articles=recent_articles,
+            crypto_prices=crypto_prices,
+            news_sources=news_sources,
+            buy_signals=crypto_prices,
+            last_scraper_run=app.config['LAST_SCRAPER_RUN'],
+            ga_tracking_id=app.config['GA_TRACKING_ID']
+        ))
+
+        # Set cache headers for static content
+        response.headers['Cache-Control'] = 'public, max-age=300'  # Cache for 5 minutes
+        return response
+
     except Exception as e:
         logger.error(f"Error generating dashboard: {str(e)}")
         return "Error loading dashboard", 500
@@ -835,10 +803,15 @@ with app.app_context():
 
 if __name__ == '__main__':
     logger.info("Starting Flask application with SocketIO")
-    socketio.run(
-        app,
-        host='0.0.0.0',
-        port=5000,
-        debug=True,
-        log_output=True
-    )
+    try:
+        socketio.run(
+            app,
+            host='0.0.0.0',
+            port=5000,
+            debug=True,
+            use_reloader=True,
+            log_output=True
+        )
+    except Exception as e:
+        logger.error(f"Failed to start server: {str(e)}")
+        raise
