@@ -899,4 +899,3 @@ with app.app_context():
 
 if __name__ == "__main__":
     print("Please run 'python main.py' to start the server")
-    raise
