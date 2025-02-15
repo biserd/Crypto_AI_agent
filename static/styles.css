@@ -18,6 +18,21 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    color: #333;
+    background-color: #f8f9fa;
+}
+
+.card, .content-card {
+    background-color: #fff;
+    color: #333;
+}
+
+.text-muted {
+    color: #6c757d !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: #212529;
 }
 
 main {

@@ -711,6 +711,18 @@ def pricing():
 def contact():
     return render_template('contact.html', ga_tracking_id=app.config['GA_TRACKING_ID'])
 
+@app.route('/privacy')
+def privacy():
+    return render_template('privacy.html', ga_tracking_id=app.config['GA_TRACKING_ID'])
+
+@app.route('/terms')
+def terms():
+    return render_template('terms.html', ga_tracking_id=app.config['GA_TRACKING_ID'])
+
+@app.route('/disclaimer')
+def disclaimer():
+    return render_template('disclaimer.html', ga_tracking_id=app.config['GA_TRACKING_ID'])
+
 @app.route('/search')
 def search():
     query = request.args.get('q', '').lower()
