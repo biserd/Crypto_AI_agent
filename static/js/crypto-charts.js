@@ -312,6 +312,13 @@ function createPriceChart(symbol) {
             button.classList.add('active');
             loadChartData(parseInt(button.dataset.days, 10));
         });
+
+        // Set initial active state
+        if (button.dataset.days === '30') {
+            button.classList.add('active');
+        } else {
+            button.classList.remove('active');
+        }
     });
 
     // Load initial data
