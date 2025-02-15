@@ -34,9 +34,8 @@
                            (symbol == 'USDT' and 'Tether' in article.content) or
                            (symbol == 'SOL' and 'Solana' in article.content) or
                            (symbol == 'BTC' and 'Bitcoin' in article.content) %}
-                            <a href="/crypto/{{ symbol }}" 
-                               class="btn btn-sm btn-{{ 'success' if article.sentiment_label == 'positive' else 'danger' }}"
-                               onclick="window.location.href='/crypto/{{ symbol }}'; return false;">
+                            <a href="{{ url_for('crypto_detail', symbol=symbol) }}" 
+                               class="btn btn-sm btn-{{ 'success' if article.sentiment_label == 'positive' else 'danger' }}">
                                 {{ symbol }}
                             </a>
                         {% endif %}
