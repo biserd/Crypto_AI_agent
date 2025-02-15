@@ -1,7 +1,3 @@
-# Monkey patch must happen before any other imports
-import eventlet
-eventlet.monkey_patch()
-
 import os
 import logging
 from flask import Flask, render_template, request, jsonify, redirect, flash, url_for, session, make_response, send_from_directory
@@ -13,19 +9,13 @@ from flask_socketio import SocketIO, emit
 import json
 from datetime import datetime, timedelta
 import stripe
-from functools import wraps
 from sqlalchemy import desc
 import pandas as pd
 import numpy as np
 import re
 import requests
 from functools import wraps
-
-# Initialize Stripe
-stripe.api_key = os.environ.get('STRIPE_SECRET_KEY', '')
-if not stripe.api_key:
-    logger.warning("Stripe secret key not set. Payment features will be disabled.")
-
+import eventlet
 
 # Configure logging first
 logging.basicConfig(
@@ -39,7 +29,7 @@ app = Flask(__name__)
 
 # Configuration
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", os.urandom(24))
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/postgres")
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
@@ -54,17 +44,15 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# Initialize SocketIO with proper configuration
+# Initialize SocketIO with minimal configuration
 socketio = SocketIO(
     app,
     async_mode='eventlet',
-    cors_allowed_origins="*",
-    logger=True,
-    engineio_logger=True,
-    ping_timeout=60,
-    ping_interval=25,
-    max_http_buffer_size=1e8
+    cors_allowed_origins="*"
 )
+
+# Monkey patch must happen after imports
+eventlet.monkey_patch()
 
 def filter_by_positive(value):
     return value.percent_change_24h > 0
@@ -821,10 +809,10 @@ def serve_robots():
     """Serve robots.txt file"""
     try:
         logger.info("Serving robots.txt file")
-        return send_from_directory(app.staticfolder or app.root_path, 'robots.txt', mimetype='text/plain')
+        return send_from_directory(app.static_folder or app.root_path, 'robots.txt', mimetype='text/plain')
     except Exception as e:
         logger.error(f"Error serving robots.txt: {str(e)}")
-        return "User-agent: *\nAllow::\n", 200, {'Content-Type': 'text/plain'}
+        return "User-agent: *\nAllow: /\n", 200, {'Content-Type': 'text/plain'}
 
 @app.route('/api/load-more-articles')
 def load_more_articles():
@@ -912,25 +900,24 @@ with app.app_context():
 if __name__ == "__main__":
     try:
         logger.info("Starting server with SocketIO support...")
-        # Create all tables before starting the server
+
+        # Initialize database tables within app context
         with app.app_context():
             try:
                 db.create_all()
+                sync_article_counts()  # Sync article counts after DB initialization
                 logger.info("Database tables created successfully")
             except Exception as e:
-                logger.error(f"Error creating database tables: {str(e)}")
-                db.session.rollback()
+                logger.error(f"Error during database initialization: {str(e)}", exc_info=True)
                 raise
 
-        # Start the server
+        # Start the server with minimal configuration
         socketio.run(
             app,
             host='0.0.0.0',
             port=5000,
-            debug=False,  # Disable debug in production
-            use_reloader=False,  # Disable reloader when using eventlet
-            log_output=True,
-            allow_unsafe_werkzeug=True  # Required for eventlet
+            debug=True,
+            use_reloader=False  # Disable reloader when using eventlet
         )
     except Exception as e:
         logger.error(f"Failed to start server: {str(e)}", exc_info=True)
