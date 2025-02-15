@@ -410,6 +410,7 @@ crypto_names = {
     'RNDR': 'Render Token',
     'ICP': 'Internet Computer',
     'TAO': 'Bittensor',
+    'MASK': 'Mask Network'
 }
 
 def calculate_crypto_signals(symbol, related_news=None, price_data=None):

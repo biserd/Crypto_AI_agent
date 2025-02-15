@@ -153,7 +153,8 @@ class CryptoPriceTracker:
             'ICP': 'internet-computer',
             'VET': 'vechain',
             'INJ': 'injective-protocol',
-            'MASK': 'mask-network'
+            'MASK': 'mask-network',
+            'TRUMP': 'trump'
         }
 
     def _rate_limit_wait(self):
