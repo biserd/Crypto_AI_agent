@@ -825,7 +825,7 @@ def price_history(symbol):
         if not historical_data or not isinstance(historical_data, dict):
             logger.error(f"Invalid historical data type for {symbol}: {type(historical_data)}")
             return jsonify({
-                'error': f'`Invalid data format received for {symbol}',
+                'error': f'Invalid data format received for {symbol}',
                 'symbol': symbol
             }), 500
 
@@ -874,10 +874,6 @@ def price_history(symbol):
         }), 500
 
 # Add the following route after the existing routes but before the if __name__ == '__main__': block
-@app.route('/ai-risk-assessment')
-def ai_risk_assessment():
-    return render_template('ai_risk_assessment.html', ga_tracking_id=app.config['GA_TRACKING_ID'])
-
 @app.route('/robots.txt')
 def serve_robots():
     """Serve robots.txt file"""
