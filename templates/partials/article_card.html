@@ -24,23 +24,27 @@
                     </span>
                 {% endif %}
             </div>
-            <div class="action-buttons">
-                {% if article.sentiment_label in ['positive', 'negative'] %}
-                    {% for symbol, name in crypto_names.items() %}
-                        {% if symbol.lower() in article.content.lower() or 
-                           symbol.lower() in article.title.lower() or 
-                           name.lower() in article.content.lower() or 
-                           name.lower() in article.title.lower() %}
-                            <a href="{{ url_for('crypto_detail', symbol=symbol) }}" 
-                               class="btn btn-sm btn-{{ 'success' if article.sentiment_label == 'positive' else 'danger' }}">
-                                View {{ symbol }}
-                            </a>
-                        {% endif %}
-                    {% endfor %}
-                {% endif %}
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="action-buttons">
+                    {% if article.sentiment_label in ['positive', 'negative'] %}
+                        {% for symbol, name in crypto_names.items() %}
+                            {% if symbol.lower() in article.content.lower() or 
+                               symbol.lower() in article.title.lower() or 
+                               name.lower() in article.content.lower() or 
+                               name.lower() in article.title.lower() %}
+                                <a href="{{ url_for('crypto_detail', symbol=symbol) }}" 
+                                   class="btn btn-sm btn-{{ 'success' if article.sentiment_label == 'positive' else 'danger' }}">
+                                    View {{ symbol }}
+                                </a>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div>
+                    <button class="btn btn-info btn-sm share-btn" onclick="shareArticle('{{ article.url }}')">Share</button>
+                    <a href="{{ article.source_url }}" class="btn btn-primary btn-sm" target="_blank" rel="nofollow noopener">Read More</a>
+                </div>
             </div>
-            <button class="btn btn-info btn-sm share-btn" onclick="shareArticle('{{ article.url }}')">Share</button>
-            <a href="{{ article.source_url }}" class="btn btn-primary btn-sm" target="_blank" rel="nofollow noopener">Read More</a>
         </div>
     </div>
     {% if article.image_url %}
