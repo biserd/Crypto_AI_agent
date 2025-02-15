@@ -1,4 +1,3 @@
-
 document.addEventListener('DOMContentLoaded', function() {
     const marketCap = document.getElementById('total-market-cap');
     const volume = document.getElementById('total-volume');
@@ -14,12 +13,11 @@ document.addEventListener('DOMContentLoaded', function() {
             marketTable.innerHTML = ''; // Clear table before adding new data
             const response = await fetch('/api/crypto-prices');
             const data = await response.json();
-            
+
             let totalMarketCap = 0;
             let totalVolume = 0;
             let btcMarketCap = 0;
 
-            // First pass to calculate totals
             data.forEach(crypto => {
                 const mCap = parseFloat(crypto.market_cap) || 0;
                 const vol = parseFloat(crypto.volume_24h) || 0;
@@ -30,9 +28,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
 
-            // Second pass to create table rows
-            data.forEach(crypto => {
+            // Update market statistics
+            marketCap.textContent = `$${await formatNumber(totalMarketCap)}`;
+            volume.textContent = `$${await formatNumber(totalVolume)}`;
+            btcDominance.textContent = `${((btcMarketCap / totalMarketCap) * 100).toFixed(1)}%`;
+            activeCryptos.textContent = data.length;
 
+            // Create table rows
+            data.forEach(crypto => {
                 const row = marketTable.insertRow();
                 row.innerHTML = `
                     <td>${crypto.rank || '-'}</td>
@@ -48,14 +51,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>$${(crypto.volume_24h || 0).toLocaleString()}</td>
                 `;
             });
-
-            marketCap.textContent = `$${totalMarketCap.toLocaleString()}`;
-            volume.textContent = `$${totalVolume.toLocaleString()}`;
-            btcDominance.textContent = `${((btcMarketCap / totalMarketCap) * 100).toFixed(2)}%`;
-            activeCryptos.textContent = data.length;
         } catch (error) {
             console.error('Error fetching market data:', error);
         }
+    }
+
+    async function formatNumber(num) {
+        return num.toLocaleString(); // Simple formatting for demonstration
     }
 
     fetchMarketData();
