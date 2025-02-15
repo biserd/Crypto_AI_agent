@@ -771,15 +771,22 @@ def crypto_prices():
         if not prices:
             return jsonify({'error': 'No crypto prices found'}), 404
             
-        return jsonify([{
-            'symbol': p.symbol,
-            'price_usd': float(p.price_usd) if p.price_usd else 0.0,
-            'percent_change_24h': float(p.percent_change_24h) if p.percent_change_24h else 0.0,
-            'percent_change_7d': 0.0,  # Add if you have this data
-            'market_cap': 0,  # Add if you have this data
-            'volume_24h': 0,  # Add if you have this data 
-            'rank': 0  # Add if you have this data
-        } for p in prices])
+        tracker = CryptoPriceTracker()
+        result = []
+        
+        for p in prices:
+            coin_data = tracker.get_coin_data(p.symbol)
+            result.append({
+                'symbol': p.symbol,
+                'price_usd': float(p.price_usd) if p.price_usd else 0.0,
+                'percent_change_24h': float(p.percent_change_24h) if p.percent_change_24h else 0.0,
+                'percent_change_7d': 0.0,
+                'market_cap': coin_data.get('market_cap', 0) if coin_data else 0,
+                'volume_24h': coin_data.get('total_volume', 0) if coin_data else 0,
+                'rank': coin_data.get('market_cap_rank', 0) if coin_data else 0
+            })
+            
+        return jsonify(result)
     except Exception as e:
         print(f"Error in crypto_prices endpoint: {str(e)}")
         return jsonify({'error': str(e)}), 500

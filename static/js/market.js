@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function fetchMarketData() {
         try {
+            marketTable.innerHTML = ''; // Clear table before adding new data
             const response = await fetch('/api/crypto-prices');
             const data = await response.json();
             
@@ -18,12 +19,19 @@ document.addEventListener('DOMContentLoaded', function() {
             let totalVolume = 0;
             let btcMarketCap = 0;
 
+            // First pass to calculate totals
             data.forEach(crypto => {
-                totalMarketCap += crypto.market_cap || 0;
-                totalVolume += crypto.volume_24h || 0;
+                const mCap = parseFloat(crypto.market_cap) || 0;
+                const vol = parseFloat(crypto.volume_24h) || 0;
+                totalMarketCap += mCap;
+                totalVolume += vol;
                 if (crypto.symbol === 'BTC') {
-                    btcMarketCap = crypto.market_cap || 0;
+                    btcMarketCap = mCap;
                 }
+            });
+
+            // Second pass to create table rows
+            data.forEach(crypto => {
 
                 const row = marketTable.insertRow();
                 row.innerHTML = `
