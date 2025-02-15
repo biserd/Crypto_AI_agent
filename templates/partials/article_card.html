@@ -26,22 +26,20 @@
             </div>
             <div class="article-actions">
                 <div class="crypto-buttons">
-                    {% if article.sentiment_label in ['positive', 'negative'] %}
-                {% for symbol, name in crypto_names.items() %}
-                    {% if symbol.lower() in article.content.lower() or 
-                       symbol.lower() in article.title.lower() or 
-                       name.lower() in article.content.lower() or 
-                       name.lower() in article.title.lower() or
-                       (symbol == 'USDT' and 'Tether' in article.content) or
-                       (symbol == 'SOL' and 'Solana' in article.content) or
-                       (symbol == 'BTC' and 'Bitcoin' in article.content) %}
-                        <a href="{{ url_for('crypto_detail', symbol=symbol) }}" 
-                           class="btn btn-sm btn-{{ 'success' if article.sentiment_label == 'positive' else 'danger' }}">
-                            View {{ symbol }}
-                        </a>
-                    {% endif %}
-                {% endfor %}
-            {% endif %}
+                    {% for symbol, name in crypto_names.items() %}
+                        {% if symbol.lower() in article.content.lower() or 
+                           symbol.lower() in article.title.lower() or 
+                           name.lower() in article.content.lower() or 
+                           name.lower() in article.title.lower() or
+                           (symbol == 'USDT' and 'Tether' in article.content) or
+                           (symbol == 'SOL' and 'Solana' in article.content) or
+                           (symbol == 'BTC' and 'Bitcoin' in article.content) %}
+                            <a href="{{ url_for('crypto_detail', symbol=symbol) }}" 
+                               class="btn btn-sm btn-{{ 'success' if article.sentiment_label == 'positive' else 'danger' }}">
+                                {{ symbol }}
+                            </a>
+                        {% endif %}
+                    {% endfor %}
                 </div>
                 <div class="general-buttons">
                     <button class="btn btn-info btn-sm share-btn" onclick="shareArticle('{{ article.url }}')">Share</button>
