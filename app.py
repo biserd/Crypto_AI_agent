@@ -357,24 +357,72 @@ def glossary():
                     definition="A decentralized, distributed ledger technology that records transactions across multiple computers securely.",
                     detailed_explanation="A blockchain is a type of distributed database that stores data in blocks that are linked together using cryptography.",
                     technical_details="Uses cryptographic hashing and consensus mechanisms to maintain data integrity.",
-                    real_world_usage="Used in cryptocurrencies, supply chain management, and digital identity verification.",
+                    real_world_usage="Used in cryptocurrencies, smart contracts, DeFi applications, and digital identity verification.",
                     historical_context="First implemented as part of Bitcoin in 2009 by Satoshi Nakamoto.",
                     category="Technology",
                     difficulty_level="Beginner",
-                    related_terms="Bitcoin,Cryptocurrency,Mining",
+                    related_terms="Smart Contracts,Tokens,Bitcoin,DeFi",
                     sources="Bitcoin Whitepaper, Blockchain Academic Papers"
                 ),
                 CryptoGlossary(
-                    term="Bitcoin",
-                    definition="The first and most well-known cryptocurrency, created by Satoshi Nakamoto in 2009.",
-                    detailed_explanation="Bitcoin is a peer-to-peer electronic cash system that enables online payments without going through financial institutions.",
-                    technical_details="Uses SHA-256 hashing algorithm and Proof of Work consensus mechanism.",
-                    real_world_usage="Digital payments, store of value, and international remittances.",
-                    historical_context="Created in 2009 as a response to the 2008 financial crisis.",
-                    category="Cryptocurrency",
+                    term="Smart Contracts",
+                    definition="Self-executing contracts with the terms directly written into code that automatically enforce and execute agreements.",
+                    detailed_explanation="Smart contracts are programs stored on a blockchain that run when predetermined conditions are met, enabling trustless automation of agreements.",
+                    technical_details="Written in programming languages like Solidity (Ethereum) or Rust (Solana), executed by the blockchain's virtual machine.",
+                    real_world_usage="DeFi protocols, NFT marketplaces, automated token exchanges, and decentralized lending platforms.",
+                    historical_context="Concept first proposed by Nick Szabo in 1994, implemented on Ethereum in 2015.",
+                    category="Technology",
+                    difficulty_level="Intermediate",
+                    related_terms="DeFi,AMM,Tokens,Blockchain",
+                    sources="Ethereum Documentation, Smart Contract Research Papers"
+                ),
+                CryptoGlossary(
+                    term="Tokens",
+                    definition="Digital assets created and managed on existing blockchain platforms, representing various forms of value or utility.",
+                    detailed_explanation="Tokens can represent financial assets, utilities, or rights within a blockchain ecosystem. They're created using standard protocols like ERC-20 or SPL.",
+                    technical_details="Implemented through smart contracts following token standards, managed by blockchain networks.",
+                    real_world_usage="Cryptocurrency trading, governance voting, DeFi protocols, and representing real-world assets.",
+                    historical_context="Gained prominence with Ethereum's ERC-20 standard in 2015.",
+                    category="Asset",
                     difficulty_level="Beginner",
-                    related_terms="Blockchain,Mining,Wallet",
-                    sources="Bitcoin Whitepaper, Bitcoin.org"
+                    related_terms="Smart Contracts,DeFi,AMM,Blockchain",
+                    sources="Token Standards Documentation, DeFi Protocols"
+                ),
+                CryptoGlossary(
+                    term="AMM",
+                    definition="Automated Market Makers - decentralized exchange protocols that use mathematical formulas to price assets and provide liquidity.",
+                    detailed_explanation="AMMs enable automatic trading between cryptocurrency pairs using liquidity pools instead of traditional order books.",
+                    technical_details="Uses constant product formula (x*y=k) or other mathematical models to determine asset prices and manage liquidity pools.",
+                    real_world_usage="Decentralized exchanges like Uniswap, SushiSwap, and PancakeSwap.",
+                    historical_context="Popularized by Uniswap's launch in 2018.",
+                    category="DeFi",
+                    difficulty_level="Advanced",
+                    related_terms="DeFi,Tokens,Smart Contracts,Liquidity Pools",
+                    sources="Uniswap Whitepaper, DeFi Documentation"
+                ),
+                CryptoGlossary(
+                    term="DeFi",
+                    definition="Decentralized Finance - financial services and products built on blockchain technology without traditional intermediaries.",
+                    detailed_explanation="DeFi uses smart contracts to recreate and innovate upon traditional financial services in a decentralized manner.",
+                    technical_details="Built primarily on smart contract platforms, using tokens and protocols for various financial operations.",
+                    real_world_usage="Lending, borrowing, trading, yield farming, and insurance services.",
+                    historical_context="Emerged in 2018-2019 with the rise of lending protocols and AMMs.",
+                    category="Finance",
+                    difficulty_level="Intermediate",
+                    related_terms="Smart Contracts,AMM,Tokens,Liquidity Pools",
+                    sources="DeFi Pulse, Protocol Documentation"
+                ),
+                CryptoGlossary(
+                    term="Liquidity Pools",
+                    definition="Smart contract-based pools of tokens that provide trading liquidity for decentralized exchanges and DeFi protocols.",
+                    detailed_explanation="Users deposit pairs of tokens into these pools to enable automated trading and earn fees from trades.",
+                    technical_details="Managed by AMM algorithms, typically using constant product market making formulas.",
+                    real_world_usage="Providing liquidity for DEXes, yield farming, and automated trading strategies.",
+                    historical_context="Became mainstream with the growth of AMMs and yield farming in 2020.",
+                    category="DeFi",
+                    difficulty_level="Advanced",
+                    related_terms="AMM,DeFi,Tokens,Smart Contracts",
+                    sources="DeFi Protocol Documentation, Academic Research"
                 )
             ]
             db.session.bulk_save_objects(default_terms)
