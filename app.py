@@ -209,7 +209,7 @@ def dashboard():
         crypto_prices = []
         recent_articles = []
         news_sources = []
-        
+
         # Fetch crypto prices with error handling
         try:
             crypto_prices = CryptoPrice.query.filter(
