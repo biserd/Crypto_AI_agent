@@ -5,6 +5,7 @@ eventlet.monkey_patch()
 import os
 import logging
 from flask import Flask, render_template, request, jsonify, redirect, flash, url_for, session, make_response, send_from_directory
+from flask_compress import Compress
 from flask_login import LoginManager, UserMixin, current_user, login_required, login_user, logout_user
 from database import db, init_app, sync_article_counts
 from models import Article, CryptoPrice, NewsSourceMetrics, CryptoGlossary, Subscription, Users
@@ -29,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 # Create Flask app
 app = Flask(__name__)
+Compress(app)
 
 # Configuration
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", os.urandom(24))
@@ -901,8 +903,13 @@ with app.app_context():
 @app.route('/static/<path:filename>')
 def serve_static(filename):
     response = send_from_directory(app.static_folder, filename)
-    response.cache_control.max_age = 86400  # Cache for 24 hours
+    response.cache_control.max_age = 31536000  # Cache for 1 year
     response.cache_control.public = True
+    response.headers['Vary'] = 'Accept-Encoding'
+    if filename.endswith('.css'):
+        response.headers['Content-Type'] = 'text/css'
+    elif filename.endswith('.js'):
+        response.headers['Content-Type'] = 'application/javascript'
     return response
 
 if __name__ == "__main__":
