@@ -26,13 +26,11 @@
             </div>
             <div class="action-buttons">
                 {% if article.sentiment_label in ['positive', 'negative'] %}
-                    {% for symbol in supported_cryptos %}
-                        {% set full_name = crypto_names.get(symbol, '').lower() %}
+                    {% for symbol, name in crypto_names.items() %}
                         {% if symbol.lower() in article.content.lower() or 
-                           symbol in article.content or 
-                           full_name in article.content.lower() or 
-                           full_name in article.title.lower() or
-                           symbol in article.title %}
+                           symbol.lower() in article.title.lower() or 
+                           name.lower() in article.content.lower() or 
+                           name.lower() in article.title.lower() %}
                             <a href="{{ url_for('crypto_detail', symbol=symbol) }}" 
                                class="btn btn-sm btn-{{ 'success' if article.sentiment_label == 'positive' else 'danger' }}">
                                 View {{ symbol }}
@@ -40,10 +38,9 @@
                         {% endif %}
                     {% endfor %}
                 {% endif %}
-                {% endif %}
-                <button class="btn btn-info btn-sm share-btn" onclick="shareArticle('{{ article.url }}')">Share</button>
-                <a href="{{ article.source_url }}" class="btn btn-primary btn-sm" target="_blank" rel="nofollow noopener">Read More</a>
             </div>
+            <button class="btn btn-info btn-sm share-btn" onclick="shareArticle('{{ article.url }}')">Share</button>
+            <a href="{{ article.source_url }}" class="btn btn-primary btn-sm" target="_blank" rel="nofollow noopener">Read More</a>
         </div>
     </div>
     {% if article.image_url %}
