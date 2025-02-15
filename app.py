@@ -109,21 +109,19 @@ def check_subscription(feature='basic'):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            # For now, we'll use a test user_id of 1
-            # This should be replaced with actual user authentication later
-            request.subscription = Subscription.query.filter_by(user_id=1, active=True).first()
+            if current_user.is_authenticated:
+                request.subscription = Subscription.query.filter_by(user_id=current_user.id, active=True).first()
+            else:
+                request.subscription = None
 
+            # Allow basic access without subscription
+            if feature == 'basic':
+                return f(*args, **kwargs)
+
+            # Check pro features
             if feature == 'pro' and (not request.subscription or request.subscription.tier != 'pro'):
-                return jsonify({'error': 'Pro subscription required'}), 403
-
-            # Check rate limiting for basic features
-            if request.subscription and request.subscription.rate_limit:
-                current = Article.query.filter(
-                    Article.created_at > datetime.utcnow() - timedelta(days=1)
-                ).count()
-
-                if current >= request.subscription.rate_limit:
-                    return jsonify({'error': 'Rate limit exceeded'}), 429
+                flash('Pro subscription required for this feature', 'warning')
+                return redirect(url_for('pricing'))
 
             return f(*args, **kwargs)
         return decorated_function
