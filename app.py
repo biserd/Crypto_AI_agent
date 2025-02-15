@@ -897,5 +897,12 @@ with app.app_context():
         logger.error(f"Error creating database tables: {str(e)}")
         db.session.rollback()
 
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    response = send_from_directory(app.static_folder, filename)
+    response.cache_control.max_age = 86400  # Cache for 24 hours
+    response.cache_control.public = True
+    return response
+
 if __name__ == "__main__":
     print("Please run 'python main.py' to start the server")

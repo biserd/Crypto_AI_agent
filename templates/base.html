@@ -18,8 +18,12 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{% block twitter_title %}{{ self.title() }}{% endblock %}">
     <meta name="twitter:description" content="{% block twitter_description %}{{ self.meta_description() }}{% endblock %}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/static/styles.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="/static/styles.css" media="print" onload="this.media='all'">
+    <noscript>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="/static/styles.css">
+    </noscript>
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-TQRHFZPBR9"></script>
     <script>
@@ -40,21 +44,21 @@
         margin-left: 1rem;
         transition: all 0.2s ease;
     }
-    
+
     .subscription-badge.basic {
         cursor: pointer;
     }
-    
+
     .subscription-badge.basic {
         background: #e9ecef;
         color: #495057;
     }
-    
+
     .subscription-badge.pro {
         background: linear-gradient(135deg, #2a2a72 0%, #009ffd 100%);
         color: white;
     }
-    
+
     .upgrade-modal {
         display: none;
         position: fixed;
@@ -65,7 +69,7 @@
         height: 100%;
         background-color: rgba(0,0,0,0.5);
     }
-    
+
     .upgrade-modal-content {
         background-color: #fff;
         margin: 15% auto;
@@ -75,7 +79,7 @@
         max-width: 500px;
         position: relative;
     }
-    
+
     .close-modal {
         position: absolute;
         right: 1rem;
@@ -83,17 +87,17 @@
         font-size: 1.5rem;
         cursor: pointer;
     }
-    
+
     .plan-features {
         margin: 1.5rem 0;
     }
-    
+
     .plan-features li {
         margin-bottom: 0.5rem;
         padding-left: 1.5rem;
         position: relative;
     }
-    
+
     .plan-features li:before {
         content: "✓";
         position: absolute;
@@ -153,7 +157,7 @@
             </div>
         </div>
     </nav>
-    
+
     <!-- Upgrade Modal -->
     <div id="upgradeModal" class="upgrade-modal">
         <div class="upgrade-modal-content">
@@ -171,18 +175,18 @@
             </button>
         </div>
     </div>
-    
+
     <main class="container mt-4">
         {% block content %}{% endblock %}
     </main>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://js.stripe.com/v3/"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script>
         let stripe;
         const socket = io();
-        
+
         async function initStripe() {
             try {
                 const response = await fetch('/stripe-config');
@@ -199,7 +203,7 @@
                 console.error('Stripe initialization failed:', error);
             }
         }
-        
+
         function showUpgradeModal() {
             // Only show modal if user has basic plan
             const badge = document.getElementById('subscriptionStatus');
@@ -207,11 +211,11 @@
                 document.getElementById('upgradeModal').style.display = 'block';
             }
         }
-        
+
         function hideUpgradeModal() {
             document.getElementById('upgradeModal').style.display = 'none';
         }
-        
+
         async function fetchSubscriptionStatus() {
             try {
                 const response = await fetch('/subscription/status');
@@ -226,13 +230,13 @@
                 console.error('Error fetching subscription:', error);
             }
         }
-        
+
         async function processUpgrade() {
             try {
                 if (!stripe) {
                     await initStripe();
                 }
-                
+
                 const response = await fetch('/create-checkout-session', {
                     method: 'POST',
                     headers: {
@@ -240,15 +244,15 @@
                     }
                 });
                 const session = await response.json();
-                
+
                 if (!stripe) {
                     await initStripe();
                 }
-                
+
                 if (session.error) {
                     throw new Error(session.error);
                 }
-                
+
                 // Redirect to Stripe's checkout URL directly
                 window.location.href = session.url;
             } catch (error) {
@@ -258,7 +262,7 @@
                 hideUpgradeModal();
             }
         }
-        
+
         // Crypto search functionality
         const cryptoNames = {
             'bitcoin': 'BTC', 'ethereum': 'ETH', 'tether': 'USDT', 'binance': 'BNB',
@@ -291,21 +295,21 @@
             'celer': 'CELR', 'qtum': 'QTUM', 'ravencoin': 'RVN', 'ontology': 'ONT',
             'reserve rights': 'RSR', 'ankr': 'ANKR', 'siacoin': 'SC', 'ondo': 'ONDO'
         };
-        
+
         const searchInput = document.getElementById('searchCrypto');
         const suggestionsDiv = document.getElementById('searchSuggestions');
-        
+
         searchInput.addEventListener('input', function() {
             const query = this.value.toLowerCase();
             if (query.length < 1) {
                 suggestionsDiv.classList.add('d-none');
                 return;
             }
-            
+
             const matches = Object.entries(cryptoNames).filter(([name, symbol]) => 
                 name.includes(query) || symbol.toLowerCase().includes(query)
             );
-            
+
             if (matches.length > 0) {
                 suggestionsDiv.innerHTML = matches.map(([name, symbol]) => `
                     <div class="p-2 hover-bg-light cursor-pointer" onclick="selectCrypto('${symbol}')">
@@ -317,7 +321,7 @@
                 suggestionsDiv.classList.add('d-none');
             }
         });
-        
+
         if (typeof cryptoNames === 'undefined') {
             const cryptoNames = {
                 'bitcoin': 'BTC',
@@ -376,32 +380,32 @@
                 'link': 'LINK'
             };
         }
-        
+
         function selectCrypto(symbol) {
             window.location.href = `/crypto/${symbol}`;
         }
-        
+
         // Hide suggestions when clicking outside
         document.addEventListener('click', function(e) {
             if (!searchInput.contains(e.target)) {
                 suggestionsDiv.classList.add('d-none');
             }
         });
-        
+
         // Initialize subscription status and Stripe when page loads
         document.addEventListener('DOMContentLoaded', () => {
             fetchSubscriptionStatus();
             initStripe();
         });
-        
+
         // Reconnect WebSocket on disconnect
         socket.on('disconnect', () => {
             setTimeout(() => {
                 socket.connect();
             }, 1000);
         });
-        
-        
+
+
         function shareArticle(url) {
             if (navigator.share) {
                 navigator.share({
