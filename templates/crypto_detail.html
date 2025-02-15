@@ -88,40 +88,7 @@
         </div>
     </div>
 
-    <!-- Market Data Section -->
-    {% if coin_data %}
-    <div class="market-data-grid mb-4">
-        <div class="market-data-item">
-            <span class="label">Market Cap Rank</span>
-            <span class="value">#{{ coin_data.market_cap_rank }}</span>
-        </div>
-        <div class="market-data-item">
-            <span class="label">Market Cap</span>
-            <span class="value">${{ "{:,.0f}".format(coin_data.market_cap) }}</span>
-        </div>
-        <div class="market-data-item">
-            <span class="label">24h Volume</span>
-            <span class="value">${{ "{:,.0f}".format(coin_data.total_volume) }}</span>
-        </div>
-        <div class="market-data-item">
-            <span class="label">Circulating Supply</span>
-            <span class="value">{{ "{:,.0f}".format(coin_data.circulating_supply) }}</span>
-        </div>
-        {% if coin_data.reddit_subscribers or coin_data.twitter_followers %}
-        <div class="market-data-item">
-            <span class="label">Social Following</span>
-            <span class="value">
-                {% if coin_data.reddit_subscribers %}
-                <i class="fab fa-reddit"></i> {{ "{:,.0f}".format(coin_data.reddit_subscribers) }}
-                {% endif %}
-                {% if coin_data.twitter_followers %}
-                <i class="fab fa-twitter"></i> {{ "{:,.0f}".format(coin_data.twitter_followers) }}
-                {% endif %}
-            </span>
-        </div>
-        {% endif %}
-    </div>
-    {% endif %}
+    
 
     <div class="row">
         <!-- Left Column: Chart and Market Data -->
