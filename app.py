@@ -13,12 +13,19 @@ from flask_socketio import SocketIO, emit
 import json
 from datetime import datetime, timedelta
 import stripe
+from functools import wraps
 from sqlalchemy import desc
 import pandas as pd
 import numpy as np
 import re
 import requests
 from functools import wraps
+
+# Initialize Stripe
+stripe.api_key = os.environ.get('STRIPE_SECRET_KEY', '')
+if not stripe.api_key:
+    logger.warning("Stripe secret key not set. Payment features will be disabled.")
+
 
 # Configure logging first
 logging.basicConfig(
@@ -920,9 +927,10 @@ if __name__ == "__main__":
             app,
             host='0.0.0.0',
             port=5000,
-            debug=True,
+            debug=False,  # Disable debug in production
             use_reloader=False,  # Disable reloader when using eventlet
-            log_output=True
+            log_output=True,
+            allow_unsafe_werkzeug=True  # Required for eventlet
         )
     except Exception as e:
         logger.error(f"Failed to start server: {str(e)}", exc_info=True)
