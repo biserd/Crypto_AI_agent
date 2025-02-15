@@ -211,8 +211,8 @@ def dashboard():
 
         # Fetch articles with error handling
         try:
-            # Get articles from last 24 hours only
-            cutoff_time = datetime.utcnow() - timedelta(hours=24)
+            # Get articles from last 12 hours only
+            cutoff_time = datetime.utcnow() - timedelta(hours=12)
             recent_articles = Article.query.filter(
                 Article.created_at >= cutoff_time,
                 Article.sentiment_score.isnot(None)  # Ensure sentiment score exists
