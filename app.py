@@ -211,6 +211,15 @@ def dashboard():
 
         # Fetch articles with error handling
         try:
+            # Get crypto prices first
+            crypto_prices = CryptoPrice.query.filter(
+                CryptoPrice.price_usd.isnot(None),
+                CryptoPrice.percent_change_24h.isnot(None)
+            ).all()
+            
+            # Store for template use
+            app.crypto_prices = crypto_prices
+
             # Get last 15 articles
             recent_articles = Article.query.filter(
                 Article.sentiment_score.isnot(None)  # Ensure sentiment score exists
