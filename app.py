@@ -823,7 +823,8 @@ def price_history(symbol):
 
         # Validate the historical data structure
         if not historical_data or not isinstance(historical_data, dict):
-            logger.error(f"Invalid historical data type for {symbol}: {type(historical_data)}return jsonify({
+            logger.error(f"Invalid historical data type for {symbol}: {type(historical_data)}")
+            return jsonify({
                 'error': f'Invalid data format received for {symbol}',
                 'symbol': symbol
             }), 500
@@ -985,18 +986,6 @@ def utility_processor():
         'crypto_names': crypto_names,
         'supported_cryptos': list(tracker.crypto_ids.keys())
     }
-
-@app.route('/ai-trading')
-def ai_trading():
-    return render_template('ai_trading.html', ga_tracking_id=app.config['GA_TRACKING_ID'])
-
-@app.route('/ai-analysis')
-def ai_analysis():
-    return render_template('ai_analysis.html', ga_tracking_id=app.config['GA_TRACKING_ID'])
-
-@app.route('/ai-risk')
-def ai_risk():
-    return render_template('ai_risk.html', ga_tracking_id=app.config['GA_TRACKING_ID'])
 
 if __name__ == "__main__":
     print("Please run 'python main.py' to start the server")
