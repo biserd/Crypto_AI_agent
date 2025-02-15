@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const activeCryptos = document.getElementById('active-cryptos');
     const marketTable = document.getElementById('market-table').getElementsByTagName('tbody')[0];
 
+    // Clear existing rows
+    marketTable.innerHTML = '';
+
     async function fetchMarketData() {
         try {
             const response = await fetch('/api/crypto-prices');

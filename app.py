@@ -767,17 +767,21 @@ def market():
 @app.route('/api/crypto-prices')
 def crypto_prices():
     try:
-        prices = CryptoPrice.query.all()
+        prices = CryptoPrice.query.order_by(CryptoPrice.symbol).all()
+        if not prices:
+            return jsonify({'error': 'No crypto prices found'}), 404
+            
         return jsonify([{
             'symbol': p.symbol,
-            'price_usd': p.price_usd,
-            'percent_change_24h': p.percent_change_24h,
-            'percent_change_7d': p.percent_change_7d,
-            'market_cap': p.market_cap,
-            'volume_24h': p.volume_24h,
-            'rank': p.rank
+            'price_usd': float(p.price_usd) if p.price_usd else 0.0,
+            'percent_change_24h': float(p.percent_change_24h) if p.percent_change_24h else 0.0,
+            'percent_change_7d': 0.0,  # Add if you have this data
+            'market_cap': 0,  # Add if you have this data
+            'volume_24h': 0,  # Add if you have this data 
+            'rank': 0  # Add if you have this data
         } for p in prices])
     except Exception as e:
+        print(f"Error in crypto_prices endpoint: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/search')
