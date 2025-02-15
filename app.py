@@ -534,11 +534,15 @@ def crypto_detail(symbol):
         # Get related news articles (from last 7 days)
         try:
             cutoff_time = datetime.utcnow() - timedelta(days=7)
+            coin_name = crypto_names.get(symbol, '')
             related_news = Article.query.filter(
                 db.and_(
                     db.or_(
                         Article.content.ilike(f'%{symbol}%'),
-                        Article.title.ilike(f'%{symbol}%')
+                        Article.title.ilike(f'%{symbol}%'),
+                        Article.content.ilike(f'%{coin_name}%'),
+                        Article.title.ilike(f'%{coin_name}%'),
+                        Article.content.ilike(f'%TRON%')  # Special case for TRX
                     ),
                     Article.created_at >= cutoff_time
                 )
