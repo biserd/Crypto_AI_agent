@@ -168,11 +168,21 @@ def init_source_metrics(source_name):
 
         source_metrics = NewsSourceMetrics.query.filter_by(source_name=source_name).first()
         if not source_metrics:
+            # Define varied default scores based on source
+            default_scores = {
+                'CoinDesk': {'trust': 85.0, 'accuracy': 88.0},
+                'Cointelegraph': {'trust': 82.0, 'accuracy': 85.0},
+                'The Block': {'trust': 88.0, 'accuracy': 90.0},
+                'Messari': {'trust': 86.0, 'accuracy': 87.0}
+            }
+            
+            scores = default_scores.get(source_name, {'trust': 75.0, 'accuracy': 78.0})
+            
             source_metrics = NewsSourceMetrics(
                 source_name=source_name,
-                trust_score=70.0,
+                trust_score=scores['trust'],
                 article_count=existing_count,
-                accuracy_score=80.0,
+                accuracy_score=scores['accuracy'],
                 last_updated=datetime.utcnow()
             )
             db.session.add(source_metrics)
