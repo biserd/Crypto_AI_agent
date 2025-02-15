@@ -163,16 +163,16 @@ def register():
         db.session.add(subscription)
         db.session.commit()
 
-        # Send notification email
+        # Send admin notification email
         try:
             msg = Message(
                 'New User Registration',
                 recipients=['hello@bigappledigital.nyc'],
-                body=f'New user registered:\nEmail: {email}\nRegistration Time: {user.created_at}'
+                body=f'New user registered:\nEmail: {email}'
             )
             mail.send(msg)
         except Exception as e:
-            logger.error(f"Failed to send registration notification: {str(e)}")
+            logging.error(f"Failed to send registration notification: {str(e)}")
 
         login_user(user)
         return redirect(url_for('dashboard'))
@@ -824,7 +824,7 @@ def price_history(symbol):
         logger.error(f"Error in price history endpoint for {symbol}: {str(e)}", exc_info=True)
         return jsonify({
             'error': 'Internal server error',
-            'details': str(e)
+            'details': str(e)}
         }), 500
 
 # Add the following route after the existing routes but before the if __name__ == '__main__': block
