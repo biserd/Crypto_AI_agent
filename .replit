@@ -8,7 +8,7 @@ deploymentTarget = "autoscale"
 run = ["python", "main.py"]
 
 [workflows]
-runButton = "Flask Server"
+runButton = "Run Server"
 
 [[workflows.workflow]]
 name = "Project"
@@ -48,6 +48,14 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "python app.py"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Run Server"
+author = 31309541
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
 
 [[ports]]
 localPort = 5000
