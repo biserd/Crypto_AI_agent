@@ -53,7 +53,8 @@ function initPriceChart(symbol) {
             'MATIC': 'matic-network',
             'AAVE': 'aave',
             'CAKE': 'pancakeswap-token',
-            'POLY': 'polymath'
+            'POLY': 'polymath',
+            'ORDI': 'ordinals-token'
         };
         
         const coinId = symbolToId[symbol.toUpperCase()] || symbol.toLowerCase();
