@@ -41,7 +41,7 @@ class CryptoPriceTracker:
             'TIA': 'celestia',
             'DYM': 'dymension',
             'ORDI': 'ordinals',
-            'TRX': 'tron',
+            'TRX': 'tron-old',
             'DAI': 'dai',
             'MATIC': 'matic-network',
             'DOT': 'polkadot',
