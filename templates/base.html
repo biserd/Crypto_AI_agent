@@ -166,16 +166,8 @@
                         <a class="nav-link py-2" href="/">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('glossary') }}">Glossary</a>
+                        <a class="nav-link" href="/glossary">Glossary</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('market') }}">Market</a>
-                    </li>
-                    {% if current_user.is_authenticated %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('portfolio') }}">Portfolio</a>
-                        </li>
-                    {% endif %}
                     <li class="nav-item">
                         <a class="nav-link" href="/about">About</a>
                     </li>
@@ -263,7 +255,7 @@
     <script>
         let stripe;
         let socket;
-
+        
         // Initialize socket only when needed
         function initSocket() {
             if (!socket) {
