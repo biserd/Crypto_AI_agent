@@ -7,9 +7,36 @@ function initPriceChart(symbol) {
 
     fetchChartData(symbol, currentTimeframe);
 
+    function calculateRSI(prices, periods = 14) {
+        let gains = [], losses = [];
+        for (let i = 1; i < prices.length; i++) {
+            const diff = prices[i] - prices[i - 1];
+            gains.push(diff > 0 ? diff : 0);
+            losses.push(diff < 0 ? -diff : 0);
+        }
+        
+        const avgGain = gains.slice(0, periods).reduce((a, b) => a + b) / periods;
+        const avgLoss = losses.slice(0, periods).reduce((a, b) => a + b) / periods;
+        
+        return (100 - (100 / (1 + avgGain / avgLoss)));
+    }
+
+    function calculateMA(prices, periods) {
+        let ma = [];
+        for (let i = 0; i < prices.length; i++) {
+            if (i < periods - 1) {
+                ma.push(null);
+                continue;
+            }
+            const slice = prices.slice(i - periods + 1, i + 1);
+            const avg = slice.reduce((a, b) => a + b) / periods;
+            ma.push(avg);
+        }
+        return ma;
+    }
+
     function fetchChartData(symbol, days, attempt = 1) {
         console.log(`Fetching data for ${symbol} with ${days} days (attempt ${attempt})`);
-        // Map symbols to CoinGecko IDs
         const symbolToId = {
             'BTC': 'bitcoin',
             'ETH': 'ethereum',
@@ -34,7 +61,7 @@ function initPriceChart(symbol) {
             .then(response => response.json())
             .then(data => {
                 console.log("Creating chart with data:", data);
-                createChart(data.prices);
+                createChart(data.prices, data.total_volumes);
             })
             .catch(error => {
                 console.error('Error fetching chart data:', error);
@@ -46,47 +73,86 @@ function initPriceChart(symbol) {
             });
     }
 
-    function createChart(priceData) {
+    function createChart(priceData, volumeData) {
         console.log("Creating Chart.js instance");
         const ctx = document.getElementById('priceChart').getContext('2d');
         
-        // Destroy existing chart if it exists
         if (chart) {
             chart.destroy();
         }
 
-        // Process data
         const labels = priceData.map(d => new Date(d[0]));
         const prices = priceData.map(d => d[1]);
+        const volumes = volumeData.map(d => d[1]);
 
-        // Create new chart
+        // Calculate technical indicators
+        const ma20 = calculateMA(prices, 20);
+        const ma50 = calculateMA(prices, 50);
+        const rsi = calculateRSI(prices);
+
         chart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
-                datasets: [{
-                    label: 'Price (USD)',
-                    data: prices,
-                    borderColor: '#10B981',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4
-                }]
+                datasets: [
+                    {
+                        label: 'Price',
+                        data: prices,
+                        borderColor: '#10B981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'MA20',
+                        data: ma20,
+                        borderColor: '#FFB020',
+                        borderWidth: 1.5,
+                        fill: false,
+                        tension: 0.4,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'MA50',
+                        data: ma50,
+                        borderColor: '#7C3AED',
+                        borderWidth: 1.5,
+                        fill: false,
+                        tension: 0.4,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Volume',
+                        data: volumes,
+                        type: 'bar',
+                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                        yAxisID: 'volume'
+                    }
+                ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
                 plugins: {
                     legend: {
-                        display: false
+                        display: true,
+                        position: 'top'
                     },
                     tooltip: {
                         mode: 'index',
                         intersect: false,
                         callbacks: {
                             label: function(context) {
-                                return `$${context.parsed.y.toFixed(2)}`;
+                                if (context.dataset.label === 'Volume') {
+                                    return `Volume: $${context.parsed.y.toFixed(0)}`;
+                                }
+                                return `${context.dataset.label}: $${context.parsed.y.toFixed(2)}`;
                             }
                         }
                     }
@@ -102,6 +168,7 @@ function initPriceChart(symbol) {
                         }
                     },
                     y: {
+                        position: 'right',
                         grid: {
                             color: 'rgba(0, 0, 0, 0.05)'
                         },
@@ -110,11 +177,18 @@ function initPriceChart(symbol) {
                                 return '$' + value.toFixed(2);
                             }
                         }
+                    },
+                    volume: {
+                        position: 'left',
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + (value/1000000).toFixed(0) + 'M';
+                            }
+                        }
                     }
-                },
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
                 }
             }
         });
