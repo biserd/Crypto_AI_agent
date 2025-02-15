@@ -1,4 +1,3 @@
-
 import eventlet
 eventlet.monkey_patch()
 
@@ -18,18 +17,8 @@ if __name__ == "__main__":
             db.create_all()
         except Exception as e:
             print(f"Database initialization error: {e}")
-            
+
     # Start scheduler in a separate thread
     scheduler_thread = threading.Thread(target=run_scheduler)
     scheduler_thread.daemon = True
     scheduler_thread.start()
-
-    # Run the main Flask app with proper eventlet configuration
-    socketio.run(
-        app,
-        host='0.0.0.0',
-        port=5000,
-        debug=False,
-        use_reloader=False,
-        log_output=True
-    )

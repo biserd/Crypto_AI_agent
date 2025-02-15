@@ -899,30 +899,16 @@ with app.app_context():
 
 if __name__ == "__main__":
     try:
-        logger.info("Starting server with SocketIO support...")
-
-        # Initialize database tables within app context
         with app.app_context():
-            try:
-                logger.info("Creating database tables...")
-                db.create_all()
-                logger.info("Database tables created successfully")
-
-                logger.info("Syncing article counts...")
-                sync_article_counts()
-                logger.info("Article counts synced successfully")
-            except Exception as e:
-                logger.error(f"Error during database initialization: {str(e)}", exc_info=True)
-                raise
-
-        # Start the server with minimal configuration
-        logger.info("Starting SocketIO server...")
+            db.create_all()
+            sync_article_counts()
+        
         socketio.run(
             app,
             host='0.0.0.0',
             port=5000,
-            debug=True,
-            use_reloader=False  # Disable reloader when using eventlet
+            debug=False,
+            use_reloader=False
         )
     except Exception as e:
         logger.error(f"Failed to start server: {str(e)}", exc_info=True)
