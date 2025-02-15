@@ -155,7 +155,7 @@ class CryptoPriceTracker:
             'INJ': 'injective-protocol',
             'MASK': 'mask-network',
             'TRUMP': 'trump-digital-trading-card',
-            'HYPE': 'hyperliquid'
+            'HYPE': 'hyperliquid-hype'
         }
 
     def _rate_limit_wait(self):
