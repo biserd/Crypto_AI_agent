@@ -261,6 +261,40 @@ class CryptoPriceTracker:
             logger.error(f"Error in fetch_current_prices: {str(e)}")
             return False
 
+    def get_coin_data(self, symbol):
+        """Fetch comprehensive coin data"""
+        try:
+            coin_id = self.crypto_ids.get(symbol.upper())
+            if not coin_id:
+                return None
+
+            api_url = f"{self.base_url}/coins/{coin_id}"
+            params = {
+                'localization': 'false',
+                'tickers': 'false',
+                'community_data': 'true',
+                'developer_data': 'false'
+            }
+
+            data = self._make_request(api_url, params)
+            if not data:
+                return None
+
+            return {
+                'market_cap': data.get('market_data', {}).get('market_cap', {}).get('usd'),
+                'total_volume': data.get('market_data', {}).get('total_volume', {}).get('usd'),
+                'circulating_supply': data.get('market_data', {}).get('circulating_supply'),
+                'total_supply': data.get('market_data', {}).get('total_supply'),
+                'market_cap_rank': data.get('market_cap_rank'),
+                'reddit_subscribers': data.get('community_data', {}).get('reddit_subscribers'),
+                'twitter_followers': data.get('community_data', {}).get('twitter_followers'),
+                'telegram_users': data.get('community_data', {}).get('telegram_channel_user_count')
+            }
+
+        except Exception as e:
+            logger.error(f"Error fetching coin data for {symbol}: {str(e)}")
+            return None
+
     def get_historical_prices(self, symbol, days=30, interval='daily', max_retries=3):
         """Fetch historical price data with improved validation and error handling"""
         try:

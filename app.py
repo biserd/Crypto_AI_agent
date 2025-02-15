@@ -566,9 +566,14 @@ def crypto_detail(symbol):
         signals = calculate_crypto_signals(symbol, related_news, crypto_price)
         recommendation = signals['signal']
 
+        # Get additional coin data
+        tracker = CryptoPriceTracker()
+        coin_data = tracker.get_coin_data(symbol)
+
         logger.info(f"Generated {recommendation} recommendation for {symbol}")
 
         return render_template('crypto_detail.html',
+                           coin_data=coin_data,
                            crypto=crypto_price,
                            news=related_news,
                            news_impact=news_impact,
