@@ -211,12 +211,10 @@ def dashboard():
 
         # Fetch articles with error handling
         try:
-            # Get articles from last 12 hours only
-            cutoff_time = datetime.utcnow() - timedelta(hours=12)
+            # Get last 15 articles
             recent_articles = Article.query.filter(
-                Article.created_at >= cutoff_time,
                 Article.sentiment_score.isnot(None)  # Ensure sentiment score exists
-            ).order_by(Article.created_at.desc()).all()
+            ).order_by(Article.created_at.desc()).limit(15).all()
 
             # Set default values for any None fields
             for article in recent_articles:
