@@ -29,10 +29,20 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             // Update market statistics
-            marketCap.textContent = `$${await formatNumber(totalMarketCap)}`;
-            volume.textContent = `$${await formatNumber(totalVolume)}`;
-            btcDominance.textContent = `${((btcMarketCap / totalMarketCap) * 100).toFixed(1)}%`;
-            activeCryptos.textContent = data.length;
+            // Format large numbers
+            const formatNumber = (num) => {
+                if (num >= 1e12) return `$${(num / 1e12).toFixed(2)}T`;
+                if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;
+                if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;
+                return `$${num.toLocaleString()}`;
+            };
+
+            marketCap.textContent = formatNumber(totalMarketCap);
+            volume.textContent = formatNumber(totalVolume);
+            btcDominance.textContent = totalMarketCap > 0 ? 
+                `${((btcMarketCap / totalMarketCap) * 100).toFixed(1)}%` : 
+                '0%';
+            activeCryptos.textContent = data.filter(c => c && c.market_cap > 0).length;
 
             // Create table rows
             data.forEach(crypto => {
@@ -56,9 +66,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    async function formatNumber(num) {
-        return num.toLocaleString(); // Simple formatting for demonstration
-    }
 
     fetchMarketData();
 });
