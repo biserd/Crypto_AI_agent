@@ -103,7 +103,8 @@ function initPriceChart(symbol) {
                         borderWidth: 2,
                         fill: true,
                         tension: 0.4,
-                        yAxisID: 'y'
+                        yAxisID: 'price',
+                        order: 1
                     },
                     {
                         label: 'MA20',
@@ -112,7 +113,8 @@ function initPriceChart(symbol) {
                         borderWidth: 1.5,
                         fill: false,
                         tension: 0.4,
-                        yAxisID: 'y'
+                        yAxisID: 'price',
+                        order: 2
                     },
                     {
                         label: 'MA50',
@@ -121,14 +123,16 @@ function initPriceChart(symbol) {
                         borderWidth: 1.5,
                         fill: false,
                         tension: 0.4,
-                        yAxisID: 'y'
+                        yAxisID: 'price',
+                        order: 3
                     },
                     {
                         label: 'Volume',
                         data: volumes,
                         type: 'bar',
                         backgroundColor: 'rgba(16, 185, 129, 0.2)',
-                        yAxisID: 'volume'
+                        yAxisID: 'volume',
+                        order: 4
                     }
                 ]
             },
@@ -167,7 +171,7 @@ function initPriceChart(symbol) {
                             display: false
                         }
                     },
-                    y: {
+                    price: {
                         position: 'right',
                         grid: {
                             color: 'rgba(0, 0, 0, 0.05)'
@@ -176,7 +180,8 @@ function initPriceChart(symbol) {
                             callback: function(value) {
                                 return '$' + value.toFixed(2);
                             }
-                        }
+                        },
+                        beginAtZero: false
                     },
                     volume: {
                         position: 'left',
@@ -187,7 +192,9 @@ function initPriceChart(symbol) {
                             callback: function(value) {
                                 return '$' + (value/1000000).toFixed(0) + 'M';
                             }
-                        }
+                        },
+                        beginAtZero: true,
+                        display: true
                     }
                 }
             }
