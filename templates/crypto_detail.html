@@ -147,31 +147,7 @@
                 </div>
             </div>
 
-            <!-- Market Statistics Grid -->
-            {% if coin_data %}
-            <div class="content-card mb-4">
-                <h3>Market Statistics</h3>
-                <div class="market-stats-grid">
-                    <div class="stat-item">
-                        <span class="stat-label">Market Cap Rank</span>
-                        <span class="stat-value">#{{ coin_data.market_cap_rank }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Market Cap</span>
-                        <span class="stat-value">${{ "{:,.0f}".format(coin_data.market_cap) }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">24h Volume</span>
-                        <span class="stat-value">${{ "{:,.0f}".format(coin_data.total_volume) }}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Circulating Supply</span>
-                        <span class="stat-value">{{ "{:,.0f}".format(coin_data.circulating_supply) }}</span>
-                    </div>
-                </div>
             </div>
-            {% endif %}
-        </div>
 
         <!-- Right Column: Sentiment and News -->
         <div class="col-lg-4">
@@ -202,27 +178,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Social Stats -->
-            {% if coin_data and (coin_data.reddit_subscribers or coin_data.twitter_followers) %}
-            <div class="content-card mb-4">
-                <h3>Social Statistics</h3>
-                <div class="social-stats">
-                    {% if coin_data.reddit_subscribers %}
-                    <div class="social-stat">
-                        <i class="fab fa-reddit"></i>
-                        <span>{{ "{:,.0f}".format(coin_data.reddit_subscribers) }} subscribers</span>
-                    </div>
-                    {% endif %}
-                    {% if coin_data.twitter_followers %}
-                    <div class="social-stat">
-                        <i class="fab fa-twitter"></i>
-                        <span>{{ "{:,.0f}".format(coin_data.twitter_followers) }} followers</span>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-            {% endif %}
         </div>
     </div>
 
