@@ -898,18 +898,5 @@ with app.app_context():
         db.session.rollback()
 
 if __name__ == "__main__":
-    try:
-        with app.app_context():
-            db.create_all()
-            sync_article_counts()
-        
-        socketio.run(
-            app,
-            host='0.0.0.0',
-            port=5000,
-            debug=False,
-            use_reloader=False
-        )
-    except Exception as e:
-        logger.error(f"Failed to start server: {str(e)}", exc_info=True)
+    print("Please run 'python main.py' to start the server")
         raise

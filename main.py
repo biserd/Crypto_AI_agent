@@ -1,20 +1,20 @@
+
 import eventlet
 eventlet.monkey_patch()
 
-from app import app, socketio
+from app import app, socketio, db, sync_article_counts
 import threading
 from scheduler import start_scheduler
-from database import db, init_app
 
 def run_scheduler():
     start_scheduler()
 
 if __name__ == "__main__":
-    # Initialize database
+    # Initialize database within app context
     with app.app_context():
         try:
-            init_app(app)
             db.create_all()
+            sync_article_counts()
         except Exception as e:
             print(f"Database initialization error: {e}")
 
@@ -22,3 +22,12 @@ if __name__ == "__main__":
     scheduler_thread = threading.Thread(target=run_scheduler)
     scheduler_thread.daemon = True
     scheduler_thread.start()
+
+    # Start the application
+    socketio.run(
+        app,
+        host='0.0.0.0',
+        port=5000,
+        debug=False,
+        use_reloader=False
+    )
