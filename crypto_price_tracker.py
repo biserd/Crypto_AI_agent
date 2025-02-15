@@ -154,7 +154,8 @@ class CryptoPriceTracker:
             'VET': 'vechain',
             'INJ': 'injective-protocol',
             'MASK': 'mask-network',
-            'TRUMP': 'trump-digital-trading-card'
+            'TRUMP': 'trump-digital-trading-card',
+            'HYPE': 'hypeliquid'
         }
 
     def _rate_limit_wait(self):
