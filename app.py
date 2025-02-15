@@ -883,7 +883,7 @@ def load_more_articles():
         page = request.args.get('page', 1, type=int)
         per_page = 10
 
-        cutoff_time = datetime.utcnow() - timedelta(hours=24)
+        cutoff_time = datetime.utcnow() - timedelta(days=90)
         articles = Article.query.filter(
             Article.created_at >= cutoff_time,
             Article.sentiment_score.isnot(None)

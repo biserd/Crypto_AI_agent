@@ -255,7 +255,10 @@ def scrape_rss_feed(source):
             # Get current time for comparison
             current_time = datetime.utcnow()
             cutoff_time = current_time - timedelta(days=90)  # Get articles from last 90 days
-
+            
+            # Increase feed limit and remove date filtering initially
+            feed.entries = feed.entries[:500]  # Get more entries from feed
+            
             for entry in feed.entries:
                 try:
                     article_url = entry.link
