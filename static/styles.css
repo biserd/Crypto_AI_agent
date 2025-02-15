@@ -2,15 +2,29 @@
 /* Footer Styles */
 footer {
     margin-top: auto;
+    background-color: #f8f9fa !important;
 }
 
 footer a {
     text-decoration: none;
     transition: color 0.2s;
+    color: #495057 !important;
 }
 
 footer a:hover {
-    color: #fff !important;
+    color: #212529 !important;
+}
+
+footer h5 {
+    color: #212529 !important;
+}
+
+footer .text-muted {
+    color: #6c757d !important;
+}
+
+footer hr.bg-secondary {
+    background-color: #dee2e6 !important;
 }
 
 /* Make sure the footer stays at bottom */
