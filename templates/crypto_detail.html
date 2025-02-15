@@ -80,6 +80,22 @@
                                     <span class="stat-value">{{ "{:,.0f}".format(coin_data.circulating_supply) }}</span>
                                 </div>
                             </div>
+                            {% if coin_data.reddit_subscribers or coin_data.twitter_followers %}
+                            <div class="col-sm-6 col-md-3">
+                                <div class="stat-summary">
+                                    <span class="stat-label">Social Following</span>
+                                    <span class="stat-value">
+                                        {% if coin_data.reddit_subscribers %}
+                                        <i class="fab fa-reddit"></i> {{ "{:,.0f}".format(coin_data.reddit_subscribers) }}
+                                        {% endif %}
+                                        {% if coin_data.twitter_followers %}
+                                        {% if coin_data.reddit_subscribers %} + {% endif %}
+                                        <i class="fab fa-twitter"></i> {{ "{:,.0f}".format(coin_data.twitter_followers) }}
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
