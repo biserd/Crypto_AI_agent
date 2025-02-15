@@ -1,3 +1,7 @@
+# Monkey patch must happen before any other imports
+import eventlet
+eventlet.monkey_patch()
+
 import os
 import logging
 from flask import Flask, render_template, request, jsonify, redirect, flash, url_for, session, make_response, send_from_directory
@@ -15,7 +19,6 @@ import numpy as np
 import re
 import requests
 from functools import wraps
-import eventlet
 
 # Configure logging first
 logging.basicConfig(
@@ -50,9 +53,6 @@ socketio = SocketIO(
     async_mode='eventlet',
     cors_allowed_origins="*"
 )
-
-# Monkey patch must happen after imports
-eventlet.monkey_patch()
 
 def filter_by_positive(value):
     return value.percent_change_24h > 0
@@ -904,14 +904,19 @@ if __name__ == "__main__":
         # Initialize database tables within app context
         with app.app_context():
             try:
+                logger.info("Creating database tables...")
                 db.create_all()
-                sync_article_counts()  # Sync article counts after DB initialization
                 logger.info("Database tables created successfully")
+
+                logger.info("Syncing article counts...")
+                sync_article_counts()
+                logger.info("Article counts synced successfully")
             except Exception as e:
                 logger.error(f"Error during database initialization: {str(e)}", exc_info=True)
                 raise
 
         # Start the server with minimal configuration
+        logger.info("Starting SocketIO server...")
         socketio.run(
             app,
             host='0.0.0.0',
