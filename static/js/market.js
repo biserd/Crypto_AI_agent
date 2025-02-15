@@ -12,7 +12,13 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             marketTable.innerHTML = ''; // Clear table before adding new data
             const response = await fetch('/api/crypto-prices');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
             const data = await response.json();
+            if (!Array.isArray(data) || data.length === 0) {
+                throw new Error('No cryptocurrency data available');
+            }
 
             let totalMarketCap = 0;
             let totalVolume = 0;
@@ -45,20 +51,28 @@ document.addEventListener('DOMContentLoaded', function() {
             activeCryptos.textContent = data.filter(c => c && c.market_cap > 0).length;
 
             // Create table rows
-            data.forEach(crypto => {
+            // Sort data by market cap
+            data.sort((a, b) => (b.market_cap || 0) - (a.market_cap || 0));
+            
+            data.forEach((crypto, index) => {
                 const row = marketTable.insertRow();
+                const priceFormatted = parseFloat(crypto.price_usd).toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+                
                 row.innerHTML = `
-                    <td>${crypto.rank || '-'}</td>
+                    <td>${index + 1}</td>
                     <td><a href="/crypto/${crypto.symbol}">${crypto.symbol}</a></td>
-                    <td>$${crypto.price_usd?.toFixed(2) || '0.00'}</td>
+                    <td>$${priceFormatted}</td>
                     <td class="${crypto.percent_change_24h > 0 ? 'text-success' : 'text-danger'}">
-                        ${crypto.percent_change_24h?.toFixed(2) || '0.00'}%
+                        ${parseFloat(crypto.percent_change_24h).toFixed(2)}%
                     </td>
                     <td class="${crypto.percent_change_7d > 0 ? 'text-success' : 'text-danger'}">
-                        ${crypto.percent_change_7d?.toFixed(2) || '0.00'}%
+                        ${parseFloat(crypto.percent_change_7d || 0).toFixed(2)}%
                     </td>
-                    <td>$${(crypto.market_cap || 0).toLocaleString()}</td>
-                    <td>$${(crypto.volume_24h || 0).toLocaleString()}</td>
+                    <td>$${parseInt(crypto.market_cap || 0).toLocaleString()}</td>
+                    <td>$${parseInt(crypto.volume_24h || 0).toLocaleString()}</td>
                 `;
             });
         } catch (error) {
