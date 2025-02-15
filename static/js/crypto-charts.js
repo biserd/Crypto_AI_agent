@@ -9,7 +9,28 @@ function initPriceChart(symbol) {
 
     function fetchChartData(symbol, days, attempt = 1) {
         console.log(`Fetching data for ${symbol} with ${days} days (attempt ${attempt})`);
-        fetch(`https://api.coingecko.com/api/v3/coins/${symbol.toLowerCase()}/market_chart?vs_currency=usd&days=${days}`)
+        // Map symbols to CoinGecko IDs
+        const symbolToId = {
+            'BTC': 'bitcoin',
+            'ETH': 'ethereum',
+            'USDT': 'tether',
+            'BNB': 'binancecoin',
+            'SOL': 'solana',
+            'XRP': 'ripple',
+            'USDC': 'usd-coin',
+            'ADA': 'cardano',
+            'AVAX': 'avalanche-2',
+            'DOGE': 'dogecoin',
+            'LINK': 'chainlink',
+            'DOT': 'polkadot',
+            'MATIC': 'matic-network',
+            'AAVE': 'aave',
+            'CAKE': 'pancakeswap-token',
+            'POLY': 'polymath'
+        };
+        
+        const coinId = symbolToId[symbol.toUpperCase()] || symbol.toLowerCase();
+        fetch(`https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=${days}`)
             .then(response => response.json())
             .then(data => {
                 console.log("Creating chart with data:", data);
