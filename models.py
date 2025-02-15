@@ -83,17 +83,12 @@ class CryptoGlossary(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     term = db.Column(db.String(100), unique=True, nullable=False)
     definition = db.Column(db.Text, nullable=False)
-    detailed_explanation = db.Column(db.Text)
-    technical_details = db.Column(db.Text)
-    real_world_usage = db.Column(db.Text)
-    historical_context = db.Column(db.Text)
     category = db.Column(db.String(50))
     difficulty_level = db.Column(db.String(20))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     usage_count = db.Column(db.Integer, default=0)
     related_terms = db.Column(db.String(200))
-    sources = db.Column(db.Text)
 
     def __repr__(self):
         return f'<CryptoGlossary {self.term}>'
