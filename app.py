@@ -498,9 +498,9 @@ def calculate_crypto_signals(symbol, related_news=None, price_data=None):
             confidence = min(95.0, max(5.0, confidence))
 
             # Determine signal with consistent thresholds
-            if total_score > 0.4 and (price_data and price_data.percent_change_24h > 2.0):
+            if total_score > 0.4 and (price_data and price_data.percent_change_24h > 0):
                 signal = 'buy'
-            elif total_score < -0.4 or (price_data and price_data.percent_change_24h < -6.0):
+            elif total_score < -0.4 and (price_data and price_data.percent_change_24h < 0):
                 signal = 'sell'
             else:
                 signal = 'hold'
