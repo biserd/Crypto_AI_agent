@@ -114,7 +114,8 @@ function initPriceChart(symbol) {
                         fill: false,
                         tension: 0.4,
                         yAxisID: 'price',
-                        order: 2
+                        order: 2,
+                        hidden: true
                     },
                     {
                         label: 'MA50',
@@ -124,7 +125,8 @@ function initPriceChart(symbol) {
                         fill: false,
                         tension: 0.4,
                         yAxisID: 'price',
-                        order: 3
+                        order: 3,
+                        hidden: true
                     },
                     {
                         label: 'Volume',
