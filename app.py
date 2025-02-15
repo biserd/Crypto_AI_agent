@@ -208,6 +208,34 @@ def profile():
 def dashboard():
     try:
         logger.info("Starting dashboard view generation")
+        crypto_prices = []
+        recent_articles = []
+        news_sources = []
+        
+        # Fetch crypto prices with error handling
+        try:
+            crypto_prices = CryptoPrice.query.filter(
+                CryptoPrice.price_usd.isnot(None),
+                CryptoPrice.percent_change_24h.isnot(None)
+            ).all()
+        except Exception as e:
+            logger.error(f"Error fetching crypto prices: {str(e)}")
+
+        # Fetch articles with error handling
+        try:
+            recent_articles = Article.query.filter(
+                Article.sentiment_score.isnot(None)
+            ).order_by(Article.created_at.desc()).limit(15).all()
+        except Exception as e:
+            logger.error(f"Error fetching articles: {str(e)}")
+
+        # Fetch news sources with error handling
+        try:
+            news_sources = NewsSourceMetrics.query.order_by(
+                NewsSourceMetrics.trust_score.desc()
+            ).all()
+        except Exception as e:
+            logger.error(f"Error fetching news sources: {str(e)}")
 
         # Fetch articles with error handling
         try:
