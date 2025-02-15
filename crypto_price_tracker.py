@@ -33,7 +33,7 @@ class CryptoPriceTracker:
             'BONK': 'bonk',
             'WLD': 'worldcoin-wld',
             'PYTH': 'pyth-network',
-            'JUP': 'jupiter',
+            'JUP': 'jupiter-2',
             'BLUR': 'blur',
             'HFT': 'hashflow',
             'WIF': 'wif-token',
