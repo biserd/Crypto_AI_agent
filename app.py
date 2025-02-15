@@ -824,7 +824,7 @@ def price_history(symbol):
         logger.error(f"Error in price history endpoint for {symbol}: {str(e)}", exc_info=True)
         return jsonify({
             'error': 'Internal server error',
-            'details': str(e)}
+            'details': str(e)
         }), 500
 
 # Add the following route after the existing routes but before the if __name__ == '__main__': block
