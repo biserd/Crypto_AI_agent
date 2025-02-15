@@ -140,23 +140,15 @@ class TelegramDistributor:
 
 def distribute_articles():
     """Distribute processed articles that haven't been published yet"""
-    twitter = TwitterDistributor()
-    telegram = TelegramDistributor()
-
     articles = Article.query.filter_by(published=False).all()
     logging.info(f"Found {len(articles)} unpublished articles to distribute")
 
     for article in articles:
         try:
-            twitter_success = twitter.post_article(article)
-            telegram_success = telegram.send_article(article)
-
-            if twitter_success or telegram_success:
-                article.published = True
-                db.session.commit()
-                logging.info(f"Successfully distributed article {article.id} to some platforms")
-            else:
-                logging.warning(f"Failed to distribute article {article.id} to any platform")
+            # Mark as published without social media distribution
+            article.published = True
+            db.session.commit()
+            logging.info(f"Marked article {article.id} as published")
 
         except Exception as e:
             logging.error(f"Distribution error for article {article.id}: {str(e)}")
