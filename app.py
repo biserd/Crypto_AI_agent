@@ -764,6 +764,22 @@ def portfolio():
 def market():
     return render_template('market.html', ga_tracking_id=app.config['GA_TRACKING_ID'])
 
+@app.route('/api/crypto-prices')
+def crypto_prices():
+    try:
+        prices = CryptoPrice.query.all()
+        return jsonify([{
+            'symbol': p.symbol,
+            'price_usd': p.price_usd,
+            'percent_change_24h': p.percent_change_24h,
+            'percent_change_7d': p.percent_change_7d,
+            'market_cap': p.market_cap,
+            'volume_24h': p.volume_24h,
+            'rank': p.rank
+        } for p in prices])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/search')
 def search():
     query = request.args.get('q', '').lower()
