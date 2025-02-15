@@ -462,17 +462,51 @@ main {
 
 /* Crypto Detail Page Styles */
 .crypto-header {
-    padding: 1rem;
-    border-radius: 8px;
-    background: var(--card-bg);
+    margin-bottom: 2rem;
 }
 
 .crypto-title {
-    font-size: 2rem;
+    font-size: 1.75rem;
     margin: 0;
     display: flex;
     align-items: center;
     gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.market-stats-summary {
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.stat-summary {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 0.5rem;
+    background: rgba(0,0,0,0.03);
+    border-radius: 8px;
+    height: 100%;
+}
+
+.stat-summary .stat-label {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+}
+
+.stat-summary .stat-value {
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.content-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .symbol-badge {
