@@ -4,7 +4,7 @@ eventlet.monkey_patch()
 
 import os
 from functools import wraps
-from flask import Flask, render_template, request, jsonify, redirect, flash, url_for, session, make_response
+from flask import Flask, render_template, request, jsonify, redirect, flash, url_for, session, make_response, send_from_directory
 from flask_login import LoginManager, UserMixin, current_user, login_required, login_user, logout_user
 from database import db, init_app, sync_article_counts
 from models import Article, CryptoPrice, NewsSourceMetrics, CryptoGlossary, Subscription, Users
@@ -47,7 +47,21 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 
 # Initialize SocketIO with proper configuration
-socketio = SocketIO(app, async_mode='eventlet', cors_allowed_origins="*", logger=True, engineio_logger=True)
+try:
+    socketio = SocketIO(
+        app,
+        async_mode='eventlet',
+        cors_allowed_origins="*",
+        logger=True,
+        engineio_logger=True,
+        ping_timeout=60,
+        ping_interval=25
+    )
+    logger.info("Successfully initialized SocketIO")
+except Exception as e:
+    logger.error(f"Error initializing SocketIO: {str(e)}")
+    raise
+
 
 def filter_by_positive(value):
     return value.percent_change_24h > 0
@@ -768,9 +782,9 @@ def price_history(symbol):
 
         # Filter out any invalid data points
         prices = [p for p in prices if isinstance(p, list) and len(p) == 2 and 
-                 all(isinstance(x, (int, float)) or 
-                     (isinstance(x, str) and x.replace('.', '').isdigit()) 
-                     for x in p)]
+                  all(isinstance(x, (int, float)) or 
+                      (isinstance(x, str) and x.replace('.', '').isdigit()) 
+                      for x in p)]
 
         volumes = [v for v in volumes if isinstance(v, list) and len(v) == 2 and 
                   all(isinstance(x, (int, float)) or 
@@ -799,13 +813,32 @@ def price_history(symbol):
             'details': str(e)
         }), 500
 
+# Add the following route after the existing routes but before the if __name__ == '__main__': block
+@app.route('/robots.txt')
+def serve_robots():
+    """Serve robots.txt file"""
+    try:
+        logger.info("Serving robots.txt file")
+        return send_from_directory(app.static_folder or app.root_path, 'robots.txt', mimetype='text/plain')
+    except Exception as e:
+        logger.error(f"Error serving robots.txt: {str(e)}")
+        return "User-agent: *\nAllow: /\n", 200, {'Content-Type': 'text/plain'}
+
 with app.app_context():
     try:
         db.create_all()
-        sync_article_counts()  # Sync counts on startup
+        sync_article_counts()
         logger.info("Successfully created database tables and synced counts")
     except Exception as e:
         logger.error(f"Error creating database tables: {str(e)}")
+        db.session.rollback()
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000)
+    logger.info("Starting Flask application with SocketIO")
+    socketio.run(
+        app,
+        host='0.0.0.0',
+        port=5000,
+        debug=True,
+        log_output=True
+    )
