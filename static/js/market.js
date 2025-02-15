@@ -93,6 +93,14 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         } catch (error) {
             console.error('Error fetching market data:', error);
+            marketCap.textContent = 'Error loading data';
+            volume.textContent = 'Error loading data';
+            btcDominance.textContent = 'Error loading data';
+            activeCryptos.textContent = 'Error loading data';
+            
+            // Display error in table
+            const row = marketTable.insertRow();
+            row.innerHTML = `<td colspan="7" class="text-center">Error loading market data. Please try refreshing the page.</td>`;
         }
     }
 
