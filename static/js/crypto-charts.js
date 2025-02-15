@@ -54,7 +54,22 @@ function initPriceChart(symbol) {
             'AAVE': 'aave',
             'CAKE': 'pancakeswap-token',
             'POLY': 'polymath',
-            'ORDI': 'ordinals-token'
+            'ORDI': 'ordinals-token',
+            'TON': 'toncoin',
+            'TRX': 'tron',
+            'MEME': 'memecoin-2',
+            'SEI': 'sei-network',
+            'SUI': 'sui',
+            'BONK': 'bonk',
+            'WLD': 'worldcoin-wld',
+            'PYTH': 'pyth-network',
+            'JUP': 'jupiter',
+            'BLUR': 'blur',
+            'HFT': 'hashflow',
+            'WIF': 'wif-token',
+            'STRK': 'starknet',
+            'TIA': 'celestia',
+            'DYM': 'dymension'
         };
         
         const coinId = symbolToId[symbol.toUpperCase()] || symbol.toLowerCase();
