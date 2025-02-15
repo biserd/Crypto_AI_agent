@@ -944,5 +944,13 @@ def serve_static(filename):
         response.headers['Content-Type'] = 'application/javascript'
     return response
 
+@app.context_processor
+def utility_processor():
+    tracker = CryptoPriceTracker()
+    return {
+        'crypto_names': crypto_names,
+        'supported_cryptos': list(tracker.crypto_ids.keys())
+    }
+
 if __name__ == "__main__":
     print("Please run 'python main.py' to start the server")
