@@ -21,26 +21,7 @@ args = "python main.py"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Web Server"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
 args = "Flask Server"
-
-[[workflows.workflow]]
-name = "Web Server"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python main.py"
-waitForPort = 5000
 
 [[workflows.workflow]]
 name = "News Scheduler"

@@ -132,29 +132,45 @@ function loadMoreArticles() {
     fetch(`/api/load-more-articles?page=${currentPage + 1}`)
         .then(response => response.json())
         .then(data => {
+            if (data.error) {
+                console.error('Error:', data.error);
+                return;
+            }
+
             const container = document.getElementById('articles-container');
             data.articles.forEach(article => {
-                const articleHtml = createArticleCard(article);
-                container.insertAdjacentHTML('beforeend', articleHtml);
+                const template = document.createElement('template');
+                const articleHtml = generateArticleHtml(article);
+                template.innerHTML = articleHtml.trim();
+                container.appendChild(template.content.firstChild);
             });
 
             currentPage += 1;
             hasMore = data.has_more;
-            loading = false;
-            loadingIndicator.classList.add('d-none');
         })
         .catch(error => {
             console.error('Error loading more articles:', error);
+        })
+        .finally(() => {
             loading = false;
             loadingIndicator.classList.add('d-none');
         });
 }
 
-function createArticleCard(article) {
+function generateArticleHtml(article) {
+    const cryptos = ['BTC', 'ETH', 'BNB', 'ADA', 'SOL', 'XRP', 'DOGE', 'MATIC', 'AVAX', 'VRA', 'NEAR', 'RNDR', 'ICP', 'TAO'];
+    const cryptoButtons = cryptos.map(crypto => {
+        if (article.content && (article.content.toLowerCase().includes(crypto.toLowerCase()) || article.content.includes(crypto))) {
+            const btnClass = article.sentiment_label === 'positive' ? 'success' : 'danger';
+            return `<a href="/crypto/${crypto}" class="btn btn-sm btn-${btnClass}">View ${crypto}</a>`;
+        }
+        return '';
+    }).join('');
+
     return `
-        <div class="card mb-3">
+        <article class="card mb-3">
             <div class="card-body">
-                <h5 class="card-title">${article.title}</h5>
+                <h2 class="card-title h5">${article.title}</h2>
                 <h6 class="card-subtitle mb-2 text-muted">
                     ${article.source_name}
                     ${article.source_metrics ? `
@@ -176,9 +192,14 @@ function createArticleCard(article) {
                             </span>
                         ` : ''}
                     </div>
+                    <div class="action-buttons">
+                        ${cryptoButtons}
+                        <button class="btn btn-info btn-sm share-btn" onclick="shareArticle('${article.url}')">Share</button>
+                        <a href="${article.source_url}" class="btn btn-primary btn-sm" target="_blank" rel="nofollow noopener">Read More</a>
+                    </div>
                 </div>
             </div>
-        </div>
+        </article>
     `;
 }
 

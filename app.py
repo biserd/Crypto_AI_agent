@@ -3,13 +3,11 @@ import eventlet
 eventlet.monkey_patch()
 
 import os
-from functools import wraps
-from flask import Flask, render_template, request, jsonify, redirect, flash, url_for, session, make_response
+import logging
+from flask import Flask, render_template, request, jsonify, redirect, flash, url_for, session, make_response, send_from_directory
 from flask_login import LoginManager, UserMixin, current_user, login_required, login_user, logout_user
 from database import db, init_app, sync_article_counts
 from models import Article, CryptoPrice, NewsSourceMetrics, CryptoGlossary, Subscription, Users
-import logging
-import re
 from markupsafe import escape, Markup
 from flask_socketio import SocketIO, emit
 import json
@@ -18,6 +16,9 @@ import stripe
 from sqlalchemy import desc
 import pandas as pd
 import numpy as np
+import re
+import requests
+from functools import wraps
 
 # Configure logging first
 logging.basicConfig(
@@ -47,7 +48,16 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 
 # Initialize SocketIO with proper configuration
-socketio = SocketIO(app, async_mode='eventlet', cors_allowed_origins="*", logger=True, engineio_logger=True)
+socketio = SocketIO(
+    app,
+    async_mode='eventlet',
+    cors_allowed_origins="*",
+    logger=True,
+    engineio_logger=True,
+    ping_timeout=60,
+    ping_interval=25,
+    max_http_buffer_size=1e8
+)
 
 def filter_by_positive(value):
     return value.percent_change_24h > 0
@@ -63,7 +73,6 @@ app.jinja_env.filters['filter_by_negative'] = lambda x: apply_filter(x, filter_b
 
 # Initialize last run time in app config
 app.config['LAST_SCRAPER_RUN'] = datetime.utcnow()
-
 
 # Import CryptoPriceTracker after database initialization
 from crypto_price_tracker import CryptoPriceTracker
@@ -182,96 +191,130 @@ def dashboard():
     try:
         logger.info("Starting dashboard view generation")
 
-        # Fetch only essential data for initial load
+        # Fetch articles with error handling
         try:
-            # Get only the most recent 10 articles initially
+            # Get articles from last 24 hours only
             cutoff_time = datetime.utcnow() - timedelta(hours=24)
             recent_articles = Article.query.filter(
                 Article.created_at >= cutoff_time,
-                Article.sentiment_score.isnot(None)
-            ).order_by(Article.created_at.desc()).limit(10).all()
+                Article.sentiment_score.isnot(None)  # Ensure sentiment score exists
+            ).order_by(Article.created_at.desc()).all()
 
-            logger.info(f"Retrieved initial {len(recent_articles)} articles")
+            # Set default values for any None fields
+            for article in recent_articles:
+                if article.sentiment_score is None:
+                    article.sentiment_score = 0.0
+                if article.sentiment_label is None:
+                    article.sentiment_label = 'neutral'
+
+            logger.info(f"Retrieved {len(recent_articles)} articles from last 24 hours")
         except Exception as e:
             logger.error(f"Error fetching articles: {str(e)}")
             recent_articles = []
 
-        # Cache crypto prices in memory for 1 minute
-        cache_key = 'crypto_prices'
-        crypto_prices = getattr(app, cache_key, None)
-        cache_time = getattr(app, f'{cache_key}_time', None)
+        # Fetch crypto prices with error handling
+        try:
+            crypto_prices = CryptoPrice.query.filter(
+                CryptoPrice.price_usd.isnot(None),
+                CryptoPrice.percent_change_24h.isnot(None)
+            ).all()
 
-        if not crypto_prices or not cache_time or (datetime.utcnow() - cache_time).seconds > 60:
-            try:
-                crypto_prices = CryptoPrice.query.filter(
-                    CryptoPrice.price_usd.isnot(None),
-                    CryptoPrice.percent_change_24h.isnot(None)
-                ).all()
-                setattr(app, cache_key, crypto_prices)
-                setattr(app, f'{cache_key}_time', datetime.utcnow())
-                logger.info(f"Updated cache with {len(crypto_prices)} crypto prices")
-            except Exception as e:
-                logger.error(f"Error fetching crypto prices: {str(e)}")
-                crypto_prices = []
-        else:
-            logger.info("Using cached crypto prices")
+            # Set default values for any None fields
+            for price in crypto_prices:
+                if price.price_usd is None:
+                    price.price_usd = 0.0
+                if price.percent_change_24h is None:
+                    price.percent_change_24h = 0.0
 
-        # Cache news sources for 5 minutes
-        cache_key = 'news_sources'
-        news_sources = getattr(app, cache_key, None)
-        cache_time = getattr(app, f'{cache_key}_time', None)
+            logger.info(f"Retrieved {len(crypto_prices)} crypto prices")
+        except Exception as e:
+            logger.error(f"Error fetching crypto prices: {str(e)}")
+            crypto_prices = []
 
-        if not news_sources or not cache_time or (datetime.utcnow() - cache_time).seconds > 300:
-            try:
-                news_sources = NewsSourceMetrics.query.order_by(NewsSourceMetrics.trust_score.desc()).all()
-                setattr(app, cache_key, news_sources)
-                setattr(app, f'{cache_key}_time', datetime.utcnow())
-                logger.info(f"Updated cache with {len(news_sources)} news sources")
-            except Exception as e:
-                logger.error(f"Error fetching news sources: {str(e)}")
-                news_sources = []
-        else:
-            logger.info("Using cached news sources")
+        # Fetch news sources with error handling
+        try:
+            news_sources = NewsSourceMetrics.query.order_by(NewsSourceMetrics.trust_score.desc()).all()
+            logger.info(f"Retrieved {len(news_sources)} news sources")
+        except Exception as e:
+            logger.error(f"Error fetching news sources: {str(e)}")
+            news_sources = []
 
-        # Prepare articles with enhanced summaries - optimize tooltip generation
-        crypto_symbols = {crypto.symbol: crypto for crypto in crypto_prices}
+        # Calculate signals consistently
+        try:
+            # Apply sentiment analysis to all crypto prices
+            for price in crypto_prices:
+                try:
+                    # Get recent news for this token
+                    cutoff_time = datetime.utcnow() - timedelta(days=3)
+                    related_news = Article.query.filter(
+                        db.and_(
+                            db.or_(
+                                Article.content.ilike(f'%{price.symbol}%'),
+                                Article.title.ilike(f'%{price.symbol}%')
+                            ),
+                            Article.created_at >= cutoff_time
+                        )
+                    ).order_by(Article.created_at.desc()).all()
 
+                    # Calculate sentiment
+                    total_articles = len(related_news)
+                    # Use the unified signal calculation function
+                    signals = calculate_crypto_signals(price.symbol, related_news, price)
+                    price.signal = signals['signal']
+                    price.confidence_score = signals['confidence']
+                except Exception as e:
+                    logger.error(f"Error calculating sentiment for {price.symbol}: {str(e)}")
+                    price.confidence_score = 50.0
+                    price.signal = 'hold'
+
+            logger.info(f"Calculated signals for {len(crypto_prices)} cryptocurrencies")
+        except Exception as e:
+            logger.error(f"Error processing crypto data: {str(e)}")
+
+        # Prepare articles with enhanced summaries
         for article in recent_articles:
             try:
                 enhanced_summary = escape(article.summary)
+                logger.debug(f"Processing article {article.id} summary: {enhanced_summary[:100]}...")
 
-                # Process all crypto symbols at once instead of one by one
-                for symbol, crypto in crypto_symbols.items():
-                    pattern = re.compile(r'\b' + re.escape(symbol) + r'\b', re.IGNORECASE)
+                # Add crypto price tooltips to the summary
+                for crypto in crypto_prices:
+                    pattern = re.compile(r'\b' + re.escape(crypto.symbol) + r'\b', re.IGNORECASE)
                     if pattern.search(str(enhanced_summary)):
                         tooltip_html = Markup(
-                            f'<span class="crypto-tooltip">{symbol}'
+                            f'<span class="crypto-tooltip">{crypto.symbol}'
                             f'<div class="tooltip-content">'
                             f'<span class="tooltip-price">${crypto.price_usd:.2f}</span>'
                             f'<span class="tooltip-change {("positive" if crypto.percent_change_24h > 0 else "negative")}">'
                             f'{crypto.percent_change_24h:.1f}%</span>'
                             f'</div></span>'
                         )
+
                         enhanced_summary = Markup(pattern.sub(str(tooltip_html), str(enhanced_summary)))
+                        logger.debug(f"Added tooltip for whole word match {crypto.symbol} in article {article.id}")
+                        logger.debug(f"Generated tooltip HTML: {tooltip_html}")
+                    else:
+                        logger.debug(f"No whole word match found for {crypto.symbol} in article {article.id}")
 
                 article.enhanced_summary = enhanced_summary
-                article.source_metrics = next(
-                    (source for source in news_sources if source.source_name == article.source_name),
-                    None
-                )
 
             except Exception as e:
                 logger.error(f"Error processing tooltips for article {article.id}: {str(e)}")
                 article.enhanced_summary = article.summary
 
+            article.source_metrics = next(
+                (source for source in news_sources if source.source_name == article.source_name),
+                None
+            )
+
         logger.info("Successfully prepared all data for dashboard")
         return render_template('dashboard.html', 
-                          articles=recent_articles,
-                          crypto_prices=crypto_prices,
-                          news_sources=news_sources,
-                          last_scraper_run=app.config['LAST_SCRAPER_RUN'],
-                          ga_tracking_id=app.config['GA_TRACKING_ID'])
-
+                            articles=recent_articles,
+                            crypto_prices=crypto_prices,
+                            news_sources=news_sources,
+                            buy_signals=crypto_prices, #Use crypto_prices as buy_signals now.
+                            last_scraper_run=app.config['LAST_SCRAPER_RUN'],
+                            ga_tracking_id=app.config['GA_TRACKING_ID'])
     except Exception as e:
         logger.error(f"Error generating dashboard: {str(e)}")
         return "Error loading dashboard", 500
@@ -360,8 +403,75 @@ crypto_names = {
     'APE': 'ApeCoin',
     'AAVE': 'Aave',
     'MELANX': 'Melania Token',
-    'TRUMP': 'Trump Token'
+    'TRUMP': 'Trump Token',
+    'TUSD': 'True USD',
+    'KLAY': 'Klaytn',
+    'GT': 'Gatetoken',
+    'CHZ': 'Chiliz',
+    'XEC': 'Ecash',
+    'BEAM': 'Beam',
+    'VRA': 'Virtuals',
+    'NEAR': 'NEAR Protocol',
+    'RNDR': 'Render Token',
+    'ICP': 'Internet Computer',
+    'TAO': 'Bittensor',
 }
+
+def calculate_crypto_signals(symbol, related_news=None, price_data=None):
+    """Calculate unified crypto signals across the application"""
+    try:
+        if related_news is None:
+            # Get related news from last 3 days for signal calculation
+            cutoff_time = datetime.utcnow() - timedelta(days=3)
+            related_news = Article.query.filter(
+                db.and_(
+                    db.or_(
+                        Article.content.ilike(f'%{symbol}%'),
+                        Article.title.ilike(f'%{symbol}%')
+                    ),
+                    Article.created_at >= cutoff_time
+                )
+            ).order_by(desc(Article.created_at)).all()
+
+        total_articles = len(related_news)
+
+        if total_articles > 0:
+            positive_count = sum(1 for article in related_news if article.sentiment_label == 'positive')
+            neutral_count = sum(1 for article in related_news if article.sentiment_label == 'neutral')
+            negative_count = sum(1 for article in related_news if article.sentiment_label == 'negative')
+
+            # Weight each sentiment type
+            weighted_score = (positive_count * 1.2 + neutral_count * 0.2 - negative_count * 0.8) / total_articles
+
+            if price_data and price_data.percent_change_24h:
+                price_weight = 0.5 if price_data.percent_change_24h > 2.0 else (-0.5 if price_data.percent_change_24h < -2.0 else 0)
+            else:
+                price_weight = 0
+
+            # Calculate final scores
+            total_score = weighted_score + price_weight
+            confidence = 50.0 + (total_score * 40.0) + (min(10.0, abs(price_data.percent_change_24h)) if price_data else 0)
+            confidence = min(95.0, max(5.0, confidence))
+
+            # Determine signal with consistent thresholds
+            if total_score > 0.4 and (price_data and price_data.percent_change_24h > 2.0):
+                signal = 'buy'
+            elif total_score < -0.4 or (price_data and price_data.percent_change_24h < -6.0):
+                signal = 'sell'
+            else:
+                signal = 'hold'
+        else:
+            confidence = 50.0
+            signal = 'hold'
+
+        return {
+            'signal': signal,
+            'confidence': confidence,
+            'total_articles': total_articles
+        }
+    except Exception as e:
+        logger.error(f"Error calculating signals for {symbol}: {str(e)}")
+        return {'signal': 'hold', 'confidence': 50.0, 'total_articles': 0}
 
 @app.route('/crypto/<symbol>')
 @check_subscription('basic')
@@ -408,17 +518,9 @@ def crypto_detail(symbol):
             related_news = []
             news_impact = {'positive': 0, 'negative': 0, 'neutral': 0, 'total_articles': 0}
 
-        # Calculate overall sentiment and trading signals
-        total_articles = news_impact['total_articles']
-        positive_ratio = news_impact['positive'] / total_articles if total_articles > 0 else 0
-        negative_ratio = news_impact['negative'] / total_articles if total_articles > 0 else 0
-
-        if positive_ratio > 0.6:
-            recommendation = 'buy'
-        elif negative_ratio > 0.6:
-            recommendation = 'sell'
-        else:
-            recommendation = 'hold'
+        # Calculate signals using unified function
+        signals = calculate_crypto_signals(symbol, related_news, crypto_price)
+        recommendation = signals['signal']
 
         logger.info(f"Generated {recommendation} recommendation for {symbol}")
 
@@ -476,10 +578,20 @@ def sitemap():
 
     # Static routes
     routes = ['/', '/about', '/pricing', '/contact', '/glossary', '/login', '/register']
+    priorities = {
+        '/': '1.0',
+        '/about': '0.8',
+        '/glossary': '0.9',
+        '/crypto': '0.9',
+        '/contact': '0.7',
+        '/pricing': '0.8'
+    }
     for route in routes:
         pages.append({
             'loc': request.url_root[:-1] + route,
-            'lastmod': datetime.utcnow().strftime('%Y-%m-%d')
+            'lastmod': datetime.utcnow().strftime('%Y-%m-%d'),
+            'changefreq': 'daily' if route == '/' else 'weekly',
+            'priority': priorities.get(route, '0.5')
         })
 
     # Add crypto detail pages for each tracked cryptocurrency
@@ -641,18 +753,45 @@ def price_history(symbol):
         # Get historical data using the tracker
         historical_data = tracker.get_historical_prices(symbol, days=days)
 
-        if not historical_data or not isinstance(historical_data, dict):
-            logger.error(f"Invalid historical data structure for {symbol}")
-            return jsonify({'prices': [], 'total_volumes': []})
+        logger.debug(f"Raw historical data type: {type(historical_data)}")
+        logger.debug(f"Raw historical data keys: {historical_data.keys() if isinstance(historical_data, dict) else 'Not a dict'}")
 
+        # Validate the historical data structure
+        if not historical_data or not isinstance(historical_data, dict):
+            logger.error(f"Invalid historical data type for {symbol}: {type(historical_data)}")
+            return jsonify({
+                'error': f'Invalid data format received for {symbol}',
+                'symbol': symbol
+            }), 500
+
+        # Ensure both prices and total_volumes exist and are lists
         prices = historical_data.get('prices', [])
         volumes = historical_data.get('total_volumes', [])
 
-        # Ensure we always return valid arrays
-        if not isinstance(prices, list):
-            prices = []
-        if not isinstance(volumes, list):
-            volumes = []
+        if not isinstance(prices, list) or not isinstance(volumes, list):
+            logger.error(f"Invalid price or volume data type for {symbol}")
+            return jsonify({
+                'error': f'Invalid price or volume data for {symbol}',
+                'symbol': symbol
+            }), 500
+
+        # Filter out any invalid data points
+        prices = [p for p in prices if isinstance(p, list) and len(p) == 2 and 
+                  all(isinstance(x, (int, float)) or 
+                      (isinstance(x, str) and x.replace('.', '').isdigit()) 
+                      for x in p)]
+
+        volumes = [v for v in volumes if isinstance(v, list) and len(v) == 2 and 
+                  all(isinstance(x, (int, float)) or 
+                      (isinstance(x, str) and x.replace('.', '').isdigit()) 
+                      for x in v)]
+
+        if not prices:
+            logger.error(f"No valid price data points for {symbol}")
+            return jsonify({
+                'error': f'No valid price data available for {symbol}',
+                'symbol': symbol
+            }), 500
 
         logger.info(f"Successfully fetched price history for {symbol}")
         logger.debug(f"Returning {len(prices)} price points and {len(volumes)} volume points")
@@ -664,7 +803,21 @@ def price_history(symbol):
 
     except Exception as e:
         logger.error(f"Error in price history endpoint for {symbol}: {str(e)}", exc_info=True)
-        return jsonify({'prices': [], 'total_volumes': []})
+        return jsonify({
+            'error': 'Internal server error',
+            'details': str(e)
+        }), 500
+
+# Add the following route after the existing routes but before the if __name__ == '__main__': block
+@app.route('/robots.txt')
+def serve_robots():
+    """Serve robots.txt file"""
+    try:
+        logger.info("Serving robots.txt file")
+        return send_from_directory(app.staticfolder or app.root_path, 'robots.txt', mimetype='text/plain')
+    except Exception as e:
+        logger.error(f"Error serving robots.txt: {str(e)}")
+        return "User-agent: *\nAllow::\n", 200, {'Content-Type': 'text/plain'}
 
 @app.route('/api/load-more-articles')
 def load_more_articles():
@@ -690,37 +843,46 @@ def load_more_articles():
 
         processed_articles = []
         for article in articles.items:
-            enhanced_summary = escape(article.summary)
-            for symbol, crypto in crypto_symbols.items():
-                pattern = re.compile(r'\b' + re.escape(symbol) + r'\b', re.IGNORECASE)
-                if pattern.search(str(enhanced_summary)):
-                    tooltip_html = Markup(
-                        f'<span class="crypto-tooltip">{symbol}'
-                        f'<div class="tooltip-content">'
-                        f'<span class="tooltip-price">${crypto.price_usd:.2f}</span>'
-                        f'<span class="tooltip-change {("positive" if crypto.percent_change_24h > 0 else "negative")}">'
-                        f'{crypto.percent_change_24h:.1f}%</span>'
-                        f'</div></span>'
-                    )
-                    enhanced_summary = Markup(pattern.sub(str(tooltip_html), str(enhanced_summary)))
+            try:
+                enhanced_summary = escape(article.summary)
+                for symbol, crypto in crypto_symbols.items():
+                    pattern = re.compile(r'\b' + re.escape(symbol) + r'\b', re.IGNORECASE)
+                    if pattern.search(str(enhanced_summary)):
+                        tooltip_html = Markup(
+                            f'<span class="crypto-tooltip">{symbol}'
+                            f'<div class="tooltip-content">'
+                            f'<span class="tooltip-price">${crypto.price_usd:.2f}</span>'
+                            f'<span class="tooltip-change {("positive" if crypto.percent_change_24h > 0 else "negative")}">'
+                            f'{crypto.percent_change_24h:.1f}%</span>'
+                            f'</div></span>'
+                        )
+                        enhanced_summary = Markup(pattern.sub(str(tooltip_html), str(enhanced_summary)))
+
+            except Exception as e:
+                logger.error(f"Error processing tooltips for article {article.id}: {str(e)}")
+                enhanced_summary = article.summary
 
             source_metrics = next(
                 (source for source in news_sources if source.source_name == article.source_name),
                 None
             )
 
-            processed_articles.append({
+            processed_article = {
                 'id': article.id,
                 'title': article.title,
+                'content': article.content,
                 'summary': str(enhanced_summary),
                 'source_name': article.source_name,
                 'created_at': article.created_at.strftime('%Y-%m-%d %H:%M:%S'),
                 'sentiment_label': article.sentiment_label,
                 'sentiment_score': article.sentiment_score,
+                'url': article.url,
+                'source_url': article.source_url,
                 'source_metrics': {
                     'trust_score': source_metrics.trust_score if source_metrics else None
                 } if source_metrics else None
-            })
+            }
+            processed_articles.append(processed_article)
 
         return jsonify({
             'articles': processed_articles,
@@ -734,10 +896,34 @@ def load_more_articles():
 with app.app_context():
     try:
         db.create_all()
-        sync_article_counts()  # Sync counts on startup
+        sync_article_counts()
         logger.info("Successfully created database tables and synced counts")
     except Exception as e:
         logger.error(f"Error creating database tables: {str(e)}")
+        db.session.rollback()
 
-if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000)
+if __name__ == "__main__":
+    try:
+        logger.info("Starting server with SocketIO support...")
+        # Create all tables before starting the server
+        with app.app_context():
+            try:
+                db.create_all()
+                logger.info("Database tables created successfully")
+            except Exception as e:
+                logger.error(f"Error creating database tables: {str(e)}")
+                db.session.rollback()
+                raise
+
+        # Start the server
+        socketio.run(
+            app,
+            host='0.0.0.0',
+            port=5000,
+            debug=True,
+            use_reloader=False,  # Disable reloader when using eventlet
+            log_output=True
+        )
+    except Exception as e:
+        logger.error(f"Failed to start server: {str(e)}", exc_info=True)
+        raise
