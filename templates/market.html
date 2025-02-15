@@ -1,0 +1,55 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Market Overview</h1>
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <h5>Market Cap</h5>
+                            <p id="total-market-cap">Loading...</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h5>24h Volume</h5>
+                            <p id="total-volume">Loading...</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h5>BTC Dominance</h5>
+                            <p id="btc-dominance">Loading...</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h5>Active Cryptocurrencies</h5>
+                            <p id="active-cryptos">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <table class="table" id="market-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Name</th>
+                                <th>Price</th>
+                                <th>24h %</th>
+                                <th>7d %</th>
+                                <th>Market Cap</th>
+                                <th>Volume (24h)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Filled dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

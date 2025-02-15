@@ -1,0 +1,49 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Portfolio Tracker</h1>
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form id="add-holding">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <select class="form-select" id="crypto-select" required>
+                                    {% for symbol, name in crypto_names.items() %}
+                                    <option value="{{ symbol }}">{{ name }} ({{ symbol }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <input type="number" class="form-control" id="amount" placeholder="Amount" step="any" required>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" class="btn btn-primary">Add Holding</button>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <div class="holdings-list mt-4">
+                        <h5>Your Holdings</h5>
+                        <div id="holdings-table"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5>Portfolio Summary</h5>
+                    <div id="portfolio-summary">
+                        <p>Total Value: $<span id="total-value">0.00</span></p>
+                        <p>24h Change: <span id="day-change">0.00%</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

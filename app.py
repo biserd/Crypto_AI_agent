@@ -755,6 +755,15 @@ def terms():
 def disclaimer():
     return render_template('disclaimer.html', ga_tracking_id=app.config['GA_TRACKING_ID'])
 
+@app.route('/portfolio')
+@login_required
+def portfolio():
+    return render_template('portfolio.html', ga_tracking_id=app.config['GA_TRACKING_ID'])
+
+@app.route('/market')
+def market():
+    return render_template('market.html', ga_tracking_id=app.config['GA_TRACKING_ID'])
+
 @app.route('/search')
 def search():
     query = request.args.get('q', '').lower()
