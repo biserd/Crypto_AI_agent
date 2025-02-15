@@ -5,26 +5,38 @@ document.addEventListener('DOMContentLoaded', function() {
     const activeCryptos = document.getElementById('active-cryptos');
     const marketTable = document.getElementById('market-table').getElementsByTagName('tbody')[0];
 
+    // Initialize values
+    marketCap.textContent = 'Loading...';
+    volume.textContent = 'Loading...';
+    btcDominance.textContent = 'Loading...';
+    activeCryptos.textContent = 'Loading...';
+
     // Clear existing rows
     marketTable.innerHTML = '';
 
     async function fetchMarketData() {
         try {
-            marketTable.innerHTML = ''; // Clear table before adding new data
             const response = await fetch('/api/crypto-prices');
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
-            if (!Array.isArray(data) || data.length === 0) {
-                throw new Error('No cryptocurrency data available');
+            if (!Array.isArray(data)) {
+                throw new Error('Invalid data format received');
             }
 
             let totalMarketCap = 0;
             let totalVolume = 0;
             let btcMarketCap = 0;
 
-            data.forEach(crypto => {
+            // Filter out entries with invalid data
+            const validData = data.filter(crypto => 
+                crypto && 
+                typeof crypto.market_cap === 'number' && 
+                typeof crypto.volume_24h === 'number'
+            );
+
+            validData.forEach(crypto => {
                 const mCap = parseFloat(crypto.market_cap) || 0;
                 const vol = parseFloat(crypto.volume_24h) || 0;
                 totalMarketCap += mCap;
@@ -33,6 +45,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     btcMarketCap = mCap;
                 }
             });
+
+            if (totalMarketCap === 0) {
+                throw new Error('No valid market cap data available');
+            }
 
             // Update market statistics
             // Format large numbers
