@@ -199,10 +199,18 @@ def scrape_rss_feed(source):
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
             }
-            response = session.get(source.url, timeout=10, headers=headers)
+            response = session.get(source.url, timeout=15, headers=headers)
             response.raise_for_status()
-            feed = feedparser.parse(response.content)
-            
+            feed_content = response.content
+            logger.info(f"Fetching RSS feed from {source.name} with status code: {response.status_code}")
+            logger.info(f"Found {len(feedparser.parse(feed_content).entries)} entries in {source.name} feed")
+            logger.debug(f"First 500 chars of RSS content from {source.name}: {feed_content[:500]}")
+            feed = feedparser.parse(feed_content)
+
+            if hasattr(feed, 'status') and feed.status != 200:
+                logger.error(f"Feed status error for {source.name}: {feed.status} - {feed.get('bozo_exception', 'No details')}")
+                return 0
+
             if not feed or not hasattr(feed, 'entries'):
                 logger.error(f"Invalid feed structure from {source.name}")
                 return 0
@@ -211,10 +219,6 @@ def scrape_rss_feed(source):
                 logger.error(f"Error parsing RSS feed for {source.name}: {feed.bozo_exception}")
                 return 0
 
-            if 'status' in feed and feed.status != 200:
-                logger.error(f"Feed status error for {source.name}: {feed.status}")
-                return 0
-                
             if not hasattr(feed, 'entries'):
                 logger.error(f"No entries found in feed for {source.name}")
                 return 0
@@ -240,13 +244,13 @@ def scrape_rss_feed(source):
         try:
             # Get current time for comparison
             current_time = datetime.utcnow()
-            cutoff_time = current_time - timedelta(hours=24)  # Only get articles from last 24 hours
-            
+            cutoff_time = current_time - timedelta(days=7)  # Get articles from last 7 days
+
             for entry in feed.entries:
                 try:
                     article_url = entry.link
                     published_date = None
-                    
+
                     # Try to get the published date
                     if hasattr(entry, 'published_parsed') and entry.published_parsed:
                         published_date = datetime.fromtimestamp(time.mktime(entry.published_parsed))
@@ -258,7 +262,7 @@ def scrape_rss_feed(source):
                     # Skip old articles
                     if published_date < cutoff_time:
                         continue
-                        
+
                     logger.debug(f"Processing article from {source.name}: {article_url}")
                     logger.debug(f"Article date: {published_date}")
 
@@ -271,12 +275,12 @@ def scrape_rss_feed(source):
                         content = entry.get('description', '')
                         if not content and 'content' in entry:
                             content = entry.content[0].value if isinstance(entry.content, list) else entry.content
-                            
+
                         if 'content' in entry:
                             extended_content = entry.content[0].value if isinstance(entry.content, list) else entry.content
                             if len(extended_content) > len(content):
                                 content = extended_content
-                                
+
                         logger.debug(f"Using RSS feed content for {source.name}")
                     except Exception as e:
                         logger.error(f"Error fetching full article content from {source.name}: {str(e)}")

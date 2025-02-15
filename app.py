@@ -182,97 +182,96 @@ def dashboard():
     try:
         logger.info("Starting dashboard view generation")
 
-        # Fetch articles with error handling
+        # Fetch only essential data for initial load
         try:
-            # Get articles from last 24 hours only
+            # Get only the most recent 10 articles initially
             cutoff_time = datetime.utcnow() - timedelta(hours=24)
             recent_articles = Article.query.filter(
                 Article.created_at >= cutoff_time,
-                Article.sentiment_score.isnot(None)  # Ensure sentiment score exists
-            ).order_by(Article.created_at.desc()).all()
+                Article.sentiment_score.isnot(None)
+            ).order_by(Article.created_at.desc()).limit(10).all()
 
-            # Set default values for any None fields
-            for article in recent_articles:
-                if article.sentiment_score is None:
-                    article.sentiment_score = 0.0
-                if article.sentiment_label is None:
-                    article.sentiment_label = 'neutral'
-
-            logger.info(f"Retrieved {len(recent_articles)} articles from last 24 hours")
+            logger.info(f"Retrieved initial {len(recent_articles)} articles")
         except Exception as e:
             logger.error(f"Error fetching articles: {str(e)}")
             recent_articles = []
 
-        # Fetch crypto prices with error handling
-        try:
-            crypto_prices = CryptoPrice.query.filter(
-                CryptoPrice.price_usd.isnot(None),
-                CryptoPrice.percent_change_24h.isnot(None)
-            ).all()
+        # Cache crypto prices in memory for 1 minute
+        cache_key = 'crypto_prices'
+        crypto_prices = getattr(app, cache_key, None)
+        cache_time = getattr(app, f'{cache_key}_time', None)
 
-            # Set default values for any None fields
-            for price in crypto_prices:
-                if price.price_usd is None:
-                    price.price_usd = 0.0
-                if price.percent_change_24h is None:
-                    price.percent_change_24h = 0.0
+        if not crypto_prices or not cache_time or (datetime.utcnow() - cache_time).seconds > 60:
+            try:
+                crypto_prices = CryptoPrice.query.filter(
+                    CryptoPrice.price_usd.isnot(None),
+                    CryptoPrice.percent_change_24h.isnot(None)
+                ).all()
+                setattr(app, cache_key, crypto_prices)
+                setattr(app, f'{cache_key}_time', datetime.utcnow())
+                logger.info(f"Updated cache with {len(crypto_prices)} crypto prices")
+            except Exception as e:
+                logger.error(f"Error fetching crypto prices: {str(e)}")
+                crypto_prices = []
+        else:
+            logger.info("Using cached crypto prices")
 
-            logger.info(f"Retrieved {len(crypto_prices)} crypto prices")
-        except Exception as e:
-            logger.error(f"Error fetching crypto prices: {str(e)}")
-            crypto_prices = []
+        # Cache news sources for 5 minutes
+        cache_key = 'news_sources'
+        news_sources = getattr(app, cache_key, None)
+        cache_time = getattr(app, f'{cache_key}_time', None)
 
-        # Fetch news sources with error handling
-        try:
-            news_sources = NewsSourceMetrics.query.order_by(NewsSourceMetrics.trust_score.desc()).all()
-            logger.info(f"Retrieved {len(news_sources)} news sources")
-        except Exception as e:
-            logger.error(f"Error fetching news sources: {str(e)}")
-            news_sources = []
+        if not news_sources or not cache_time or (datetime.utcnow() - cache_time).seconds > 300:
+            try:
+                news_sources = NewsSourceMetrics.query.order_by(NewsSourceMetrics.trust_score.desc()).all()
+                setattr(app, cache_key, news_sources)
+                setattr(app, f'{cache_key}_time', datetime.utcnow())
+                logger.info(f"Updated cache with {len(news_sources)} news sources")
+            except Exception as e:
+                logger.error(f"Error fetching news sources: {str(e)}")
+                news_sources = []
+        else:
+            logger.info("Using cached news sources")
 
-        # Prepare articles with enhanced summaries
+        # Prepare articles with enhanced summaries - optimize tooltip generation
+        crypto_symbols = {crypto.symbol: crypto for crypto in crypto_prices}
+
         for article in recent_articles:
             try:
                 enhanced_summary = escape(article.summary)
-                logger.debug(f"Processing article {article.id} summary: {enhanced_summary[:100]}...")
 
-                # Add crypto price tooltips to the summary
-                for crypto in crypto_prices:
-                    pattern = re.compile(r'\b' + re.escape(crypto.symbol) + r'\b', re.IGNORECASE)
+                # Process all crypto symbols at once instead of one by one
+                for symbol, crypto in crypto_symbols.items():
+                    pattern = re.compile(r'\b' + re.escape(symbol) + r'\b', re.IGNORECASE)
                     if pattern.search(str(enhanced_summary)):
                         tooltip_html = Markup(
-                            f'<span class="crypto-tooltip">{crypto.symbol}'
+                            f'<span class="crypto-tooltip">{symbol}'
                             f'<div class="tooltip-content">'
                             f'<span class="tooltip-price">${crypto.price_usd:.2f}</span>'
                             f'<span class="tooltip-change {("positive" if crypto.percent_change_24h > 0 else "negative")}">'
                             f'{crypto.percent_change_24h:.1f}%</span>'
                             f'</div></span>'
                         )
-
                         enhanced_summary = Markup(pattern.sub(str(tooltip_html), str(enhanced_summary)))
-                        logger.debug(f"Added tooltip for whole word match {crypto.symbol} in article {article.id}")
-                        logger.debug(f"Generated tooltip HTML: {tooltip_html}")
-                    else:
-                        logger.debug(f"No whole word match found for {crypto.symbol} in article {article.id}")
 
                 article.enhanced_summary = enhanced_summary
+                article.source_metrics = next(
+                    (source for source in news_sources if source.source_name == article.source_name),
+                    None
+                )
 
             except Exception as e:
                 logger.error(f"Error processing tooltips for article {article.id}: {str(e)}")
                 article.enhanced_summary = article.summary
 
-            article.source_metrics = next(
-                (source for source in news_sources if source.source_name == article.source_name),
-                None
-            )
-
         logger.info("Successfully prepared all data for dashboard")
         return render_template('dashboard.html', 
-                            articles=recent_articles,
-                            crypto_prices=crypto_prices,
-                            news_sources=news_sources,
-                            last_scraper_run=app.config['LAST_SCRAPER_RUN'],
-                            ga_tracking_id=app.config['GA_TRACKING_ID'])
+                          articles=recent_articles,
+                          crypto_prices=crypto_prices,
+                          news_sources=news_sources,
+                          last_scraper_run=app.config['LAST_SCRAPER_RUN'],
+                          ga_tracking_id=app.config['GA_TRACKING_ID'])
+
     except Exception as e:
         logger.error(f"Error generating dashboard: {str(e)}")
         return "Error loading dashboard", 500
@@ -666,6 +665,71 @@ def price_history(symbol):
     except Exception as e:
         logger.error(f"Error in price history endpoint for {symbol}: {str(e)}", exc_info=True)
         return jsonify({'prices': [], 'total_volumes': []})
+
+@app.route('/api/load-more-articles')
+def load_more_articles():
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = 10
+
+        cutoff_time = datetime.utcnow() - timedelta(hours=24)
+        articles = Article.query.filter(
+            Article.created_at >= cutoff_time,
+            Article.sentiment_score.isnot(None)
+        ).order_by(Article.created_at.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+
+        if not articles.items:
+            return jsonify({'articles': [], 'has_more': False})
+
+        # Process articles similar to dashboard
+        crypto_prices = getattr(app, 'crypto_prices', [])
+        news_sources = getattr(app, 'news_sources', [])
+        crypto_symbols = {crypto.symbol: crypto for crypto in crypto_prices}
+
+        processed_articles = []
+        for article in articles.items:
+            enhanced_summary = escape(article.summary)
+            for symbol, crypto in crypto_symbols.items():
+                pattern = re.compile(r'\b' + re.escape(symbol) + r'\b', re.IGNORECASE)
+                if pattern.search(str(enhanced_summary)):
+                    tooltip_html = Markup(
+                        f'<span class="crypto-tooltip">{symbol}'
+                        f'<div class="tooltip-content">'
+                        f'<span class="tooltip-price">${crypto.price_usd:.2f}</span>'
+                        f'<span class="tooltip-change {("positive" if crypto.percent_change_24h > 0 else "negative")}">'
+                        f'{crypto.percent_change_24h:.1f}%</span>'
+                        f'</div></span>'
+                    )
+                    enhanced_summary = Markup(pattern.sub(str(tooltip_html), str(enhanced_summary)))
+
+            source_metrics = next(
+                (source for source in news_sources if source.source_name == article.source_name),
+                None
+            )
+
+            processed_articles.append({
+                'id': article.id,
+                'title': article.title,
+                'summary': str(enhanced_summary),
+                'source_name': article.source_name,
+                'created_at': article.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'sentiment_label': article.sentiment_label,
+                'sentiment_score': article.sentiment_score,
+                'source_metrics': {
+                    'trust_score': source_metrics.trust_score if source_metrics else None
+                } if source_metrics else None
+            })
+
+        return jsonify({
+            'articles': processed_articles,
+            'has_more': articles.pages > page
+        })
+
+    except Exception as e:
+        logger.error(f"Error loading more articles: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 with app.app_context():
     try:

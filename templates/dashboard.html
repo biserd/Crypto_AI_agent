@@ -36,7 +36,14 @@
                             <div class="crypto-item">
                                 <a href="{{ url_for('crypto_detail', symbol=price.symbol) }}" class="text-decoration-none">
                                     <div class="crypto-tooltip crypto-price {{ 'price-up' if price.percent_change_24h|float > 0 else 'price-down' }}">
-                                        {{ price.symbol }}: ${{ "%.2f"|format(price.price_usd) }}
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span>{{ price.symbol }}: ${{ "%.2f"|format(price.price_usd) }}</span>
+                                            {% if price.confidence_score %}
+                                                <span class="badge {% if price.signal == 'buy' %}bg-success{% elif price.signal == 'sell' %}bg-danger{% else %}bg-warning{% endif %}">
+                                                    {{ price.signal|upper }} ({{ "%.0f"|format(price.confidence_score) }}%)
+                                                </span>
+                                            {% endif %}
+                                        </div>
                                         <small>({{ "%.1f"|format(price.percent_change_24h) }}%)</small>
                                     </div>
                                 </a>
@@ -51,7 +58,14 @@
                             <div class="crypto-item">
                                 <a href="{{ url_for('crypto_detail', symbol=price.symbol) }}" class="text-decoration-none">
                                     <div class="crypto-tooltip crypto-price {{ 'price-up' if price.percent_change_24h|float > 0 else 'price-down' }}">
-                                        {{ price.symbol }}: ${{ "%.2f"|format(price.price_usd) }}
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span>{{ price.symbol }}: ${{ "%.2f"|format(price.price_usd) }}</span>
+                                            {% if price.confidence_score %}
+                                                <span class="badge {% if price.signal == 'buy' %}bg-success{% elif price.signal == 'sell' %}bg-danger{% else %}bg-warning{% endif %}">
+                                                    {{ price.signal|upper }} ({{ "%.0f"|format(price.confidence_score) }}%)
+                                                </span>
+                                            {% endif %}
+                                        </div>
                                         <small>({{ "%.1f"|format(price.percent_change_24h) }}%)</small>
                                     </div>
                                 </a>
@@ -85,58 +99,101 @@
                 {% endfor %}
             </div>
 
-            <!-- Articles Section -->
-            {% for article in articles %}
-            <div class="card mb-3">
-                <div class="card-body">
-                    <h5 class="card-title">{{ article.title.replace('**', '').replace('($BTC)', '').replace('($Btc)', '').replace('($ADA)', '').replace('($Ada)', '').replace('($ETH)', '').replace('($AVAX)', '').replace('($SOL)', '').replace('($XRP)', '').replace('($MATIC)', '').replace('($DOGE)', '').replace('($BNB)', '') }}</h5>
-                    <h6 class="card-subtitle mb-2 text-muted">
-                        {{ article.source_name }}
-                        {% if article.source_metrics %}
-                        <span class="badge {% if article.source_metrics.trust_score >= 70 %}bg-success{% elif article.source_metrics.trust_score >= 40 %}bg-warning{% else %}bg-danger{% endif %}" title="Source Trust Score">
-                            Source Trust: {{ "%.1f"|format(article.source_metrics.trust_score) }}%
-                        </span>
-                        {% endif %}
-                        - {{ article.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
-                    </h6>
-                    <p class="card-text">{{ article.enhanced_summary|safe }}</p>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            {% if article.sentiment_label %}
-                                <span class="sentiment-indicator sentiment-{{ article.sentiment_label.lower() }}">
-                                    {{ article.sentiment_label|title }}
-                                    <span class="sentiment-score">
-                                        {% if article.sentiment_score %}
-                                            {{ "%.2f"|format(article.sentiment_score) }}
-                                        {% endif %}
-                                    </span>
-                                </span>
-                            {% endif %}
-                        </div>
-                        <div class="action-buttons">
-                            {% if article.sentiment_label == 'positive' %}
-                                {% for crypto in ['BTC', 'ETH', 'BNB', 'ADA', 'SOL', 'XRP', 'DOGE', 'MATIC', 'AVAX'] %}
-                                    {% if crypto.lower() in article.content.lower() or crypto in article.content %}
-                                        <a href="{{ url_for('crypto_detail', symbol=crypto) }}" class="btn btn-sm btn-success">View {{ crypto }}</a>
-                                    {% endif %}
-                                {% endfor %}
-                            {% elif article.sentiment_label == 'negative' %}
-                                {% for crypto in ['BTC', 'ETH', 'BNB', 'ADA', 'SOL', 'XRP', 'DOGE', 'MATIC', 'AVAX'] %}
-                                    {% if crypto.lower() in article.content.lower() or crypto in article.content %}
-                                        <a href="{{ url_for('crypto_detail', symbol=crypto) }}" class="btn btn-sm btn-danger">View {{ crypto }}</a>
-                                    {% endif %}
-                                {% endfor %}
-                            {% endif %}
-                            <button class="btn btn-info btn-sm" onclick="showShareModal('{{ article.id }}')">Share</button>
-                            <a href="{{ article.source_url }}" class="btn btn-primary btn-sm" target="_blank">Read More</a>
-                        </div>
-                    </div>
+            <!-- Articles Section with Infinite Scroll -->
+            <div id="articles-container">
+                {% for article in articles %}
+                    {% include 'partials/article_card.html' %}
+                {% endfor %}
+            </div>
+
+            <!-- Loading indicator -->
+            <div id="loading-indicator" class="text-center d-none">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
                 </div>
             </div>
-            {% endfor %}
         </div>
     </div>
 </div>
+
+<!-- Infinite scroll JavaScript -->
+<script>
+let currentPage = 1;
+let loading = false;
+let hasMore = true;
+
+function loadMoreArticles() {
+    if (loading || !hasMore) return;
+
+    loading = true;
+    const loadingIndicator = document.getElementById('loading-indicator');
+    loadingIndicator.classList.remove('d-none');
+
+    fetch(`/api/load-more-articles?page=${currentPage + 1}`)
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('articles-container');
+            data.articles.forEach(article => {
+                const articleHtml = createArticleCard(article);
+                container.insertAdjacentHTML('beforeend', articleHtml);
+            });
+
+            currentPage += 1;
+            hasMore = data.has_more;
+            loading = false;
+            loadingIndicator.classList.add('d-none');
+        })
+        .catch(error => {
+            console.error('Error loading more articles:', error);
+            loading = false;
+            loadingIndicator.classList.add('d-none');
+        });
+}
+
+function createArticleCard(article) {
+    return `
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">${article.title}</h5>
+                <h6 class="card-subtitle mb-2 text-muted">
+                    ${article.source_name}
+                    ${article.source_metrics ? `
+                        <span class="badge ${article.source_metrics.trust_score >= 70 ? 'bg-success' : article.source_metrics.trust_score >= 40 ? 'bg-warning' : 'bg-danger'}" title="Source Trust Score">
+                            Source Trust: ${article.source_metrics.trust_score.toFixed(1)}%
+                        </span>
+                    ` : ''}
+                    - ${article.created_at}
+                </h6>
+                <p class="card-text">${article.summary}</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        ${article.sentiment_label ? `
+                            <span class="sentiment-indicator sentiment-${article.sentiment_label.toLowerCase()}">
+                                ${article.sentiment_label}
+                                <span class="sentiment-score">
+                                    ${article.sentiment_score ? article.sentiment_score.toFixed(2) : ''}
+                                </span>
+                            </span>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Infinite scroll detection
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting && hasMore && !loading) {
+            loadMoreArticles();
+        }
+    });
+}, { rootMargin: '100px' });
+
+// Observe the loading indicator
+observer.observe(document.getElementById('loading-indicator'));
+</script>
 
 {{ super() }}
 {% endblock %}
