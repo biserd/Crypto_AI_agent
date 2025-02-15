@@ -53,6 +53,26 @@
         </div>
     </div>
 
+    <!-- Market Stats -->
+    <div class="market-stats-grid mt-4 mb-4">
+        <div class="stat-card">
+            <div class="stat-label">Market Cap</div>
+            <div class="stat-value">${{ "{:,.0f}".format(crypto.market_cap) }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">24h Volume</div>
+            <div class="stat-value">${{ "{:,.0f}".format(crypto.volume_24h) }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Market Cap Rank</div>
+            <div class="stat-value">#{{ crypto.market_cap_rank }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Circulating Supply</div>
+            <div class="stat-value">{{ "{:,.0f}".format(crypto.circulating_supply) }}</div>
+        </div>
+    </div>
+
     <div class="row">
         <!-- Price Chart Section -->
         <div class="col-12 mb-4">
