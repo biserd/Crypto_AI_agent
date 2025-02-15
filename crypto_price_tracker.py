@@ -212,10 +212,7 @@ class CryptoPriceTracker:
             params = {
                 'ids': ids,
                 'vs_currencies': 'usd',
-                'include_24hr_change': 'true',
-                'include_market_cap': 'true',
-                'include_24hr_vol': 'true',
-                'include_last_updated_at': 'true'
+                'include_24hr_change': 'true'
             }
 
             data = self._make_request(api_url, params)

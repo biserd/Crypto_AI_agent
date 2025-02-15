@@ -519,7 +519,8 @@ def calculate_crypto_signals(symbol, related_news=None, price_data=None):
         logger.error(f"Error calculating signals for {symbol}: {str(e)}")
         return {'signal': 'hold', 'confidence': 50.0, 'total_articles': 0}
 
-@app.route('/crypto/<symbol>', methods=['GET', 'POST'])
+@app.route('/crypto/<symbol>')
+@check_subscription('basic')
 def crypto_detail(symbol):
     try:
         logger.info(f"Accessing crypto detail page for symbol: {symbol}")
