@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <meta name="description" content="{% block meta_description %}Real-time cryptocurrency news and market analysis{% endblock %}">
     <meta name="keywords" content="{% block meta_keywords %}crypto, cryptocurrency, blockchain, bitcoin, ethereum, trading{% endblock %}">
     <meta name="robots" content="index, follow">
@@ -112,7 +112,7 @@
     <nav class="navbar navbar-expand-lg bg-white border-bottom">
         <div class="container">
             <div class="d-flex align-items-center w-100">
-                <a class="navbar-brand me-2" href="/"><img src="/static/logo.png" alt="Exploding Crypto" height="30"></a>
+                <a class="navbar-brand me-2" href="/"><img src="{{ url_for('static', filename='logo.png') }}" alt="Exploding Crypto" height="30"></a>
                 <div class="flex-grow-1 mx-2 position-relative">
                     <input type="text" id="searchCrypto" class="form-control" placeholder="Search..." autocomplete="off">
                     <div id="searchSuggestions" class="position-absolute bg-white shadow rounded mt-1 w-100 d-none" style="z-index: 1050;"></div>
