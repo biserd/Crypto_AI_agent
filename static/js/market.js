@@ -5,15 +5,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const activeCryptos = document.getElementById('active-cryptos');
     const marketTable = document.getElementById('market-table').getElementsByTagName('tbody')[0];
 
-    // Initialize values
-    marketCap.textContent = 'Loading...';
-    volume.textContent = 'Loading...';
-    btcDominance.textContent = 'Loading...';
-    activeCryptos.textContent = 'Loading...';
-
-    // Clear existing rows
-    marketTable.innerHTML = '';
-
     async function fetchMarketData() {
         try {
             const response = await fetch('/api/crypto-prices');
@@ -21,89 +12,67 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
-            if (!Array.isArray(data)) {
-                throw new Error('Invalid data format received');
-            }
 
+            // Calculate totals
             let totalMarketCap = 0;
             let totalVolume = 0;
             let btcMarketCap = 0;
 
-            // Filter out entries with invalid data
-            const validData = data.filter(crypto => 
-                crypto && 
-                typeof crypto.market_cap === 'number' && 
-                typeof crypto.volume_24h === 'number'
-            );
-
-            validData.forEach(crypto => {
-                const mCap = parseFloat(crypto.market_cap) || 0;
-                const vol = parseFloat(crypto.volume_24h) || 0;
-                totalMarketCap += mCap;
-                totalVolume += vol;
-                if (crypto.symbol === 'BTC') {
-                    btcMarketCap = mCap;
-                }
-            });
-
-            if (totalMarketCap === 0) {
-                throw new Error('No valid market cap data available');
-            }
-
-            // Update market statistics
             // Format large numbers
-            const formatNumber = (num) => {
-                if (num >= 1e12) return `$${(num / 1e12).toFixed(2)}T`;
-                if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;
-                if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;
-                return `$${num.toLocaleString()}`;
+            const formatLargeNumber = (num) => {
+                if (num >= 1e12) return `${(num / 1e12).toFixed(2)}T`;
+                if (num >= 1e9) return `${(num / 1e9).toFixed(2)}B`;
+                if (num >= 1e6) return `${(num / 1e6).toFixed(2)}M`;
+                return num.toLocaleString();
             };
 
-            marketCap.textContent = formatNumber(totalMarketCap);
-            volume.textContent = formatNumber(totalVolume);
-            btcDominance.textContent = totalMarketCap > 0 ? 
-                `${((btcMarketCap / totalMarketCap) * 100).toFixed(1)}%` : 
-                '0%';
-            activeCryptos.textContent = data.filter(c => c && c.market_cap > 0).length;
+            // Clear existing table rows
+            marketTable.innerHTML = '';
 
-            // Create table rows
             // Sort data by market cap
-            data.sort((a, b) => (b.market_cap || 0) - (a.market_cap || 0));
-            
+            data.sort((a, b) => b.market_cap - a.market_cap);
+
             data.forEach((crypto, index) => {
+                totalMarketCap += crypto.market_cap || 0;
+                totalVolume += crypto.volume_24h || 0;
+                if (crypto.symbol === 'BTC') {
+                    btcMarketCap = crypto.market_cap;
+                }
+
                 const row = marketTable.insertRow();
-                const priceFormatted = parseFloat(crypto.price_usd).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                });
-                
                 row.innerHTML = `
                     <td>${index + 1}</td>
                     <td><a href="/crypto/${crypto.symbol}">${crypto.symbol}</a></td>
-                    <td>$${priceFormatted}</td>
-                    <td class="${crypto.percent_change_24h > 0 ? 'text-success' : 'text-danger'}">
-                        ${parseFloat(crypto.percent_change_24h).toFixed(2)}%
+                    <td>$${parseFloat(crypto.price_usd).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    })}</td>
+                    <td class="${crypto.percent_change_24h >= 0 ? 'text-success' : 'text-danger'}">
+                        ${crypto.percent_change_24h.toFixed(2)}%
                     </td>
-                    <td class="${crypto.percent_change_7d > 0 ? 'text-success' : 'text-danger'}">
-                        ${parseFloat(crypto.percent_change_7d || 0).toFixed(2)}%
+                    <td class="${crypto.percent_change_7d >= 0 ? 'text-success' : 'text-danger'}">
+                        ${crypto.percent_change_7d.toFixed(2)}%
                     </td>
-                    <td>$${parseInt(crypto.market_cap || 0).toLocaleString()}</td>
-                    <td>$${parseInt(crypto.volume_24h || 0).toLocaleString()}</td>
+                    <td>$${formatLargeNumber(crypto.market_cap)}</td>
+                    <td>$${formatLargeNumber(crypto.volume_24h)}</td>
                 `;
             });
+
+            // Update market statistics
+            marketCap.textContent = `$${formatLargeNumber(totalMarketCap)}`;
+            volume.textContent = `$${formatLargeNumber(totalVolume)}`;
+            btcDominance.textContent = `${((btcMarketCap / totalMarketCap) * 100).toFixed(1)}%`;
+            activeCryptos.textContent = data.length;
+
         } catch (error) {
             console.error('Error fetching market data:', error);
-            marketCap.textContent = 'Error loading data';
-            volume.textContent = 'Error loading data';
-            btcDominance.textContent = 'Error loading data';
-            activeCryptos.textContent = 'Error loading data';
-            
-            // Display error in table
-            const row = marketTable.insertRow();
-            row.innerHTML = `<td colspan="7" class="text-center">Error loading market data. Please try refreshing the page.</td>`;
+            marketTable.innerHTML = '<tr><td colspan="7" class="text-center">Error loading market data. Please try refreshing the page.</td></tr>';
         }
     }
 
-
+    // Initial fetch
     fetchMarketData();
+
+    // Refresh every 60 seconds
+    setInterval(fetchMarketData, 60000);
 });
