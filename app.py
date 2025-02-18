@@ -202,62 +202,6 @@ def profile():
     subscription = Subscription.query.filter_by(user_id=current_user.id, active=True).first()
     return render_template('profile.html', user=current_user, subscription=subscription)
 
-def calculate_crypto_signals(symbol, related_news=None, price_data=None):
-    """Calculate unified crypto signals across the application"""
-    try:
-        if related_news is None:
-            # Get related news from last 3 days for signal calculation
-            cutoff_time = datetime.utcnow() - timedelta(days=3)
-            related_news = Article.query.filter(
-                db.and_(
-                    db.or_(
-                        Article.content.ilike(f'%{symbol}%'),
-                        Article.title.ilike(f'%{symbol}%')
-                    ),
-                    Article.created_at >= cutoff_time
-                )
-            ).order_by(desc(Article.created_at)).all()
-
-        total_articles = len(related_news)
-
-        if total_articles > 0:
-            positive_count = sum(1 for article in related_news if article.sentiment_label == 'positive')
-            neutral_count = sum(1 for article in related_news if article.sentiment_label == 'neutral')
-            negative_count = sum(1 for article in related_news if article.sentiment_label == 'negative')
-
-            # Weight each sentiment type
-            weighted_score = (positive_count * 1.2 + neutral_count * 0.2 - negative_count * 0.8) / total_articles
-
-            if price_data and price_data.percent_change_24h:
-                price_weight = 0.5 if price_data.percent_change_24h > 2.0 else (-0.5 if price_data.percent_change_24h < -2.0 else 0)
-            else:
-                price_weight = 0
-
-            # Calculate final scores
-            total_score = weighted_score + price_weight
-            confidence = 50.0 + (total_score * 40.0) + (min(10.0, abs(price_data.percent_change_24h)) if price_data else 0)
-            confidence = min(95.0, max(5.0, confidence))
-
-            # Determine signal with consistent thresholds
-            if total_score > 0.4 and (price_data and price_data.percent_change_24h > 0):
-                signal = 'buy'
-            elif total_score < -0.4 and (price_data and price_data.percent_change_24h < 0):
-                signal = 'sell'
-            else:
-                signal = 'hold'
-        else:
-            confidence = 50.0
-            signal = 'hold'
-
-        return {
-            'signal': signal,
-            'confidence': confidence,
-            'total_articles': total_articles
-        }
-    except Exception as e:
-        logger.error(f"Error calculating signals for {symbol}: {str(e)}")
-        return {'signal': 'hold', 'confidence': 50.0, 'total_articles': 0}
-
 @app.route('/')
 def dashboard():
     try:
@@ -1040,7 +984,8 @@ def utility_processor():
     tracker = CryptoPriceTracker()
     return {
         'crypto_names': crypto_names,
-        'supported_cryptos': list(tracker.crypto_ids.keys())
+        'supported_cryptos': list(tracker.crypto_ids.keys()),
+        'calculate_crypto_signals': calculate_crypto_signals
     }
 
 if __name__ == "__main__":
