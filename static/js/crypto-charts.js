@@ -48,6 +48,7 @@ function initPriceChart(symbol) {
             'ADA': 'cardano',
             'AVAX': 'avalanche-2',
             'DOGE': 'dogecoin',
+            'LTC': 'litecoin',
             'LINK': 'chainlink',
             'DOT': 'polkadot',
             'MATIC': 'matic-network',
