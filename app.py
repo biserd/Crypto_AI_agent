@@ -284,8 +284,9 @@ def dashboard():
         # Calculate signals once and store them
         try:
             cutoff_time = datetime.utcnow() - timedelta(days=3)
-            
-            # Calculate signals for all prices at once
+
+            # Calculate signals for all prices at once and store them
+            app.crypto_signals = {}
             for price in crypto_prices:
                 try:
                     # Get recent news for this token
@@ -304,17 +305,20 @@ def dashboard():
                     price.signal = signals['signal']
                     price.confidence_score = signals['confidence']
                     price.total_articles = signals['total_articles']
+
+                    # Store in app context
+                    app.crypto_signals[price.symbol] = signals
+
                 except Exception as e:
                     logger.error(f"Error calculating sentiment for {price.symbol}: {str(e)}")
-                    price.confidence_score = 50.0
-                    price.signal = 'hold'
-                    price.total_articles = 0
-                    
+                    default_signals = {'signal': 'hold', 'confidence': 50.0, 'total_articles': 0}
+                    price.signal = default_signals['signal']
+                    price.confidence_score = default_signals['confidence']
+                    price.total_articles = default_signals['total_articles']
+                    app.crypto_signals[price.symbol] = default_signals
+
             logger.info(f"Calculated signals for {len(crypto_prices)} cryptocurrencies")
-            
-            # Store the signals in app context for reuse
-            app.crypto_signals = {price.symbol: {'signal': price.signal, 'confidence': price.confidence_score} for price in crypto_prices}
-            
+
         except Exception as e:
             logger.error(f"Error processing crypto data: {str(e)}")
 
@@ -359,7 +363,7 @@ def dashboard():
                             articles=recent_articles,
                             crypto_prices=crypto_prices,
                             news_sources=news_sources,
-                            buy_signals=crypto_prices, #Use crypto_prices as buy_signals now.
+                            buy_signals=app.crypto_signals, #Use app.crypto_signals now.
                             last_scraper_run=app.config['LAST_SCRAPER_RUN'],
                             ga_tracking_id=app.config['GA_TRACKING_ID'])
     except Exception as e:
@@ -826,8 +830,7 @@ def price_history(symbol):
         logger.debug(f"Raw historical data type: {type(historical_data)}")
         logger.debug(f"Raw historical data keys: {historical_data.keys() if isinstance(historical_data, dict) else 'Not a dict'}")
 
-        # Validate the historical data structure
-        if not historical_data or not isinstance(historical_data, dict):
+        # Validate the historical data structureif not historical_data or not isinstance(historical_data, dict):
             logger.error(f"Invalid historical data type for {symbol}: {type(historical_data)}")
             return jsonify({
                 'error': f'Invalid data format received for {symbol}',
