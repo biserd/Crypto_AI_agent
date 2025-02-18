@@ -830,7 +830,8 @@ def price_history(symbol):
         logger.debug(f"Raw historical data type: {type(historical_data)}")
         logger.debug(f"Raw historical data keys: {historical_data.keys() if isinstance(historical_data, dict) else 'Not a dict'}")
 
-        # Validate the historical data structureif not historical_data or not isinstance(historical_data, dict):
+        # Validate the historical data structure
+        if not historical_data or not isinstance(historical_data, dict):
             logger.error(f"Invalid historical data type for {symbol}: {type(historical_data)}")
             return jsonify({
                 'error': f'Invalid data format received for {symbol}',
