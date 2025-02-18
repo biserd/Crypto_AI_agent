@@ -48,7 +48,7 @@ class CryptoPriceTracker:
             'WBTC': 'wrapped-bitcoin',
             'SHIB': 'shiba-inu',
             'LEO': 'leo-token',
-            'LTC': 'litecoin-2',
+            'LTC': 'litecoin',
             'UNI': 'uniswap',
             'CAKE': 'pancakeswap-token',
             'LINK': 'chainlink',
