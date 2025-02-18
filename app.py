@@ -281,13 +281,14 @@ def dashboard():
             logger.error(f"Error fetching news sources: {str(e)}")
             news_sources = []
 
-        # Calculate signals consistently
+        # Calculate signals once and store them
         try:
-            # Apply sentiment analysis to all crypto prices
+            cutoff_time = datetime.utcnow() - timedelta(days=3)
+            
+            # Calculate signals for all prices at once
             for price in crypto_prices:
                 try:
                     # Get recent news for this token
-                    cutoff_time = datetime.utcnow() - timedelta(days=3)
                     related_news = Article.query.filter(
                         db.and_(
                             db.or_(
@@ -298,18 +299,22 @@ def dashboard():
                         )
                     ).order_by(Article.created_at.desc()).all()
 
-                    # Calculate sentiment
-                    total_articles = len(related_news)
-                    # Use the unified signal calculation function
+                    # Calculate signals using unified function
                     signals = calculate_crypto_signals(price.symbol, related_news, price)
                     price.signal = signals['signal']
                     price.confidence_score = signals['confidence']
+                    price.total_articles = signals['total_articles']
                 except Exception as e:
                     logger.error(f"Error calculating sentiment for {price.symbol}: {str(e)}")
                     price.confidence_score = 50.0
                     price.signal = 'hold'
-
+                    price.total_articles = 0
+                    
             logger.info(f"Calculated signals for {len(crypto_prices)} cryptocurrencies")
+            
+            # Store the signals in app context for reuse
+            app.crypto_signals = {price.symbol: {'signal': price.signal, 'confidence': price.confidence_score} for price in crypto_prices}
+            
         except Exception as e:
             logger.error(f"Error processing crypto data: {str(e)}")
 

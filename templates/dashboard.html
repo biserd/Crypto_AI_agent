@@ -33,7 +33,7 @@
                         <h5 class="mb-3">Exploding Crypto</h5>
                         {% with sorted_gainers = crypto_prices|filter_by_positive|sort(attribute='percent_change_24h', reverse=True) %}
                         {% for price in sorted_gainers[:5] %}
-                            {% set signals = calculate_crypto_signals(price.symbol, [], price) %}
+                            {% set signals = {'signal': price.signal, 'confidence': price.confidence_score} %}
                             <div class="crypto-item">
                                 <a href="{{ url_for('crypto_detail', symbol=price.symbol) }}" class="text-decoration-none">
                                     <div class="crypto-tooltip crypto-price {{ 'price-up' if price.percent_change_24h|float > 0 else 'price-down' }}">
