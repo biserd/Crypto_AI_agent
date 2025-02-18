@@ -77,6 +77,12 @@ function initPriceChart(symbol) {
             .then(response => response.json())
             .then(data => {
                 console.log("Creating chart with data:", data);
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                if (!data.prices || !data.total_volumes) {
+                    throw new Error('Invalid data format received');
+                }
                 createChart(data.prices, data.total_volumes);
             })
             .catch(error => {
