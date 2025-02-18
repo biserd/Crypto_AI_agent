@@ -289,25 +289,14 @@ def dashboard():
             app.crypto_signals = {}
             for price in crypto_prices:
                 try:
-                    # Get recent news for this token
-                    related_news = Article.query.filter(
-                        db.and_(
-                            db.or_(
-                                Article.content.ilike(f'%{price.symbol}%'),
-                                Article.title.ilike(f'%{price.symbol}%')
-                            ),
-                            Article.created_at >= cutoff_time
-                        )
-                    ).order_by(Article.created_at.desc()).all()
-
-                    # Calculate signals using unified function
-                    signals = calculate_crypto_signals(price.symbol, related_news, price)
+                    # Calculate and cache signal
+                    signals = calculate_crypto_signals(price.symbol)
+                    app.crypto_signals[price.symbol] = signals
+                    
+                    # Update price object with signals
                     price.signal = signals['signal']
                     price.confidence_score = signals['confidence']
                     price.total_articles = signals['total_articles']
-
-                    # Store in app context
-                    app.crypto_signals[price.symbol] = signals
 
                 except Exception as e:
                     logger.error(f"Error calculating sentiment for {price.symbol}: {str(e)}")
@@ -575,8 +564,8 @@ def crypto_detail(symbol):
             related_news = []
             news_impact = {'positive': 0, 'negative': 0, 'neutral': 0, 'total_articles': 0}
 
-        # Calculate signals using unified function
-        signals = calculate_crypto_signals(symbol, related_news, crypto_price)
+        # Use cached signals or recalculate if needed
+        signals = app.crypto_signals.get(symbol) or calculate_crypto_signals(symbol)
         recommendation = signals['signal']
 
         # Get additional coin data
